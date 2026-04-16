@@ -1,0 +1,26 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: microfina-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Sql@Server2024"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1434:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    restart: unless-stopped
+
+  adminer:
+    image: adminer:latest
+    container_name: microfina-adminer
+    ports:
+      - "8888:8080"
+    depends_on:
+      - sqlserver
+    restart: unless-stopped
+
+volumes:
+  sqlserver_data:
+    driver: local
