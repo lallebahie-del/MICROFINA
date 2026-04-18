@@ -1,1 +1,49 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --sidebar-width: 200px;
+  --navbar-height: 76px;
+  --primary-blue: #1970c2;
+  --primary-blue-dark: #225381;
+  --primary-blue-light: #3987c4;
+  --navbar-gradient-start: #5d9cd6;
+  --navbar-gradient-end: #97bde2;
+  --bg-light: #eef2f7;
+  --bg-white: #ffffff;
+  --bg-sidebar: #f5f7fa;
+  --border-color: #d8dfe8;
+  --text-dark: #2c3e50;
+  --text-medium: #4a6785;
+  --text-light: #7a8ea0;
+  --text-muted: #a0b0c0;
+  --section-blue: #4a86c0;
+  --section-green: #5cb85c;
+  --hover-bg: #e8f0f8;
+  --active-blue: #3a75b0;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  background-color: var(--bg-light);
+  color: var(--text-dark);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  height: 100vh;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+ul {
+  list-style: none;
+}
