@@ -1,2 +1,2 @@
-# Re-enable TLS 1.0 and 1.1
+# Supprimer TLSv1 et TLSv1.1 de la liste des algorithmes désactivés
 jdk.tls.disabledAlgorithms=SSLv3, RC4, DES, MD5withRSA, DH keySize < 1024, EC keySize < 224, 3DES_EDE_CBC, anon, NULL

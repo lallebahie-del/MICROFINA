@@ -7,7 +7,7 @@ services:
     container_name: microfina-sqlserver
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "Sql@Server2024"
+      MSSQL_SA_PASSWORD: "Password123!"
       MSSQL_PID: "Developer"
     ports:
       - "1434:1433"
@@ -23,7 +23,7 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:sqlserver://sqlserver:1433;databaseName=microfina;encrypt=true;trustServerCertificate=true
       SPRING_DATASOURCE_USERNAME: sa
-      SPRING_DATASOURCE_PASSWORD: Sql@Server2024
+      SPRING_DATASOURCE_PASSWORD: Password123!
     depends_on:
       - sqlserver
     restart: unless-stopped

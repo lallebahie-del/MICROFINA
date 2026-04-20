@@ -69,6 +69,9 @@
            <plugin>
   <groupId>org.springframework.boot</groupId>
   <artifactId>spring-boot-maven-plugin</artifactId>
+  <configuration>
+    <jvmArguments>-Djdk.tls.client.protocols=TLSv1,TLSv1.1,TLSv1.2 -Djava.security.properties=java.security</jvmArguments>
+  </configuration>
 </plugin>
 
             <!-- Lombok -->
