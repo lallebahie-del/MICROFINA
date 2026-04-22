@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- MICROFINA — Module Client — client.xml -->
+<!-- Créé par : agent IA — Branche recommandée : feature/module-client -->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- ============================================ -->
+    <!-- NOTE : La table "membres" est déjà créée     -->
+    <!-- dans membre.xml (changeset id=23).           -->
+    <!-- Ce fichier crée uniquement les nouvelles     -->
+    <!-- tables liées au module Adhésion/Épargne.     -->
+    <!-- Préfixe obligatoire : client_                -->
+    <!-- ============================================ -->
+
+    <!-- ============================================ -->
+    <!-- TABLE : COMPTEEPS (Compte Épargne)           -->
+    <!-- ============================================ -->
+    <changeSet id="client_1" author="migration">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="COMPTEEPS"/></not>
+        </preConditions>
+        <createTable tableName="COMPTEEPS">
+            <column name="NUMCOMPTE" type="varchar(255)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="DATECREATION" type="datetime"/>
+            <column name="MONTANTOUVERT" type="decimal(15,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="FERME" type="varchar(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="BLOQUE" type="varchar(10)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="TYPEEPARGNE" type="varchar(255)"/>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <!-- Foreign Keys -->
+            <column name="membre" type="varchar(25)"/>
+            <column name="agence" type="varchar(25)"/>
+            <column name="produitEpargne" type="varchar(20)"/>
+        </createTable>
+    </changeSet>
+
+    <!-- FKs de COMPTEEPS -->
+    <changeSet id="client_2" author="migration">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="COMPTEEPS"/>
+            <not><foreignKeyConstraintExists foreignKeyName="FK_CompteEps_Membre"/></not>
+        </preConditions>
+        <addForeignKeyConstraint
+            constraintName="FK_CompteEps_Membre"
+            baseTableName="COMPTEEPS"
+            baseColumnNames="membre"
+            referencedTableName="membres"
+            referencedColumnNames="NUM_MEMBRE"
+            onDelete="NO ACTION"
+            onUpdate="NO ACTION"/>
+        <addForeignKeyConstraint
+            constraintName="FK_CompteEps_Agence"
+            baseTableName="COMPTEEPS"
+            baseColumnNames="agence"
+            referencedTableName="Agence"
+            referencedColumnNames="CODE_AGENCE"
+            onDelete="NO ACTION"
+            onUpdate="NO ACTION"/>
+        <addForeignKeyConstraint
+            constraintName="FK_CompteEps_ProduitEpargne"
+            baseTableName="COMPTEEPS"
+            baseColumnNames="produitEpargne"
+            referencedTableName="ProduitEpargne"
+            referencedColumnNames="numproduit"
+            onDelete="NO ACTION"
+            onUpdate="NO ACTION"/>
+    </changeSet>
+
+    <!-- ============================================ -->
+    <!-- TABLE : Epargne (Mouvements d'épargne)       -->
+    <!-- ============================================ -->
+    <changeSet id="client_3" author="migration">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="Epargne"/></not>
+        </preConditions>
+        <createTable tableName="Epargne">
+            <column name="IDEPARGNE" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="DATEOPERATION" type="datetime"/>
+            <column name="MONTANTCREDIT" type="decimal(15,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="MONTANTDEBIT" type="decimal(15,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="SOLDEANCIEN" type="decimal(15,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="SOLDENOUVEAU" type="decimal(15,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="LIBELLEOPERATION" type="varchar(255)"/>
+            <column name="NUMPIECE" type="varchar(255)"/>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <!-- Foreign Keys -->
+            <column name="compteEps" type="varchar(255)"/>
+            <column name="agence" type="varchar(25)"/>
+        </createTable>
+    </changeSet>
+
+    <!-- FKs de Epargne -->
+    <changeSet id="client_4" author="migration">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="Epargne"/>
+            <not><foreignKeyConstraintExists foreignKeyName="FK_Epargne_CompteEps"/></not>
+        </preConditions>
+        <addForeignKeyConstraint
+            constraintName="FK_Epargne_CompteEps"
+            baseTableName="Epargne"
+            baseColumnNames="compteEps"
+            referencedTableName="COMPTEEPS"
+            referencedColumnNames="NUMCOMPTE"
+            onDelete="NO ACTION"
+            onUpdate="NO ACTION"/>
+        <addForeignKeyConstraint
+            constraintName="FK_Epargne_Agence"
+            baseTableName="Epargne"
+            baseColumnNames="agence"
+            referencedTableName="Agence"
+            referencedColumnNames="CODE_AGENCE"
+            onDelete="NO ACTION"
+            onUpdate="NO ACTION"/>
+    </changeSet>
+
+</databaseChangeLog>

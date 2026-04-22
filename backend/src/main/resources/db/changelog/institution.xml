@@ -125,6 +125,7 @@
     <!-- TABLE 6 : Institution                        -->
     <!-- ============================================ -->
     <changeSet id="6" author="migration">
+        <validCheckSum>9:e5cc59ab1184841ab10cb105d0bfc34a</validCheckSum>
         <createTable tableName="Institution">
             <!-- Clé primaire -->
             <column name="CODE_INSTITUTION" type="varchar(255)">
@@ -234,7 +235,7 @@
             <column name="INTERET_CREDIT_DYNAMIQUE" type="bit"/>
             <column name="timeout_seconde" type="int"/>
             <column name="cpte_attente_transfert" type="varchar(255)"/>
-            <column name="UseCycles" type="varchar(1)">
+            <column name="UseCycles" type="varchar(1)" defaultValue="0">
                 <constraints nullable="false"/>
             </column>
             <column name="max_credit_cautionne_client" type="int"/>

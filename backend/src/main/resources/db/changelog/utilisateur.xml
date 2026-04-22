@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog 
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- ============================================ -->
+    <!-- TABLE : Utilisateur                           -->
+    <!-- Dépend des tables : Tiers, Agence, Guichet,   -->
+    <!-- Photos, Structure, CategorieHeureConnexion    -->
+    <!-- ============================================ -->
+
+    <changeSet id="create_table_utilisateur" author="migration">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="Utilisateur"/></not>
+        </preConditions>
+        <createTable tableName="Utilisateur">
+            <!-- PK = FK vers Tiers -->
+            <column name="CODE_TIERS" type="varchar(50)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+             
+            <!-- Infos utilisateur -->
+            <column name="Pactif" type="bit"/>
+            <column name="Conception" type="bit"/>
+            <column name="Nomutil" type="varchar(255)"/>
+            <column name="Hostname" type="varchar(255)"/>
+            <column name="Password" type="varchar(255)"/>
+            <column name="DESIGNATION" type="varchar(255)"/>
+             
+            <!-- Dates -->
+            <column name="DATE_CONNEXION" type="datetime"/>
+            <column name="DATE_CREATION" type="datetime"/>
+            <column name="DATE_UPDATE" type="datetime"/>
+             
+            <!-- Codes -->
+            <column name="CODE_CONF" type="varchar(20)"/>
+            <column name="NBRE_CONNECT" type="int"/>
+            <column name="ID_EMPLOYE" type="varchar(48)"/>
+            <column name="intercaissePass" type="varchar(200)"/>
+             
+            <!-- Boolean flags -->
+            <column name="UTILISATEUR_VIP" type="bit"/>
+            <column name="MULTI_AGENCE" type="bit"/>
+            <column name="INIT_PASSWORD" type="bit"/>
+            <column name="CONTROLE_MACHINE_CONNECTE" type="bit"/>
+            <column name="modifyRembParAnticipation" type="bit"/>
+            <column name="RESIL_CONTRAIT_MT_INSUFISANT" type="bit"/>
+            <column name="VOIR_ALL_DAY_OPEN" type="bit"/>
+            <column name="ouvrir_journee" type="bit"/>
+            <column name="remb_auto" type="bit"/>
+            <column name="remb_solde_rest_interet" type="bit"/>
+            <column name="CLOTUREPERIODETABAUXI" type="bit"/>
+            <column name="REOUVRIRPERIODETABAUXI" type="bit"/>
+            <column name="AUTORISER_DEPASSEMENT" type="bit"/>
+            <column name="ROUVERTURE_DE_JOURNEE" type="bit"/>
+            <column name="VOIR_SPY" type="bit"/>
+            <column name="MULTI_INSTITUTION" type="bit"/>
+            <column name="OPERATION_DEPLACEE" type="bit"/>
+            <column name="VOIR_NOTIF" type="bit"/>
+            <column name="MODIF_TEL" type="bit"/>
+            <column name="ANNULER_PIECE" type="bit"/>
+            <column name="EXEMPTER_CONTROL_SMS" type="bit"/>
+            <column name="validerReportEcheance" type="bit"/>
+            <column name="ACTIVER_ENVOI_SMS_OPERATION" type="bit"/>
+            <column name="valider_cycle_groupe" type="bit"/>
+            <column name="MODIF_DUREE_CREDIT_DEJA_DEBLOQUE" type="bit"/>
+            <column name="REPARTIR_CREDIT_GROUPE" type="bit"/>
+            <column name="T_VIR_DAV_PARTIEL" type="bit"/>
+            <column name="saisiMontantRetrait" type="bit"/>
+            <column name="viser_ecart_transfert_tontine_mobile" type="bit"/>
+            <column name="vider_donnees_tmp_transfert_tontine_mobile" type="bit"/>
+            <column name="mise_a_jour_cycle" type="bit"/>
+            <column name="voirsoleclient" type="bit"/>
+            <column name="voirsoleclientvip" type="bit"/>
+            <column name="modifrembauto" type="bit"/>
+            <column name="voirsoleguichet" type="bit"/>
+             
+            <!-- String flags avec valeurs par défaut -->
+            <column name="useTontine" type="varchar(1)"/>
+            <column name="use_Sce_SMS" type="varchar(1)"/>
+            <column name="use_Importation_Ttn_Mb" type="varchar(1)"/>
+            <column name="use_Ttn_Mb" type="varchar(1)"/>
+            <column name="use_Intercaisse" type="varchar(1)" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="useRepriseTontine" type="varchar(1)" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="validerRepriseTontine" type="varchar(1)" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+             
+            <!-- Foreign Keys -->
+            <column name="AGENCE" type="varchar(25)"/>
+            <column name="guichet" type="varchar(255)"/>
+            <column name="PHOTO_NUMPHOTO" type="numeric(19,0)"/>
+            <column name="CODE_STRUCTURE" type="varchar(25)"/>
+            <column name="CATEGORIE_HEURE_CONNEXION" type="varchar(50)"/>
+        </createTable>
+
+        <!-- ============================================ -->
+        <!-- Foreign Keys Constraints                     -->
+        <!-- ============================================ -->
+
+        <!-- FK vers Tiers -->
+        <addForeignKeyConstraint 
+            constraintName="FK_Utilisateur_Tiers"
+            baseTableName="Utilisateur"
+            baseColumnNames="CODE_TIERS"
+            referencedTableName="Tiers"
+            referencedColumnNames="CODE_TIERS"
+            onDelete="CASCADE"
+            onUpdate="CASCADE"/>
+
+        <!-- FK vers Agence -->
+        <addForeignKeyConstraint 
+            constraintName="FK_Utilisateur_Agence"
+            baseTableName="Utilisateur"
+            baseColumnNames="AGENCE"
+            referencedTableName="Agence"
+            referencedColumnNames="CODE_AGENCE"
+            onDelete="NO ACTION"
+            onUpdate="NO ACTION"/>
+
+        <!-- FK vers Guichet -->
+        <addForeignKeyConstraint 
+            constraintName="FK_Utilisateur_Guichet"
+            baseTableName="Utilisateur"
+            baseColumnNames="guichet"
+            referencedTableName="Guichet"
+            referencedColumnNames="codeGuichet"
+            onDelete="NO ACTION"
+            onUpdate="NO ACTION"/>
+
+        <!-- FK vers Photos -->
+        <addForeignKeyConstraint 
+            constraintName="FK_Utilisateur_Photos"
+            baseTableName="Utilisateur"
+            baseColumnNames="PHOTO_NUMPHOTO"
+            referencedTableName="Photos"
+            referencedColumnNames="NUMPHOTO"
+            onDelete="NO ACTION"
+            onUpdate="NO ACTION"/>
+
+        <!-- FK vers Structure -->
+        <addForeignKeyConstraint 
+            constraintName="FK_Utilisateur_Structure"
+            baseTableName="Utilisateur"
+            baseColumnNames="CODE_STRUCTURE"
+            referencedTableName="Structure"
+            referencedColumnNames="CODE_STRUCTURE"
+            onDelete="NO ACTION"
+            onUpdate="NO ACTION"/>
+
+        <!-- FK vers CategorieHeureConnexion -->
+        <addForeignKeyConstraint 
+            constraintName="FK_Utilisateur_CategorieHeure"
+            baseTableName="Utilisateur"
+            baseColumnNames="CATEGORIE_HEURE_CONNEXION"
+            referencedTableName="CategorieHeureConnexion"
+            referencedColumnNames="CODE_CATEGORIE"
+            onDelete="NO ACTION"
+            onUpdate="NO ACTION"/>
+
+    </changeSet>
+
+</databaseChangeLog>

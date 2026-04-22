@@ -1,0 +1,519 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- ============================================ -->
+    <!-- ÉTAPE 1 : Tables sans dépendances            -->
+    <!-- ============================================ -->
+
+    <!-- Civilite -->
+    <changeSet id="1" author="migration">
+        <createTable tableName="Civilite">
+            <column name="IDCIVILITE" type="numeric(19,0)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="LIBELLECIVILITE" type="varchar(255)"/>
+            <column name="SEXE" type="varchar(255)"/>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- TypePiece -->
+    <changeSet id="2" author="migration">
+        <createTable tableName="TypePiece">
+            <column name="numtyppiece" type="numeric(19,0)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="libpiece" type="varchar(255)"/>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="CODE_TYPE_PIECE_FNFI" type="varchar(10)"/>
+        </createTable>
+    </changeSet>
+
+    <!-- TypeClient -->
+    <changeSet id="3" author="migration">
+        <createTable tableName="TypeClient">
+            <column name="NumType" type="numeric(19,0)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="libelleTypeClient" type="varchar(255)"/>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- SecteurActivite -->
+    <changeSet id="4" author="migration">
+        <createTable tableName="SecteurActivite">
+            <column name="IDSECTEURACTIVITE" type="varchar(20)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="secteur" type="varchar(255)"/>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- TypeActivite -->
+    <changeSet id="5" author="migration">
+        <createTable tableName="TypeActivite">
+            <column name="idTypeActivite" type="numeric(19,0)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="Type" type="varchar(255)"/>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- FormeJuridique -->
+    <changeSet id="6" author="migration">
+        <createTable tableName="FormeJuridique">
+            <column name="CODE" type="numeric(19,0)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="LIBELLE" type="varchar(255)"/>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- TypeGroupement -->
+    <changeSet id="7" author="migration">
+        <createTable tableName="TypeGroupement">
+            <column name="NUMNIVEAU" type="numeric(19,0)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="DESIGNATION" type="varchar(255)"/>
+            <column name="TYPECOMPTE" type="varchar(255)"/>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- MotifDepart -->
+    <changeSet id="8" author="migration">
+        <createTable tableName="MotifDepart">
+            <column name="idMotif" type="numeric(19,0)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="libelleMotif" type="varchar(255)"/>
+            <column name="VERSION" type="int"/>
+        </createTable>
+    </changeSet>
+
+    <!-- SousTypeMembre -->
+    <changeSet id="9" author="migration">
+        <createTable tableName="SousTypeMembre">
+            <column name="IDSOUSTYPEMEMBRE" type="numeric(19,0)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="LIBELLESOUSTYPEMEMBRE" type="varchar(255)"/>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="typeMembre" type="numeric(19,0)"/>
+        </createTable>
+    </changeSet>
+
+    <!-- ProduitEpargne -->
+    <changeSet id="10" author="migration">
+        <createTable tableName="ProduitEpargne">
+            <column name="numproduit" type="varchar(20)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="LIBELLEPRODUIT" type="varchar(255)"/>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ACTIF" type="bit"/>
+            <column name="TAUXINTERET" type="numeric(28,0)"/>
+            <!-- Ajouter autres colonnes selon besoin -->
+        </createTable>
+    </changeSet>
+
+    <!-- CategorieMembre -->
+    <changeSet id="11" author="migration">
+        <createTable tableName="CategorieMembre">
+            <column name="CODE_CATEG_MBRE" type="varchar(25)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="VERSION" type="int"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Zone -->
+    <changeSet id="12" author="migration">
+        <createTable tableName="Zone">
+            <column name="ID_ZONE" type="numeric(18,0)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="LIBELLE_ZONE" type="varchar(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="INTERNATIONALE" type="bit">
+                <constraints nullable="false"/>
+            </column>
+            <column name="VERSION" type="int"/>
+        </createTable>
+    </changeSet>
+
+    <!-- TypeMembre -->
+    <changeSet id="13" author="migration">
+        <createTable tableName="TypeMembre">
+            <column name="IDTYPEMEMBRE" type="numeric(19,0)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="CODETYPEMEMBRE" type="varchar(255)"/>
+            <column name="LIBELLETYPEMEMBRE" type="varchar(255)"/>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- Profil -->
+    <changeSet id="14" author="migration">
+        <createTable tableName="Profil">
+            <column name="ID" type="numeric(19,0)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="DESCRIPTION" type="varchar(255)"/>
+            <column name="Intitule" type="varchar(255)"/>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- Photos -->
+    <changeSet id="15" author="migration">
+        <createTable tableName="Photos">
+            <column name="NUMPHOTO" type="numeric(19,0)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="AGENCE" type="varchar(25)"/>
+            <column name="FORMAT" type="varchar(255)"/>
+            <column name="NUMMEMBRE" type="varchar(255)"/>
+            <column name="PATH" type="varchar(255)"/>
+            <column name="TYP" type="varchar(255)"/>
+            <column name="TYPMBRE" type="varchar(255)"/>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ext" type="varchar(5)"/>
+        </createTable>
+    </changeSet>
+
+    <!-- StructureAdmin -->
+    <changeSet id="16" author="migration">
+        <createTable tableName="StructureAdmin">
+            <column name="ID_STRUCT_ADMIN" type="numeric(18,0)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="CODE_TYPE_STRUCT" type="varchar(25)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="STRUCT_PARENT" type="numeric(18,0)"/>
+            <column name="CODE_STRUCT_ADMIN" type="varchar(10)"/>
+            <column name="NOM_STRUCT_ADMIN" type="varchar(45)"/>
+            <column name="VERSION" type="int"/>
+            <column name="NIVEAU" type="int"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Activite -->
+    <changeSet id="17" author="migration">
+        <createTable tableName="Activite">
+            <column name="num_activite" type="numeric(18,0)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="libelle_activite" type="varchar(50)"/>
+            <column name="CODE_BRANCHE_ACTIVITE" type="varchar(25)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="VERSION" type="int"/>
+        </createTable>
+    </changeSet>
+
+    <!-- GroupeSolidaire -->
+    <changeSet id="18" author="migration">
+        <createTable tableName="GroupeSolidaire">
+            <column name="ID_GS" type="numeric(18,0)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="NUM_MEMBRE" type="varchar(25)"/>
+            <column name="NOM_GS" type="varchar(100)"/>
+            <column name="NUM_GS" type="varchar(25)"/>
+            <column name="VERSION" type="int"/>
+            <column name="ID_STRUCT_ADMIN" type="numeric(18,0)"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Profession -->
+    <changeSet id="19" author="migration">
+        <createTable tableName="Profession">
+            <column name="NUMPROFESSION" type="numeric(19,0)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="PROFESSION" type="varchar(255)"/>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="typeActivite" type="numeric(19,0)"/>
+            <column name="PRELEVERAGIO" type="bit"/>
+            <column name="CODE_BRANCHE_ACTIVITE" type="varchar(25)"/>
+        </createTable>
+    </changeSet>
+
+    <!-- ============================================ -->
+    <!-- ÉTAPE 2 : Tables Tiers                       -->
+    <!-- ============================================ -->
+
+    <!-- Tiers -->
+    <changeSet id="20" author="migration">
+        <createTable tableName="Tiers">
+            <column name="CODE_TIERS" type="varchar(50)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="DESIGNATION" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="REFERENCE_TIERS" type="varchar(100)"/>
+            <column name="DTYPE" type="varchar(100)"/>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- Personne -->
+    <changeSet id="21" author="migration">
+        <createTable tableName="Personne">
+            <column name="CODE_TIERS" type="varchar(50)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ACTIF" type="bit"/>
+            <column name="dateNAIS" type="datetime"/>
+            <column name="idPersonne" type="varchar(48)"/>
+            <column name="DTYPE" type="varchar(31)"/>
+            <column name="zoneGeographique" type="numeric(19,0)"/>
+            <column name="ADRESSE_IDADRESSE" type="varchar(48)"/>
+            <column name="lieuNaissance" type="varchar(255)"/>
+            <column name="nomJeuneFille" type="varchar(255)"/>
+            <column name="nomPersonne" type="varchar(255)"/>
+            <column name="prenomPersonne" type="varchar(255)"/>
+            <column name="sexe" type="varchar(255)"/>
+            <column name="profession" type="numeric(19,0)"/>
+            <column name="raison_sociale" type="varchar(255)"/>
+            <column name="NOMPARRAIN" type="varchar(255)"/>
+            <column name="membre" type="varchar(25)"/>
+            <column name="matriculePersonne" type="varchar(25)"/>
+        </createTable>
+        
+        <addForeignKeyConstraint constraintName="FK_Personne_Tiers" baseTableName="Personne" baseColumnNames="CODE_TIERS" referencedTableName="Tiers" referencedColumnNames="CODE_TIERS"/>
+        <addForeignKeyConstraint constraintName="FK_Personne_Profession" baseTableName="Personne" baseColumnNames="profession" referencedTableName="Profession" referencedColumnNames="NUMPROFESSION"/>
+    </changeSet>
+
+    <!-- ============================================ -->
+    <!-- ÉTAPE 3 : Table Agence                       -->
+    <!-- ============================================ -->
+
+    <changeSet id="22" author="migration">
+        <createTable tableName="Agence">
+            <column name="CODE_AGENCE" type="varchar(25)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="ACTIF" type="bit"/>
+            <column name="NOMAGENCE" type="varchar(255)"/>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="institution" type="varchar(255)"/>
+            <column name="zoneGeographique" type="numeric(19,0)"/>
+            <column name="ADRESSE_IDADRESSE" type="varchar(48)"/>
+            <column name="chefAgence" type="varchar(48)"/>
+            <column name="NUMCOMPTE" type="varchar(15)"/>
+            <column name="devise_local" type="numeric(19,0)"/>
+        </createTable>
+    </changeSet>
+
+    <!-- ============================================ -->
+    <!-- ÉTAPE 4 : Table membres                      -->
+    <!-- ============================================ -->
+
+    <changeSet id="23" author="migration">
+        <validCheckSum>any</validCheckSum>
+        <createTable tableName="membres">
+            <!-- Clé primaire -->
+            <column name="NUM_MEMBRE" type="varchar(25)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="DTYPE" type="varchar(31)"/>
+            <column name="NBREPAS" type="int"/>
+            <column name="CARTE" type="varchar(255)"/>
+            <column name="compteur" type="int"/>
+            <column name="CONTACTPERSONNECONTACT" type="varchar(255)"/>
+            <column name="DATECREATIONUSER" type="datetime"/>
+            <column name="dateDemande" type="datetime"/>
+            <column name="DATEDEPART" type="datetime"/>
+            <column name="dateExpirPiece" type="datetime"/>
+            <column name="DATEVALIDATION" type="datetime"/>
+            <column name="DEPART" type="bit"/>
+            <column name="depot" type="numeric(28,0)"/>
+            <column name="DROITENTREE" type="numeric(28,0)"/>
+            <column name="ETAT" type="varchar(255)"/>
+            <column name="FRAISOUVERT" type="numeric(28,0)"/>
+            <column name="INFOPERSONNECONTACT" type="varchar(255)"/>
+            <column name="lieuEtablissementCarte" type="varchar(255)"/>
+            <column name="MEMBPRIVILEGE" type="char(1)"/>
+            <column name="mtSensibilisateur" type="numeric(28,0)"/>
+            <column name="MOTIFREJET" type="varchar(255)"/>
+            <column name="numManuelle" type="varchar(255)"/>
+            <column name="Numutil" type="int"/>
+            <column name="Observation" type="varchar(255)"/>
+            <column name="STATUT" type="varchar(255)"/>
+            <column name="VISE" type="bit"/>
+            
+            <!-- Foreign Keys -->
+            <column name="agence" type="varchar(25)"/>
+            <column name="categorie" type="varchar(25)"/>
+            <column name="commercial" type="varchar(48)"/>
+            <column name="gestionnaire" type="varchar(48)"/>
+            <column name="membrePere" type="varchar(25)"/>
+            <column name="parrain" type="varchar(48)"/>
+            <column name="PARTSOCIALE" type="varchar(50)"/>
+            <column name="pays" type="numeric(19,0)"/>
+            <column name="personneContacter" type="varchar(48)"/>
+            <column name="produitEpargne" type="varchar(20)"/>
+            <column name="zoneGeographique" type="numeric(19,0)"/>
+            <column name="secteurActivite" type="varchar(20)"/>
+            <column name="sensibilisateur" type="varchar(48)"/>
+            <column name="sousTypeMembre" type="numeric(19,0)"/>
+            <column name="typeClient" type="numeric(19,0)"/>
+            <column name="typePiece" type="numeric(19,0)"/>
+            <column name="utilisateur" type="varchar(48)"/>
+            <column name="zone" type="numeric(18,0)"/>
+            <column name="ADRESSE_IDADRESSE" type="varchar(48)"/>
+            <column name="photo" type="numeric(19,0)"/>
+            <column name="DATEFONDATION" type="datetime"/>
+            <column name="GROUPE" type="varchar(255)"/>
+            <column name="raison_sociale" type="varchar(255)"/>
+            <column name="TypeActivite" type="numeric(19,0)"/>
+            <column name="formeJuridique" type="numeric(19,0)"/>
+            <column name="nbrefemme" type="int"/>
+            <column name="nbrehomme" type="int"/>
+            <column name="typeGroupement" type="numeric(19,0)"/>
+            <column name="SituationMatrimoniale" type="varchar(255)"/>
+            <column name="AGE" type="int"/>
+            <column name="ANALPHABETE" type="char(1)"/>
+            <column name="DATENAISSANCE" type="datetime"/>
+            <column name="LIEUNAISSANCE" type="varchar(255)"/>
+            <column name="matriculemembre" type="varchar(255)"/>
+            <column name="NOM" type="varchar(255)"/>
+            <column name="nomMere" type="varchar(255)"/>
+            <column name="nomPere" type="varchar(255)"/>
+            <column name="NOMJEUNEFILLE" type="varchar(255)"/>
+            <column name="personneAcontacter" type="varchar(255)"/>
+            <column name="PRENOM" type="varchar(255)"/>
+            <column name="SEXE" type="varchar(1)"/>
+            <column name="civilité" type="numeric(19,0)"/>
+            <column name="profession" type="numeric(19,0)"/>
+            <column name="section" type="numeric(19,0)"/>
+            <column name="signature" type="varchar(50)"/>
+            <column name="rccm" type="varchar(30)"/>
+            <column name="numInstallation" type="varchar(30)"/>
+            <column name="cogérance" type="bit"/>
+            <column name="NUM_AGREEMENT" type="varchar(30)"/>
+            <column name="DATE_AGREEMENT" type="datetime"/>
+            <column name="NUM_CONVENTION" type="varchar(30)"/>
+            <column name="DATE_CONVENTION" type="datetime"/>
+            <column name="ACTIVITE" type="numeric(18,0)"/>
+            <column name="ID_STRUCT_ADMIN" type="numeric(18,0)"/>
+            <column name="ID_GS" type="numeric(18,0)"/>
+            <column name="MOTIFDEPART" type="numeric(19,0)"/>
+            <column name="chargeable" type="varchar(1)"/>
+            <column name="NBRE_ENF" type="int"/>
+            <column name="NBRE_PERS_CHARG" type="int"/>
+            <column name="LOGEMENT" type="char(1)"/>
+            <column name="personcharge" type="int"/>
+            <column name="nbreenfant" type="int"/>
+            <column name="zoneg" type="numeric(18,0)"/>
+            <column name="dateCreerPiece" type="datetime"/>
+            <column name="paysCreerPiece" type="numeric(19,0)"/>
+            <column name="PRELEVERAGIOS" type="bit"/>
+            <column name="CALCULERINTERET" type="bit"/>
+            <column name="RESIDENT" type="bit"/>
+            <column name="raison_depart" type="varchar(255)"/>
+            <column name="longitude" type="varchar(50)"/>
+            <column name="latitude" type="varchar(50)"/>
+            <column name="devise_premier_compte" type="varchar(10)"/>
+            <column name="code_retrait" type="varchar(5)"/>
+            <column name="agenceOrigine" type="varchar(25)"/>
+            <column name="pieceTransfert" type="varchar(50)"/>
+            <column name="dateree1" type="datetime"/>
+            <column name="CODE_EMPLOYE" type="varchar(48)"/>
+            <column name="CODE_TMEMBRE" type="numeric(19,0)"/>
+            <column name="numero_national_id" type="varchar(50)"/>
+            <column name="CODE_TIERS" type="varchar(50)"/>
+            <column name="sans_nni" type="bit"/>
+            <column name="nbre_signataire_exige" type="int"/>
+            <column name="profilage" type="numeric(19,0)"/>
+        </createTable>
+    </changeSet>
+
+    <!-- ============================================ -->
+    <!-- CRÉATION DES FOREIGN KEYS                    -->
+    <!-- ============================================ -->
+
+    <changeSet id="24" author="migration">
+        <!-- FKs de membres -->
+        <addForeignKeyConstraint constraintName="FK_membres_Agence" baseTableName="membres" baseColumnNames="agence" referencedTableName="Agence" referencedColumnNames="CODE_AGENCE"/>
+        <addForeignKeyConstraint constraintName="FK_membres_Categorie" baseTableName="membres" baseColumnNames="categorie" referencedTableName="CategorieMembre" referencedColumnNames="CODE_CATEG_MBRE"/>
+        <addForeignKeyConstraint constraintName="FK_membres_ZoneGeo" baseTableName="membres" baseColumnNames="zoneGeographique" referencedTableName="ZoneGeographique" referencedColumnNames="idZoneGeographique"/>
+        <addForeignKeyConstraint constraintName="FK_membres_Adresse" baseTableName="membres" baseColumnNames="ADRESSE_IDADRESSE" referencedTableName="Adresse" referencedColumnNames="IDADRESS"/>
+        <addForeignKeyConstraint constraintName="FK_membres_Pays" baseTableName="membres" baseColumnNames="pays" referencedTableName="Pays" referencedColumnNames="idPays"/>
+        <addForeignKeyConstraint constraintName="FK_membres_Parent" baseTableName="membres" baseColumnNames="membrePere" referencedTableName="membres" referencedColumnNames="NUM_MEMBRE"/>
+        <addForeignKeyConstraint constraintName="FK_membres_Tiers" baseTableName="membres" baseColumnNames="CODE_TIERS" referencedTableName="Tiers" referencedColumnNames="CODE_TIERS"/>
+        <addForeignKeyConstraint constraintName="FK_membres_TypeMembre" baseTableName="membres" baseColumnNames="CODE_TMEMBRE" referencedTableName="TypeMembre" referencedColumnNames="IDTYPEMEMBRE"/>
+        <addForeignKeyConstraint constraintName="FK_membres_Profilage" baseTableName="membres" baseColumnNames="profilage" referencedTableName="Profil" referencedColumnNames="ID"/>
+        <addForeignKeyConstraint constraintName="FK_membres_ProduitEpargne" baseTableName="membres" baseColumnNames="produitEpargne" referencedTableName="ProduitEpargne" referencedColumnNames="numproduit"/>
+        <addForeignKeyConstraint constraintName="FK_membres_SecteurActivite" baseTableName="membres" baseColumnNames="secteurActivite" referencedTableName="SecteurActivite" referencedColumnNames="IDSECTEURACTIVITE"/>
+        <addForeignKeyConstraint constraintName="FK_membres_SousTypeMembre" baseTableName="membres" baseColumnNames="sousTypeMembre" referencedTableName="SousTypeMembre" referencedColumnNames="IDSOUSTYPEMEMBRE"/>
+        <addForeignKeyConstraint constraintName="FK_membres_TypeClient" baseTableName="membres" baseColumnNames="typeClient" referencedTableName="TypeClient" referencedColumnNames="NumType"/>
+        <addForeignKeyConstraint constraintName="FK_membres_TypePiece" baseTableName="membres" baseColumnNames="typePiece" referencedTableName="TypePiece" referencedColumnNames="numtyppiece"/>
+        <addForeignKeyConstraint constraintName="FK_membres_Zone" baseTableName="membres" baseColumnNames="zone" referencedTableName="Zone" referencedColumnNames="ID_ZONE"/>
+        <addForeignKeyConstraint constraintName="FK_membres_Photo" baseTableName="membres" baseColumnNames="photo" referencedTableName="Photos" referencedColumnNames="NUMPHOTO"/>
+        <addForeignKeyConstraint constraintName="FK_membres_TypeActivite" baseTableName="membres" baseColumnNames="TypeActivite" referencedTableName="TypeActivite" referencedColumnNames="idTypeActivite"/>
+        <addForeignKeyConstraint constraintName="FK_membres_FormeJuridique" baseTableName="membres" baseColumnNames="formeJuridique" referencedTableName="FormeJuridique" referencedColumnNames="CODE"/>
+        <addForeignKeyConstraint constraintName="FK_membres_TypeGroupement" baseTableName="membres" baseColumnNames="typeGroupement" referencedTableName="TypeGroupement" referencedColumnNames="NUMNIVEAU"/>
+        <addForeignKeyConstraint constraintName="FK_membres_Civilite" baseTableName="membres" baseColumnNames="civilité" referencedTableName="Civilite" referencedColumnNames="IDCIVILITE"/>
+        <addForeignKeyConstraint constraintName="FK_membres_Profession" baseTableName="membres" baseColumnNames="profession" referencedTableName="Profession" referencedColumnNames="NUMPROFESSION"/>
+        <addForeignKeyConstraint constraintName="FK_membres_Signature" baseTableName="membres" baseColumnNames="signature" referencedTableName="Tiers" referencedColumnNames="CODE_TIERS"/>
+        <addForeignKeyConstraint constraintName="FK_membres_Activite" baseTableName="membres" baseColumnNames="ACTIVITE" referencedTableName="Activite" referencedColumnNames="num_activite"/>
+        <addForeignKeyConstraint constraintName="FK_membres_StructureAdmin" baseTableName="membres" baseColumnNames="ID_STRUCT_ADMIN" referencedTableName="StructureAdmin" referencedColumnNames="ID_STRUCT_ADMIN"/>
+        <addForeignKeyConstraint constraintName="FK_membres_GroupeSolidaire" baseTableName="membres" baseColumnNames="ID_GS" referencedTableName="GroupeSolidaire" referencedColumnNames="ID_GS"/>
+        <addForeignKeyConstraint constraintName="FK_membres_MotifDepart" baseTableName="membres" baseColumnNames="MOTIFDEPART" referencedTableName="MotifDepart" referencedColumnNames="idMotif"/>
+        <addForeignKeyConstraint constraintName="FK_membres_PaysCreerPiece" baseTableName="membres" baseColumnNames="paysCreerPiece" referencedTableName="Pays" referencedColumnNames="idPays"/>
+    </changeSet>
+
+</databaseChangeLog>
