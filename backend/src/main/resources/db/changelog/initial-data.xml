@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- ============================================ -->
+    <!-- INSERTION DE L'INSTITUTION UNIQUE            -->
+    <!-- ============================================ -->
+    <changeSet id="data_1" author="migration">
+        <insert tableName="Institution">
+            <column name="CODE_INSTITUTION" value="INST001"/>
+            <column name="DENOMINATION" value="MICROFINA HQ"/>
+            <column name="VERSION" value="1"/>
+            <column name="ACTIF" valueBoolean="true"/>
+            <column name="TAILLEMOTDEPASSE" valueNumeric="8"/>
+            <column name="VALIDITEMOTDEPASS" valueNumeric="90"/>
+        </insert>
+    </changeSet>
+
+    <!-- ============================================ -->
+    <!-- INSERTION DE L'AGENCE PAR DEFAUT             -->
+    <!-- ============================================ -->
+    <changeSet id="data_2" author="migration">
+        <insert tableName="Agence">
+            <column name="CODE_AGENCE" value="AG001"/>
+            <column name="NOMAGENCE" value="Agence Principale"/>
+            <column name="institution" value="INST001"/>
+            <column name="VERSION" value="1"/>
+            <column name="ACTIF" valueBoolean="true"/>
+        </insert>
+    </changeSet>
+
+    <!-- ============================================ -->
+    <!-- INSERTION DES PROFILS                        -->
+    <!-- ============================================ -->
+    <changeSet id="data_3" author="migration">
+        <insert tableName="Profil">
+            <column name="ID" valueNumeric="1"/><column name="Intitule" value="CHARGE_CLIENTELE"/><column name="DESCRIPTION" value="Chargé de Clientèle"/><column name="VERSION" value="1"/>
+        </insert>
+        <insert tableName="Profil">
+            <column name="ID" valueNumeric="2"/><column name="Intitule" value="CHARGE_CREDIT"/><column name="DESCRIPTION" value="Chargé de Crédit"/><column name="VERSION" value="1"/>
+        </insert>
+        <insert tableName="Profil">
+            <column name="ID" valueNumeric="3"/><column name="Intitule" value="CHEF_AGENCE"/><column name="DESCRIPTION" value="Chef d'Agence"/><column name="VERSION" value="1"/>
+        </insert>
+        <insert tableName="Profil">
+            <column name="ID" valueNumeric="4"/><column name="Intitule" value="CAISSIER"/><column name="DESCRIPTION" value="Caissier"/><column name="VERSION" value="1"/>
+        </insert>
+        <insert tableName="Profil">
+            <column name="ID" valueNumeric="5"/><column name="Intitule" value="COMPTABLE"/><column name="DESCRIPTION" value="Comptable"/><column name="VERSION" value="1"/>
+        </insert>
+        <insert tableName="Profil">
+            <column name="ID" valueNumeric="6"/><column name="Intitule" value="RESP_EPARGNE"/><column name="DESCRIPTION" value="Responsable Épargne"/><column name="VERSION" value="1"/>
+        </insert>
+        <insert tableName="Profil">
+            <column name="ID" valueNumeric="7"/><column name="Intitule" value="RESP_RISQUES"/><column name="DESCRIPTION" value="Responsable des Risques"/><column name="VERSION" value="1"/>
+        </insert>
+        <insert tableName="Profil">
+            <column name="ID" valueNumeric="8"/><column name="Intitule" value="AUDITEUR"/><column name="DESCRIPTION" value="Auditeur Interne"/><column name="VERSION" value="1"/>
+        </insert>
+        <insert tableName="Profil">
+            <column name="ID" valueNumeric="9"/><column name="Intitule" value="ADMIN_SYS"/><column name="DESCRIPTION" value="Administrateur Système"/><column name="VERSION" value="1"/>
+        </insert>
+        <insert tableName="Profil">
+            <column name="ID" valueNumeric="10"/><column name="Intitule" value="DIRIGEANT"/><column name="DESCRIPTION" value="Dirigeant / DG"/><column name="VERSION" value="1"/>
+        </insert>
+    </changeSet>
+
+    <!-- ============================================ -->
+    <!-- INSERTION DES PERMISSIONS (Echantillon)      -->
+    <!-- ============================================ -->
+    <changeSet id="data_4" author="migration">
+        <!-- Chargé de Clientèle -->
+        <insert tableName="Permission"><column name="ID" valueNumeric="1"/><column name="CODE" value="CLIENT_CREATE"/><column name="LIBELLE" value="Création d'identité client"/><column name="VERSION" value="1"/></insert>
+        <insert tableName="Permission"><column name="ID" valueNumeric="2"/><column name="CODE" value="CLIENT_CLASSIFY"/><column name="LIBELLE" value="Affectation catégorie client"/><column name="VERSION" value="1"/></insert>
+        <insert tableName="Permission"><column name="ID" valueNumeric="3"/><column name="CODE" value="CLIENT_GROUP_CREATE"/><column name="LIBELLE" value="Constitution groupes solidaires"/><column name="VERSION" value="1"/></insert>
+        <insert tableName="Permission"><column name="ID" valueNumeric="4"/><column name="CODE" value="ACCOUNT_OPEN"/><column name="LIBELLE" value="Ouverture de comptes épargne"/><column name="VERSION" value="1"/></insert>
+        
+        <!-- Chargé de Crédit -->
+        <insert tableName="Permission"><column name="ID" valueNumeric="5"/><column name="CODE" value="CREDIT_CREATE"/><column name="LIBELLE" value="Montage dossier crédit"/><column name="VERSION" value="1"/></insert>
+        <insert tableName="Permission"><column name="ID" valueNumeric="6"/><column name="CODE" value="CREDIT_GUARANTY_SAISI"/><column name="LIBELLE" value="Saisie des garanties"/><column name="VERSION" value="1"/></insert>
+        
+        <!-- Chef d'Agence -->
+        <insert tableName="Permission"><column name="ID" valueNumeric="7"/><column name="CODE" value="CREDIT_APPROVE"/><column name="LIBELLE" value="Approbation des crédits"/><column name="VERSION" value="1"/></insert>
+        <insert tableName="Permission"><column name="ID" valueNumeric="8"/><column name="CODE" value="CASH_CONTROL_LOCAL"/><column name="LIBELLE" value="Contrôle trésorerie locale"/><column name="VERSION" value="1"/></insert>
+        
+        <!-- Caissier -->
+        <insert tableName="Permission"><column name="ID" valueNumeric="9"/><column name="CODE" value="CASH_OPERATIONS"/><column name="LIBELLE" value="Encaissement/Décaissement physique"/><column name="VERSION" value="1"/></insert>
+        <insert tableName="Permission"><column name="ID" valueNumeric="10"/><column name="CODE" value="CASH_BROUILLARD_SAISI"/><column name="LIBELLE" value="Saisie brouillard"/><column name="VERSION" value="1"/></insert>
+        
+        <!-- Comptable -->
+        <insert tableName="Permission"><column name="ID" valueNumeric="11"/><column name="CODE" value="ACCOUNTING_VALIDATE"/><column name="LIBELLE" value="Transfert Brouillard vers Définitif"/><column name="VERSION" value="1"/></insert>
+        <insert tableName="Permission"><column name="ID" valueNumeric="12"/><column name="CODE" value="ACCOUNTING_CLOSURE"/><column name="LIBELLE" value="Clôture journalière"/><column name="VERSION" value="1"/></insert>
+        
+        <!-- Admin -->
+        <insert tableName="Permission"><column name="ID" valueNumeric="13"/><column name="CODE" value="SYS_ADMIN"/><column name="LIBELLE" value="Administration Système"/><column name="VERSION" value="1"/></insert>
+    </changeSet>
+
+    <!-- ============================================ -->
+    <!-- LIAISON PROFILS - PERMISSIONS                -->
+    <!-- ============================================ -->
+    <changeSet id="data_5" author="migration">
+        <!-- CC -->
+        <insert tableName="Profil_Permission"><column name="ID_PROFIL" valueNumeric="1"/><column name="ID_PERMISSION" valueNumeric="1"/></insert>
+        <insert tableName="Profil_Permission"><column name="ID_PROFIL" valueNumeric="1"/><column name="ID_PERMISSION" valueNumeric="2"/></insert>
+        <insert tableName="Profil_Permission"><column name="ID_PROFIL" valueNumeric="1"/><column name="ID_PERMISSION" valueNumeric="3"/></insert>
+        <insert tableName="Profil_Permission"><column name="ID_PROFIL" valueNumeric="1"/><column name="ID_PERMISSION" valueNumeric="4"/></insert>
+        
+        <!-- Agent Crédit -->
+        <insert tableName="Profil_Permission"><column name="ID_PROFIL" valueNumeric="2"/><column name="ID_PERMISSION" valueNumeric="5"/></insert>
+        <insert tableName="Profil_Permission"><column name="ID_PROFIL" valueNumeric="2"/><column name="ID_PERMISSION" valueNumeric="6"/></insert>
+        
+        <!-- Admin -->
+        <insert tableName="Profil_Permission"><column name="ID_PROFIL" valueNumeric="9"/><column name="ID_PERMISSION" valueNumeric="13"/></insert>
+    </changeSet>
+
+    <!-- ============================================ -->
+    <!-- INSERTION D'UN TIERS ET UTILISATEUR ADMIN    -->
+    <!-- ============================================ -->
+    <changeSet id="data_6_v2" author="migration">
+        <delete tableName="Utilisateur">
+            <where>Nomutil = 'admin'</where>
+        </delete>
+        <delete tableName="Tiers">
+            <where>CODE_TIERS = 'ADMIN001'</where>
+        </delete>
+        <insert tableName="Tiers">
+            <column name="CODE_TIERS" value="ADMIN001"/>
+            <column name="DESIGNATION" value="Administrateur"/>
+            <column name="VERSION" value="1"/>
+        </insert>
+        <insert tableName="Utilisateur">
+            <column name="CODE_TIERS" value="ADMIN001"/>
+            <column name="Nomutil" value="admin"/>
+            <column name="Password" value="admin123"/>
+            <column name="AGENCE" value="AG001"/>
+            <column name="ID_PROFIL" valueNumeric="9"/>
+            <column name="Pactif" valueBoolean="true"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="data_6_v4" author="migration">
+        <update tableName="Utilisateur">
+            <column name="Password" value="$2a$10$PmR0EvHV.BlXI3AI6OQvFuxPXh5SHgb/K.ZkaS7h.Z/zXqlIcWLuu"/>
+            <where>Nomutil = 'admin'</where>
+        </update>
+    </changeSet>
+
+</databaseChangeLog>

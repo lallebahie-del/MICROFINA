@@ -9,7 +9,8 @@
     <include file="db/changelog/membre.xml"/>
     <include file="db/changelog/infrastructure.xml"/>
     <include file="db/changelog/utilisateur.xml"/>
+    <include file="db/changelog/rbac.xml"/>
     <include file="db/changelog/client.xml"/>
-    <include file="db/changelog/demo-data.xml"/>
+    <include file="db/changelog/initial-data.xml"/>
 
 </databaseChangeLog>

@@ -1,4 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { AuthService } from '../../services/auth.service';
 
 interface SubMenuItem {
   label: string;
@@ -15,11 +17,17 @@ interface NavItem {
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './navbar.html',
   styleUrl: './navbar.css'
 })
 export class NavbarComponent {
+  authService = inject(AuthService);
+  
+  logout() {
+    this.authService.logout();
+  }
+
   navItems: NavItem[] = [
     {
       label: 'Client',

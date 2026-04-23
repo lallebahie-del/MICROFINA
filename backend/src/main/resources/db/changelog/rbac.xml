@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- ============================================ -->
+    <!-- TABLE : Permission                           -->
+    <!-- ============================================ -->
+    <changeSet id="rbac_1" author="migration">
+        <createTable tableName="Permission">
+            <column name="ID" type="numeric(19,0)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="CODE" type="varchar(100)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="LIBELLE" type="varchar(255)"/>
+            <column name="VERSION" type="int">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <!-- ============================================ -->
+    <!-- TABLE : Profil_Permission (Join Table)       -->
+    <!-- ============================================ -->
+    <changeSet id="rbac_2" author="migration">
+        <createTable tableName="Profil_Permission">
+            <column name="ID_PROFIL" type="numeric(19,0)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ID_PERMISSION" type="numeric(19,0)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="Profil_Permission" columnNames="ID_PROFIL, ID_PERMISSION" constraintName="PK_Profil_Permission"/>
+        <addForeignKeyConstraint constraintName="FK_PP_Profil" baseTableName="Profil_Permission" baseColumnNames="ID_PROFIL" referencedTableName="Profil" referencedColumnNames="ID"/>
+        <addForeignKeyConstraint constraintName="FK_PP_Permission" baseTableName="Profil_Permission" baseColumnNames="ID_PERMISSION" referencedTableName="Permission" referencedColumnNames="ID"/>
+    </changeSet>
+
+    <!-- ============================================ -->
+    <!-- AJOUT DU PROFIL A UTILISATEUR                -->
+    <!-- ============================================ -->
+    <changeSet id="rbac_3" author="migration">
+        <addColumn tableName="Utilisateur">
+            <column name="ID_PROFIL" type="numeric(19,0)"/>
+        </addColumn>
+        <addForeignKeyConstraint constraintName="FK_Utilisateur_Profil" baseTableName="Utilisateur" baseColumnNames="ID_PROFIL" referencedTableName="Profil" referencedColumnNames="ID"/>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.20.xsd">
+
+    <!-- Table: Guichet -->
+    <changeSet id="create_table_guichet" author="migration">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="Guichet"/></not>
+        </preConditions>
+        <createTable tableName="Guichet">
+            <column name="codeGuichet" type="varchar(255)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="libelleGuichet" type="varchar(255)"/>
+            <column name="AGENCE" type="varchar(25)"/>
+            <column name="VERSION" type="int" defaultValueNumeric="0"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Table: Structure -->
+    <changeSet id="create_table_structure" author="migration">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="Structure"/></not>
+        </preConditions>
+        <createTable tableName="Structure">
+            <column name="CODE_STRUCTURE" type="varchar(25)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="LIBELLE" type="varchar(255)"/>
+            <column name="VERSION" type="int" defaultValueNumeric="0"/>
+        </createTable>
+    </changeSet>
+
+    <!-- Table: CategorieHeureConnexion -->
+    <changeSet id="create_table_categorie_heure" author="migration">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="CategorieHeureConnexion"/></not>
+        </preConditions>
+        <createTable tableName="CategorieHeureConnexion">
+            <column name="CODE_CATEGORIE" type="varchar(50)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="LIBELLE" type="varchar(255)"/>
+            <column name="VERSION" type="int" defaultValueNumeric="0"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>
