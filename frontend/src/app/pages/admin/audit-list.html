@@ -1,0 +1,28 @@
+<div class="page-container">
+  <div class="page-header"><h1>Journal d'Audit</h1></div>
+  <div class="filter-bar">
+    <input type="text" [(ngModel)]="filterUser" (input)="applyFilter()" placeholder="Filtrer par utilisateur" class="form-input">
+    <select [(ngModel)]="filterAction" (change)="applyFilter()" class="form-input">
+      @for (a of actions; track a) { <option [value]="a">{{ a || 'Toutes les actions' }}</option> }
+    </select>
+  </div>
+  @if (loading()) { <div class="loading">Chargement...</div> }
+  <table class="data-table">
+    <thead>
+      <tr><th>Date/Heure</th><th>Utilisateur</th><th>Action</th><th>Entité</th><th>ID entité</th></tr>
+    </thead>
+    <tbody>
+      @for (l of filtered(); track l.id) {
+        <tr>
+          <td>{{ l.dateAction | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+          <td>{{ l.utilisateur }}</td>
+          <td><span [class]="actionClass(l.action)">{{ l.action }}</span></td>
+          <td>{{ l.entite }}</td>
+          <td>{{ l.idEntite ?? '—' }}</td>
+        </tr>
+      } @empty {
+        <tr><td colspan="5" class="empty">Aucun journal d'audit</td></tr>
+      }
+    </tbody>
+  </table>
+</div>

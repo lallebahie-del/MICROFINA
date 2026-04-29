@@ -1,0 +1,103 @@
+<div class="carto-container">
+
+  <!-- ── Panneau de contrôle ───────────────────────────────────────────────── -->
+  <div class="carto-controls">
+    <div class="controls-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18">
+        <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+      </svg>
+      Cartographie
+    </div>
+
+    <!-- Vue -->
+    <div class="control-group">
+      <label>Vue</label>
+      <div class="vue-btns">
+        <button [class.active]="vueMode() === 'zones'"   (click)="changerVue('zones')">Zones</button>
+        <button [class.active]="vueMode() === 'heatmap'" (click)="changerVue('heatmap')">Heatmap PAR</button>
+        <button [class.active]="vueMode() === 'agences'" (click)="changerVue('agences')">Agences</button>
+      </div>
+    </div>
+
+    <!-- Filtre type zone (si vue zones) -->
+    @if (vueMode() === 'zones') {
+      <div class="control-group">
+        <label>Niveau administratif</label>
+        <select [(ngModel)]="typeZone" (change)="changerType()">
+          @for (t of typesZone; track t.val) {
+            <option [value]="t.val">{{ t.label }}</option>
+          }
+        </select>
+      </div>
+    }
+
+    <!-- Bouton actualiser -->
+    <button class="btn-refresh" (click)="charger()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+        <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+      Actualiser
+    </button>
+
+    <!-- État chargement -->
+    @if (loading()) {
+      <div class="ctrl-loading"><div class="spinner"></div> Chargement…</div>
+    }
+    @if (error()) {
+      <div class="ctrl-error">{{ error() }}</div>
+    }
+
+    <!-- Légende heatmap PAR -->
+    @if (vueMode() === 'heatmap') {
+      <div class="control-group">
+        <label>Légende PAR</label>
+        <div class="legende">
+          @for (item of legendePar; track item.label) {
+            <div class="legende-item">
+              <span class="legende-dot" [style.background]="item.color"></span>
+              <span>{{ item.label }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Légende zones (membres) -->
+    @if (vueMode() === 'zones') {
+      <div class="control-group">
+        <label>Légende (membres)</label>
+        <div class="legende">
+          <div class="legende-item"><span class="legende-dot" style="background:#bdc3c7"></span><span>Aucun</span></div>
+          <div class="legende-item"><span class="legende-dot" style="background:#85c1e9"></span><span>&lt; 100</span></div>
+          <div class="legende-item"><span class="legende-dot" style="background:#3498db"></span><span>100–499</span></div>
+          <div class="legende-item"><span class="legende-dot" style="background:#1a5276"></span><span>500–1 999</span></div>
+          <div class="legende-item"><span class="legende-dot" style="background:#0d2137"></span><span>2 000+</span></div>
+        </div>
+      </div>
+    }
+
+    <!-- Détail zone sélectionnée -->
+    @if (selected()) {
+      <div class="feature-detail">
+        <div class="detail-header">
+          <span>{{ selected()?.['libelle'] ?? 'Détail' }}</span>
+          <button class="detail-close" (click)="fermerDetail()">✕</button>
+        </div>
+        <table class="detail-table">
+          @for (entry of selectedEntries; track entry.key) {
+            <tr>
+              <td class="dk">{{ entry.key }}</td>
+              <td class="dv">{{ entry.value }}</td>
+            </tr>
+          }
+        </table>
+      </div>
+    }
+  </div>
+
+  <!-- ── Carte Leaflet ──────────────────────────────────────────────────────── -->
+  <div class="carto-map-wrap">
+    <div id="carto-map"></div>
+  </div>
+
+</div>

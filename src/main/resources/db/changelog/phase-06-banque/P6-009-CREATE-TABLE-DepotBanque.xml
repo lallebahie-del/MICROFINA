@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    P6-009 — Création de la table DepotBanque (sous-type JOINED de OperationBanque)
+    Dépendances :
+      - OperationBanque  (P6-005) → FK_DepotBanque_OperationBanque (PK partagée)
+    La colonne id est à la fois PK et FK vers OperationBanque (héritage JOINED).
+    Modes de paiement typiques : ESPECES / CHEQUE / VIREMENT
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P6-009-create-DepotBanque" author="microfina">
+        <createTable tableName="DepotBanque">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true" primaryKeyName="PK_DepotBanque" nullable="false"/>
+            </column>
+            <column name="motif" type="NVARCHAR(500)"/>
+            <column name="mode_paiement" type="NVARCHAR(20)" defaultValue="ESPECES"/>
+        </createTable>
+
+        <addForeignKeyConstraint
+            constraintName="FK_DepotBanque_OperationBanque"
+            baseTableName="DepotBanque"
+            baseColumnNames="id"
+            referencedTableName="OperationBanque"
+            referencedColumnNames="id"/>
+
+        <rollback>
+            <dropAllForeignKeyConstraints baseTableName="DepotBanque"/>
+            <dropTable tableName="DepotBanque"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

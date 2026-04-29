@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P10-408 – vue_indicateurs_performance
+        ══════════════════════════════════════════════════════════════════════════
+        Indicateurs de performance opérationnelle — une ligne par agence.
+
+        KPIs calculés :
+
+        PORTEFEUILLE CRÉDIT
+          nb_credits_total          — tous crédits (tous statuts)
+          nb_credits_actifs         — crédits DEBLOQUE en cours
+          nb_credits_retard         — crédits avec au moins 1 échéance EN_RETARD
+          nb_credits_soldes         — crédits SOLDE sur la période
+          montant_encours           — Σ SOLDE_CAPITAL des crédits DEBLOQUE
+          montant_debloque_total    — Σ MONTANT_DEBLOQUER historique
+          taux_credits_retard       — nb_credits_retard / nb_credits_actifs
+
+        REMBOURSEMENT
+          montant_rembourse_total   — Σ MONTANT_TOTAL des Reglement VALIDE
+          montant_interet_percu     — Σ MONTANT_INTERET des Reglement VALIDE
+          taux_remboursement_global — montant_rembourse / total_echu
+
+        ÉPARGNE
+          nb_comptes_epargne_actifs — COMPTEEPS non fermé et non bloqué
+          total_epargne             — Σ MONTANTDEPOT des COMPTEEPS actifs
+          total_epargne_bloquee     — Σ MONTANTBLOQUE des COMPTEEPS actifs
+
+        MEMBRES
+          nb_membres_actifs         — membres.STATUT = 'ACTIF'
+          nb_membres_emprunteurs    — membres ayant au moins 1 crédit DEBLOQUE
+
+        Tables source :
+          Credits   (P4-001), Amortp (P4-005), Reglement (P4-011),
+          membres   (P2-003), COMPTEEPS (P2-006), AGENCE (P1-002)
+        ══════════════════════════════════════════════════════════════════════════
+    -->
+
+    <changeSet id="P10-408-create-vue-indicateurs-performance" author="microfina">
+        <comment>
+            KPIs opérationnels par agence : portefeuille, remboursement, épargne, membres.
+            Utilisé pour le tableau de bord de direction et les rapports BCM.
+        </comment>
+
+        <createView viewName="vue_indicateurs_performance" replaceIfExists="true">
+            SELECT
+                ag.CODE_AGENCE,
+                ag.NOMAGENCE                                    AS nom_agence,
+
+                /* ── Portefeuille crédit ─────────────────────────────────── */
+                COALESCE(crd.nb_credits_total,      0)         AS nb_credits_total,
+                COALESCE(crd.nb_credits_actifs,     0)         AS nb_credits_actifs,
+                COALESCE(crd.nb_credits_soldes,     0)         AS nb_credits_soldes,
+                COALESCE(crd.montant_encours,       0)         AS montant_encours,
+                COALESCE(crd.montant_debloque_total,0)         AS montant_debloque_total,
+
+                /* ── Retards ─────────────────────────────────────────────── */
+                COALESCE(ret.nb_credits_retard,     0)         AS nb_credits_retard,
+                CASE
+                    WHEN COALESCE(crd.nb_credits_actifs, 0) > 0
+                    THEN CAST(COALESCE(ret.nb_credits_retard, 0) AS FLOAT)
+                         / CAST(crd.nb_credits_actifs AS FLOAT)
+                    ELSE 0
+                END                                             AS taux_credits_retard,
+                COALESCE(ret.nb_echeances_en_retard,0)         AS nb_echeances_en_retard,
+                COALESCE(ret.montant_arrieres,      0)         AS montant_arrieres,
+
+                /* ── Remboursement ───────────────────────────────────────── */
+                COALESCE(remb.montant_rembourse_total,  0)     AS montant_rembourse_total,
+                COALESCE(remb.montant_interet_percu,    0)     AS montant_interet_percu,
+                COALESCE(remb.montant_commission_percu, 0)     AS montant_commission_percu,
+                COALESCE(remb.nb_reglements,            0)     AS nb_reglements,
+                COALESCE(amort.total_echu,              0)     AS total_echu,
+                CASE
+                    WHEN COALESCE(amort.total_echu, 0) > 0
+                    THEN CAST(COALESCE(remb.montant_rembourse_total, 0) AS FLOAT)
+                         / CAST(amort.total_echu AS FLOAT)
+                    ELSE 0
+                END                                             AS taux_remboursement_global,
+
+                /* ── Épargne ─────────────────────────────────────────────── */
+                COALESCE(eps.nb_comptes_actifs,     0)         AS nb_comptes_epargne_actifs,
+                COALESCE(eps.total_epargne,         0)         AS total_epargne,
+                COALESCE(eps.total_epargne_bloquee, 0)         AS total_epargne_bloquee,
+
+                /* ── Membres ─────────────────────────────────────────────── */
+                COALESCE(mbr.nb_membres_actifs,     0)         AS nb_membres_actifs,
+                COALESCE(empr.nb_membres_emprunteurs,0)        AS nb_membres_emprunteurs
+
+            FROM AGENCE ag
+
+            /* ── Indicateurs crédit ────────────────────────────────────────── */
+            LEFT JOIN (
+                SELECT
+                    c.agence,
+                    COUNT(*)                                    AS nb_credits_total,
+                    SUM(CASE WHEN c.STATUT = 'DEBLOQUE' THEN 1 ELSE 0 END)
+                                                               AS nb_credits_actifs,
+                    SUM(CASE WHEN c.STATUT = 'SOLDE'    THEN 1 ELSE 0 END)
+                                                               AS nb_credits_soldes,
+                    SUM(CASE WHEN c.STATUT = 'DEBLOQUE'
+                             THEN c.SOLDE_CAPITAL ELSE 0 END)  AS montant_encours,
+                    SUM(COALESCE(c.MONTANT_DEBLOQUER, 0))      AS montant_debloque_total
+                FROM Credits c
+                GROUP BY c.agence
+            ) crd ON crd.agence = ag.CODE_AGENCE
+
+            /* ── Crédits en retard ─────────────────────────────────────────── */
+            LEFT JOIN (
+                SELECT
+                    c2.agence,
+                    COUNT(DISTINCT a.idcredit)                 AS nb_credits_retard,
+                    COUNT(*)                                    AS nb_echeances_en_retard,
+                    SUM(a.CAPITAL    - a.CAPITAL_REMBOURSE
+                      + a.INTERET    - a.INTERET_REMBOURSE
+                      + a.PENALITE   - a.PENALITE_REGLEE)      AS montant_arrieres
+                FROM Amortp a
+                JOIN Credits c2 ON c2.IDCREDIT = a.idcredit
+                WHERE a.STATUT_ECHEANCE IN ('EN_RETARD','PARTIELLEMENT_REGLE')
+                GROUP BY c2.agence
+            ) ret ON ret.agence = ag.CODE_AGENCE
+
+            /* ── Remboursements ────────────────────────────────────────────── */
+            LEFT JOIN (
+                SELECT
+                    r.agence,
+                    SUM(r.MONTANT_TOTAL)                       AS montant_rembourse_total,
+                    SUM(r.MONTANT_INTERET)                     AS montant_interet_percu,
+                    SUM(r.MONTANT_COMMISSION)                  AS montant_commission_percu,
+                    COUNT(r.IDREGLEMENT)                       AS nb_reglements
+                FROM Reglement r
+                WHERE r.STATUT = 'VALIDE'
+                GROUP BY r.agence
+            ) remb ON remb.agence = ag.CODE_AGENCE
+
+            /* ── Échéances échues ──────────────────────────────────────────── */
+            LEFT JOIN (
+                SELECT
+                    c3.agence,
+                    SUM(a2.TOTAL_ECHEANCE)                     AS total_echu
+                FROM Amortp a2
+                JOIN Credits c3 ON c3.IDCREDIT = a2.idcredit
+                WHERE a2.STATUT_ECHEANCE IN ('EN_RETARD','PARTIELLEMENT_REGLE','REGLE')
+                GROUP BY c3.agence
+            ) amort ON amort.agence = ag.CODE_AGENCE
+
+            /* ── Épargne (COMPTEEPS par agence via membres) ────────────────── */
+            LEFT JOIN (
+                SELECT
+                    m2.agence                                  AS agence,
+                    COUNT(*)                                   AS nb_comptes_actifs,
+                    SUM(ce.MONTANTDEPOT)                       AS total_epargne,
+                    SUM(ce.MONTANTBLOQUE)                      AS total_epargne_bloquee
+                FROM COMPTEEPS ce
+                JOIN membres m2 ON m2.NUM_MEMBRE = ce.code_membre
+                WHERE COALESCE(ce.FERME,  0) = 0
+                  AND COALESCE(ce.BLOQUE, 0) = 0
+                GROUP BY m2.agence
+            ) eps ON eps.agence = ag.CODE_AGENCE
+
+            /* ── Membres actifs ────────────────────────────────────────────── */
+            LEFT JOIN (
+                SELECT
+                    m3.agence                                  AS agence,
+                    COUNT(*)                                   AS nb_membres_actifs
+                FROM membres m3
+                WHERE m3.STATUT = 'ACTIF'
+                GROUP BY m3.agence
+            ) mbr ON mbr.agence = ag.CODE_AGENCE
+
+            /* ── Membres emprunteurs actifs ────────────────────────────────── */
+            LEFT JOIN (
+                SELECT
+                    c4.agence,
+                    COUNT(DISTINCT c4.nummembre)               AS nb_membres_emprunteurs
+                FROM Credits c4
+                WHERE c4.STATUT = 'DEBLOQUE'
+                GROUP BY c4.agence
+            ) empr ON empr.agence = ag.CODE_AGENCE
+
+            WHERE ag.ACTIF = 1
+        </createView>
+
+        <rollback>
+            <dropView viewName="vue_indicateurs_performance"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

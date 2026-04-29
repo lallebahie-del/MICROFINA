@@ -1,0 +1,23 @@
+<div class="page-container">
+  <div class="page-header"><h1>Sauvegarde Base de Données</h1></div>
+  @if (success()) { <div class="alert alert-success">{{ success() }}</div> }
+  @if (error()) { <div class="alert alert-danger">{{ error() }}</div> }
+  <div class="form-card">
+    <p>Déclenche une sauvegarde complète SQL Server (BACKUP DATABASE). Le fichier .bak est stocké sur le serveur.</p>
+    <button class="btn btn-primary" (click)="lancerBackup()" [disabled]="backupLoading()">
+      {{ backupLoading() ? 'Sauvegarde en cours...' : '🗃 Lancer une sauvegarde' }}
+    </button>
+  </div>
+  <h2>Sauvegardes disponibles</h2>
+  @if (loading()) { <div class="loading">Chargement...</div> }
+  <table class="data-table">
+    <thead><tr><th>Fichier</th></tr></thead>
+    <tbody>
+      @for (s of sauvegardes(); track s) {
+        <tr><td>{{ s }}</td></tr>
+      } @empty {
+        <tr><td class="empty">Aucune sauvegarde disponible</td></tr>
+      }
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,39 @@
+<div class="page-container">
+  <h2 class="page-title">Balance générale des comptes</h2>
+
+  <div class="filters">
+    <input type="text" [(ngModel)]="agence" placeholder="Agence (laisser vide = toutes)" class="form-control" />
+    <button (click)="load()" class="btn btn-primary">Actualiser</button>
+  </div>
+
+  <div *ngIf="loading" class="loading">Chargement…</div>
+
+  <table *ngIf="!loading && balance.length > 0" class="table">
+    <thead>
+      <tr>
+        <th>Compte</th><th>Intitulé</th>
+        <th>Débit</th><th>Crédit</th><th>Solde D</th><th>Solde C</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let b of balance">
+        <td>{{ b.numCompte }}</td>
+        <td>{{ b.intitule }}</td>
+        <td class="montant">{{ b.totalDebit | number:'1.2-2' }}</td>
+        <td class="montant">{{ b.totalCredit | number:'1.2-2' }}</td>
+        <td class="montant">{{ b.soldeDebiteur | number:'1.2-2' }}</td>
+        <td class="montant">{{ b.soldeCrediteur | number:'1.2-2' }}</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td colspan="2">TOTAUX</td>
+        <td class="montant">{{ totalDebit | number:'1.2-2' }}</td>
+        <td class="montant">{{ totalCredit | number:'1.2-2' }}</td>
+        <td colspan="2"></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <p *ngIf="!loading && balance.length === 0" class="empty-state">Aucune donnée disponible.</p>
+</div>

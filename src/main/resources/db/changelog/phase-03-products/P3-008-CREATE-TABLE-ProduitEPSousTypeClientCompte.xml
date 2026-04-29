@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P3-008 – ProduitEPSousTypeClientCompte
+        Maps a savings product to the sub-types of client accounts it supports
+        (e.g. Personne Physique, Personne Morale, Groupe).
+        Each row defines access + optional account-number prefix for one
+        (product, sub-type) combination.
+
+        FK dependencies:
+          PRODUITEPARGNE (NUMPRODUIT) – Phase 3
+        DDL source of truth: Phase 3 spec – Section 2.
+    -->
+    <changeSet id="P3-008-create-ProduitEPSousTypeClientCompte" author="microfina">
+
+        <createTable tableName="ProduitEPSousTypeClientCompte">
+
+            <!-- PK -->
+            <column name="IDPRODUITEPCLIENT" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"
+                             primaryKeyName="PK_ProduitEPSousTypeClientCompte"
+                             nullable="false"/>
+            </column>
+
+            <!-- ── Sub-type of client ─────────────────────────────── -->
+            <!-- PP=Physique, PM=Morale, GS=Groupe Solidaire, etc. -->
+            <column name="SOUS_TYPE_CLIENT" type="NVARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Optional prefix for account numbers of this sub-type -->
+            <column name="PREFIXE_NUMCOMPTE" type="NVARCHAR(20)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Account-number generation sequence (if product uses auto-numbering) -->
+            <column name="SEQUENCE_COMPTE" type="NVARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- 1 = active combination -->
+            <column name="ACTIF" type="INT" defaultValueNumeric="1">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Optimistic lock -->
+            <column name="VERSION" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="ProduitEPSousTypeClientCompte"/>
+        </rollback>
+
+    </changeSet>
+
+    <!-- Unique: one row per (product, sub-type) -->
+    <changeSet id="P3-008-uq-ProduitEPSousTypeClientCompte" author="microfina">
+
+        <addColumn tableName="ProduitEPSousTypeClientCompte">
+            <column name="numproduit" type="NVARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addUniqueConstraint
+            tableName      = "ProduitEPSousTypeClientCompte"
+            columnNames    = "numproduit, SOUS_TYPE_CLIENT"
+            constraintName = "UQ_ProduitEPSousTypeClientCompte_prod_type"/>
+
+        <rollback>
+            <dropUniqueConstraint tableName="ProduitEPSousTypeClientCompte"
+                                  constraintName="UQ_ProduitEPSousTypeClientCompte_prod_type"/>
+            <dropColumn tableName="ProduitEPSousTypeClientCompte" columnName="numproduit"/>
+        </rollback>
+
+    </changeSet>
+
+    <!-- FK → PRODUITEPARGNE -->
+    <changeSet id="P3-008-fk-ProduitEPSousTypeClientCompte-PRODUITEPARGNE" author="microfina">
+
+        <addForeignKeyConstraint
+            constraintName           = "FK_ProduitEPSousTypeClientCompte_PRODUITEPARGNE"
+            baseTableName            = "ProduitEPSousTypeClientCompte"
+            baseColumnNames          = "numproduit"
+            referencedTableName      = "PRODUITEPARGNE"
+            referencedColumnNames    = "NUMPRODUIT"
+            onDelete                 = "CASCADE"
+            onUpdate                 = "CASCADE"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="ProduitEPSousTypeClientCompte"
+                                      constraintName="FK_ProduitEPSousTypeClientCompte_PRODUITEPARGNE"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

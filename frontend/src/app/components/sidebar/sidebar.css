@@ -64,3 +64,37 @@
 .menu-item:hover .item-arrow {
   color: var(--active-blue);
 }
+
+.menu-item.active,
+.menu-item.active .item-arrow {
+  background: var(--hover-bg);
+  color: var(--active-blue);
+  font-weight: 600;
+}
+
+.menu-item.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.section-header.orange {
+  background: #e07b39;
+}
+
+.section-header.gray {
+  background: #6b7a8d;
+}
+
+/* ── Phase 10 ── */
+.section-header.purple {
+  background: #7d3c98;
+}
+
+.section-header.teal {
+  background: #148f77;
+}
+
+.section-header.indigo {
+  background: #2e4057;
+}

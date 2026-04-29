@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P1-009-CREATE-TABLE-CompteurMembre" author="microfina">
+        <comment>Create CompteurMembre table – member numbering counter per category/institution/agency</comment>
+
+        <createTable tableName="CompteurMembre">
+            <column name="ID_COMPTEUR_MEMBRE" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="PK_CompteurMembre"/>
+            </column>
+            <column name="COMPTEUR"        type="BIGINT"        defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="VERSION"         type="INT"           defaultValueNumeric="0"/>
+            <column name="fk_idCategorie"  type="NVARCHAR(25)"/>
+            <column name="fk_idInstitution" type="NVARCHAR(255)"/>
+            <column name="fk_idAgence"     type="NVARCHAR(25)"/>
+        </createTable>
+
+        <addForeignKeyConstraint
+            baseTableName="CompteurMembre" baseColumnNames="fk_idInstitution"
+            referencedTableName="institution" referencedColumnNames="CODE_INSTITUTION"
+            constraintName="FK_CompteurMembre_institution"/>
+
+        <addForeignKeyConstraint
+            baseTableName="CompteurMembre" baseColumnNames="fk_idAgence"
+            referencedTableName="AGENCE" referencedColumnNames="CODE_AGENCE"
+            constraintName="FK_CompteurMembre_AGENCE"/>
+
+        <!-- Unique constraint: one counter row per (institution, agence, categorie) tuple -->
+        <addUniqueConstraint
+            tableName="CompteurMembre"
+            columnNames="fk_idInstitution, fk_idAgence, fk_idCategorie"
+            constraintName="UQ_CompteurMembre_inst_agence_cat"/>
+
+        <rollback>
+            <dropAllForeignKeyConstraints baseTableName="CompteurMembre"/>
+            <dropTable tableName="CompteurMembre"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

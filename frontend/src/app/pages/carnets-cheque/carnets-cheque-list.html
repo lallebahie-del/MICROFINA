@@ -1,0 +1,41 @@
+<div class="page-container">
+  <h2 class="page-title">Carnets de chèques</h2>
+
+  <div class="filters">
+    <input type="text" [(ngModel)]="agenceFilter" placeholder="Agence" class="form-control" />
+    <button (click)="load()" class="btn btn-primary">Filtrer</button>
+  </div>
+
+  <div *ngIf="loading" class="loading">Chargement…</div>
+
+  <table *ngIf="!loading && carnets.length > 0" class="table">
+    <thead>
+      <tr>
+        <th>N° Carnet</th><th>Membre</th><th>Premier chèque</th>
+        <th>Dernier chèque</th><th>Feuillets</th><th>Date émission</th><th>Statut</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let c of carnets">
+        <td>{{ c.numCarnet }}</td>
+        <td>{{ c.nomMembre ?? c.numMembre }}</td>
+        <td>{{ c.numeroPremierCheque }}</td>
+        <td>{{ c.numeroDernierCheque }}</td>
+        <td>{{ c.nbFeuillets }}</td>
+        <td>{{ c.dateEmission }}</td>
+        <td>
+          <span [class]="c.statut === 'ACTIF' ? 'badge badge-success' : 'badge badge-secondary'">
+            {{ c.statut }}
+          </span>
+        </td>
+        <td>
+          <button *ngIf="c.statut === 'ACTIF'" (click)="bloquer(c.id)" class="btn btn-sm btn-warning">
+            Bloquer
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p *ngIf="!loading && carnets.length === 0" class="empty-state">Aucun carnet de chèques.</p>
+</div>

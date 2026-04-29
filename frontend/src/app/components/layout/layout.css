@@ -3,8 +3,14 @@
   height: 100vh;
 }
 
-.main-content {
+.layout-body {
+  display: flex;
   height: calc(100vh - var(--navbar-height));
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
   overflow-y: auto;
   background: var(--bg-light);
   padding: 0;

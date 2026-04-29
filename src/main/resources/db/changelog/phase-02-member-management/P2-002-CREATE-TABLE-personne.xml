@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P2-002 – personne  (JOINED subtype of TIERS)
+        Spec p.52-53. PK = CODE_TIERS (FK to TIERS).
+        DTYPE and VERSION are inherited from TIERS; not duplicated here.
+        Phase-2+ FKs (profession, zoneGeographique FK value stored as raw Long) deferred.
+    -->
+    <changeSet id="P2-002-CREATE-TABLE-personne" author="microfina">
+        <comment>Create personne table – JOINED subtype of TIERS; stores all personal identity fields</comment>
+
+        <createTable tableName="personne">
+            <!-- PK = FK to TIERS (JOINED inheritance) -->
+            <column name="CODE_TIERS"        type="NVARCHAR(50)">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="PK_personne"/>
+            </column>
+
+            <!-- Internal person identifier (AN/48 per spec) -->
+            <column name="idPersonne"         type="NVARCHAR(48)"/>
+            <!-- ACTIF: N type (numeric flag) -->
+            <column name="ACTIF"              type="INT"/>
+            <!-- FK to zoneGeographique (N type – numeric Long) -->
+            <column name="zoneGeographique"   type="BIGINT"/>
+            <!-- FK to ADRESSE (AN/48) -->
+            <column name="ADRESSE_IDADRESSE"  type="NVARCHAR(48)"/>
+
+            <!-- Personal identity -->
+            <column name="dateNAIS"           type="DATE"/>
+            <column name="lieuNaissance"      type="NVARCHAR(255)"/>
+            <column name="nomJeuneFille"      type="NVARCHAR(255)"/>
+            <column name="nomPersonne"        type="NVARCHAR(255)"/>
+            <column name="prenomPersonne"     type="NVARCHAR(255)"/>
+            <column name="sexe"               type="NVARCHAR(255)"/>
+
+            <!-- FK to profession table (N type – deferred to phase 2+) -->
+            <column name="profession"         type="BIGINT"/>
+            <column name="raison_sociale"     type="NVARCHAR(255)"/>
+            <column name="NOMPARRAIN"         type="NVARCHAR(255)"/>
+
+            <!-- Back-link to membres (AN/25) -->
+            <column name="membre"             type="NVARCHAR(25)"/>
+            <column name="matriculePersonne"  type="NVARCHAR(25)"/>
+            <column name="num_membre_old"     type="NVARCHAR(25)"/>
+        </createTable>
+
+        <!-- JOINED inheritance: CODE_TIERS FK to TIERS -->
+        <addForeignKeyConstraint
+            baseTableName="personne"        baseColumnNames="CODE_TIERS"
+            referencedTableName="TIERS"     referencedColumnNames="CODE_TIERS"
+            constraintName="FK_personne_TIERS"/>
+
+        <!-- FK to ADRESSE (Phase 1) -->
+        <addForeignKeyConstraint
+            baseTableName="personne"        baseColumnNames="ADRESSE_IDADRESSE"
+            referencedTableName="ADRESSE"   referencedColumnNames="IDADRESSE"
+            constraintName="FK_personne_ADRESSE"/>
+
+        <rollback>
+            <dropAllForeignKeyConstraints baseTableName="personne"/>
+            <dropTable tableName="personne"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

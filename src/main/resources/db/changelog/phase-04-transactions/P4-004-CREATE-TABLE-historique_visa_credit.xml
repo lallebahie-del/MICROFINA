@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P4-004 – historique_visa_credit
+        Immutable audit trail of every workflow step (visa) applied to a credit.
+        Records who moved the credit from one status to another and when.
+        One row per transition event; rows are never updated.
+
+        FK dependencies:
+          Credits (IDCREDIT) – P4-001
+        DDL source of truth: Phase 4 spec – Section 9 (workflow / visa).
+    -->
+    <changeSet id="P4-004-create-historique_visa_credit" author="microfina">
+
+        <createTable tableName="historique_visa_credit">
+
+            <!-- PK -->
+            <column name="IDHISTORIQUE" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"
+                             primaryKeyName="PK_historique_visa_credit"
+                             nullable="false"/>
+            </column>
+
+            <!-- Workflow step label: SAISIE | ANALYSE | VALIDATION_AGENT |
+                 VALIDATION_COMITE | DEBLOCAGE | REMBOURSEMENT | CLOTURE -->
+            <column name="ETAPE" type="NVARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Status before this transition -->
+            <column name="STATUT_AVANT" type="NVARCHAR(20)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Status after this transition -->
+            <column name="STATUT_APRES" type="NVARCHAR(20)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Timestamp of the visa / approval action -->
+            <column name="DATE_VISA" type="DATE">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Decision: APPROUVE | REFUSE | EN_ATTENTE -->
+            <column name="DECISION" type="NVARCHAR(20)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Free-text comment or rejection reason -->
+            <column name="COMMENTAIRE" type="NVARCHAR(500)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- User or committee that issued the visa -->
+            <column name="UTILISATEUR" type="NVARCHAR(48)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Optimistic lock -->
+            <column name="VERSION" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="historique_visa_credit"/>
+        </rollback>
+
+    </changeSet>
+
+    <!-- FK → Credits -->
+    <changeSet id="P4-004-fk-historique_visa_credit-Credits" author="microfina">
+
+        <addColumn tableName="historique_visa_credit">
+            <column name="idcredit" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <!-- Index on idcredit for fast history lookups -->
+        <createIndex tableName="historique_visa_credit"
+                     indexName="IDX_historique_visa_credit_idcredit">
+            <column name="idcredit"/>
+        </createIndex>
+
+        <addForeignKeyConstraint
+            constraintName        = "FK_historique_visa_credit_Credits"
+            baseTableName         = "historique_visa_credit"
+            baseColumnNames       = "idcredit"
+            referencedTableName   = "Credits"
+            referencedColumnNames = "IDCREDIT"
+            onDelete              = "CASCADE"
+            onUpdate="NO ACTION"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="historique_visa_credit"
+                                      constraintName="FK_historique_visa_credit_Credits"/>
+            <dropIndex tableName="historique_visa_credit"
+                       indexName="IDX_historique_visa_credit_idcredit"/>
+            <dropColumn tableName="historique_visa_credit" columnName="idcredit"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

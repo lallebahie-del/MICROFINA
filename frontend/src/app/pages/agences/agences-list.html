@@ -1,0 +1,37 @@
+<div class="page-container">
+  <h2 class="page-title">Agences</h2>
+
+  <div class="filters">
+    <select [(ngModel)]="filtreActif" (change)="load()" class="form-control">
+      <option value="">Toutes</option>
+      <option value="true">Actives</option>
+      <option value="false">Inactives</option>
+    </select>
+  </div>
+
+  <div *ngIf="loading" class="loading">Chargement…</div>
+
+  <table *ngIf="!loading" class="table">
+    <thead>
+      <tr>
+        <th>Code</th><th>Nom</th><th>Siège ?</th><th>Chef d'agence</th><th>Zone</th><th>Statut</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let a of agences">
+        <td>{{ a.codeAgence }}</td>
+        <td>{{ a.nomAgence }}</td>
+        <td>{{ a.isSiege ? 'Oui' : 'Non' }}</td>
+        <td>{{ a.chefAgence ?? '—' }}</td>
+        <td>{{ a.zoneGeographique ?? '—' }}</td>
+        <td>
+          <span [class]="a.actif ? 'badge badge-success' : 'badge badge-danger'">
+            {{ a.actif ? 'Actif' : 'Inactif' }}
+          </span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p *ngIf="!loading && agences.length === 0" class="empty-state">Aucune agence trouvée.</p>
+</div>

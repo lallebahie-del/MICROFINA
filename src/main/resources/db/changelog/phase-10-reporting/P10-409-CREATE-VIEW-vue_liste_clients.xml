@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P10-409 – vue_liste_clients
+        ══════════════════════════════════════════════════════════════════════════
+        Fiche client consolidée — une ligne par membre.
+
+        Agrège pour chaque membre :
+          IDENTITÉ
+            NUM_MEMBRE, NOM, PRENOM, SEXE, DATENAISSANCE
+            STATUT, ETAT, DATECREATIONUSER
+            agence de rattachement (CODE_AGENCE, NOMAGENCE)
+
+          ÉPARGNE (COMPTEEPS)
+            nb_comptes_epargne    — nombre de comptes ouverts
+            total_epargne         — Σ MONTANTDEPOT des comptes actifs
+            total_epargne_bloquee — Σ MONTANTBLOQUE des comptes actifs
+
+          CRÉDITS
+            nb_credits_total      — tous crédits (tous statuts)
+            nb_credits_actifs     — crédits DEBLOQUE
+            montant_total_accorde — Σ MONTANT_ACCORDE historique
+            encours_capital       — Σ SOLDE_CAPITAL des crédits DEBLOQUE
+            nb_credits_retard     — crédits avec au moins 1 échéance EN_RETARD
+            categorie_par_pire    — catégorie PAR la plus sévère (via vue_par_bcm)
+
+          GARANTIES
+            nb_garanties          — nombre de garanties actives (toutes sources)
+            total_garanties       — Σ valeur_estimee garanties actives
+
+        Tables source :
+          membres              (P2-003)  — identité
+          AGENCE               (P1-002)  — agence rattachement
+          COMPTEEPS            (P2-006)  — épargne
+          Credits              (P4-001)  — crédits
+          Amortp               (P4-005)  — retards
+          vue_par_bcm          (P5-001)  — catégorie PAR
+          vue_garanties_unifiee(P10-001d)— garanties
+        ══════════════════════════════════════════════════════════════════════════
+    -->
+
+    <changeSet id="P10-409-create-vue-liste-clients" author="microfina">
+        <comment>
+            Fiche client consolidée — une ligne par membre avec épargne,
+            crédits et garanties agrégés. Utilisée pour les états BCM
+            et la gestion du portefeuille client.
+        </comment>
+
+        <createView viewName="vue_liste_clients" replaceIfExists="true">
+            SELECT
+                /* ── Identité du membre ──────────────────────────────────── */
+                m.NUM_MEMBRE,
+                m.NOM,
+                m.PRENOM,
+                m.SEXE,
+                m.DATENAISSANCE,
+                m.STATUT                                        AS statut_membre,
+                m.ETAT                                          AS etat_membre,
+                m.DATECREATIONUSER                              AS date_adhesion,
+
+                /* ── Agence de rattachement ──────────────────────────────── */
+                m.agence                                        AS code_agence,
+                ag.NOMAGENCE                                    AS nom_agence,
+
+                /* ── Épargne ─────────────────────────────────────────────── */
+                COALESCE(eps.nb_comptes_epargne,    0)          AS nb_comptes_epargne,
+                COALESCE(eps.total_epargne,         0)          AS total_epargne,
+                COALESCE(eps.total_epargne_bloquee, 0)          AS total_epargne_bloquee,
+
+                /* ── Crédits ─────────────────────────────────────────────── */
+                COALESCE(crd.nb_credits_total,      0)          AS nb_credits_total,
+                COALESCE(crd.nb_credits_actifs,     0)          AS nb_credits_actifs,
+                COALESCE(crd.montant_total_accorde, 0)          AS montant_total_accorde,
+                COALESCE(crd.encours_capital,       0)          AS encours_capital,
+
+                /* ── Retards ─────────────────────────────────────────────── */
+                COALESCE(ret.nb_credits_retard,     0)          AS nb_credits_retard,
+
+                /* ── Catégorie PAR la plus sévère ────────────────────────── */
+                /*    Ordre de sévérité : PAR180_PLUS > PAR180 > PAR90 > PAR30 > SAIN */
+                CASE
+                    WHEN COALESCE(par.max_jours_retard, 0) > 180 THEN 'PAR180_PLUS'
+                    WHEN COALESCE(par.max_jours_retard, 0) > 90  THEN 'PAR180'
+                    WHEN COALESCE(par.max_jours_retard, 0) > 30  THEN 'PAR90'
+                    WHEN COALESCE(par.max_jours_retard, 0) > 0   THEN 'PAR30'
+                    ELSE 'SAIN'
+                END                                             AS categorie_par_pire,
+                COALESCE(par.max_jours_retard,      0)          AS max_jours_retard,
+                COALESCE(par.total_arrieres,        0)          AS total_arrieres,
+
+                /* ── Garanties ───────────────────────────────────────────── */
+                COALESCE(gar.nb_garanties,          0)          AS nb_garanties,
+                COALESCE(gar.total_garanties,       0)          AS total_garanties
+
+            FROM membres m
+
+            LEFT JOIN AGENCE ag
+                   ON ag.CODE_AGENCE = m.agence
+
+            /* ── Comptes épargne ──────────────────────────────────────────── */
+            LEFT JOIN (
+                SELECT
+                    ce.code_membre,
+                    COUNT(*)                        AS nb_comptes_epargne,
+                    SUM(CASE WHEN COALESCE(ce.FERME,  0) = 0
+                              AND COALESCE(ce.BLOQUE, 0) = 0
+                             THEN ce.MONTANTDEPOT  ELSE 0 END)  AS total_epargne,
+                    SUM(CASE WHEN COALESCE(ce.FERME,  0) = 0
+                              AND COALESCE(ce.BLOQUE, 0) = 0
+                             THEN ce.MONTANTBLOQUE ELSE 0 END)  AS total_epargne_bloquee
+                FROM COMPTEEPS ce
+                GROUP BY ce.code_membre
+            ) eps ON eps.code_membre = m.NUM_MEMBRE
+
+            /* ── Crédits du membre ────────────────────────────────────────── */
+            LEFT JOIN (
+                SELECT
+                    c.nummembre,
+                    COUNT(*)                                    AS nb_credits_total,
+                    SUM(CASE WHEN c.STATUT = 'DEBLOQUE' THEN 1 ELSE 0 END)
+                                                               AS nb_credits_actifs,
+                    SUM(COALESCE(c.MONTANT_ACCORDE, 0))        AS montant_total_accorde,
+                    SUM(CASE WHEN c.STATUT = 'DEBLOQUE'
+                             THEN c.SOLDE_CAPITAL ELSE 0 END)  AS encours_capital
+                FROM Credits c
+                GROUP BY c.nummembre
+            ) crd ON crd.nummembre = m.NUM_MEMBRE
+
+            /* ── Nombre de crédits avec retard ───────────────────────────── */
+            LEFT JOIN (
+                SELECT
+                    c2.nummembre,
+                    COUNT(DISTINCT a.idcredit)                 AS nb_credits_retard
+                FROM Amortp a
+                JOIN Credits c2 ON c2.IDCREDIT = a.idcredit
+                WHERE a.STATUT_ECHEANCE IN ('EN_RETARD','PARTIELLEMENT_REGLE')
+                GROUP BY c2.nummembre
+            ) ret ON ret.nummembre = m.NUM_MEMBRE
+
+            /* ── PAR le plus sévère du membre (pire crédit) ───────────────── */
+            LEFT JOIN (
+                SELECT
+                    p.NUM_MEMBRE,
+                    MAX(p.max_jours_retard)                    AS max_jours_retard,
+                    SUM(p.total_arrieres)                      AS total_arrieres
+                FROM vue_par_bcm p
+                GROUP BY p.NUM_MEMBRE
+            ) par ON par.NUM_MEMBRE = m.NUM_MEMBRE
+
+            /* ── Garanties actives du membre ──────────────────────────────── */
+            LEFT JOIN (
+                SELECT
+                    g.num_membre,
+                    COUNT(*)                                   AS nb_garanties,
+                    SUM(g.valeur_estimee)                      AS total_garanties
+                FROM vue_garanties_unifiee g
+                WHERE COALESCE(g.statut, 'ACTIF') = 'ACTIF'
+                  AND g.num_membre IS NOT NULL
+                GROUP BY g.num_membre
+            ) gar ON gar.num_membre = m.NUM_MEMBRE
+        </createView>
+
+        <rollback>
+            <dropView viewName="vue_liste_clients"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

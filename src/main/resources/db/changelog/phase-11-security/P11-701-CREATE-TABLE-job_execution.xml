@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ============================================================
+  MICROFINA++ — Phase 11.7 — Traçabilité des jobs planifiés
+  ============================================================
+  P11-701 : Création de la table job_execution
+  ============================================================
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P11-701" author="microfina">
+        <comment>Création de la table de traçabilité des traitements batchs planifiés</comment>
+
+        <createTable tableName="job_execution">
+            <column name="id_job_execution" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"
+                             primaryKeyName="PK_job_execution"/>
+            </column>
+            <column name="nom_job" type="NVARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_debut" type="DATETIME">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_fin" type="DATETIME"/>
+            <column name="statut" type="NVARCHAR(20)" defaultValue="EN_COURS">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message" type="NVARCHAR(1000)"/>
+            <column name="nb_traites" type="INT"/>
+            <column name="declencheur" type="NVARCHAR(100)"/>
+        </createTable>
+
+        <createIndex tableName="job_execution" indexName="IDX_job_execution_nom_debut">
+            <column name="nom_job"/>
+            <column name="date_debut"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="job_execution"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P12-004 – Seed des associations Role ↔ Privilege
+
+        Until now, only ADMIN had explicit RolePrivilege rows (P9-007-C cross-join).
+        AGENT_CREDIT, COMITE_CREDIT, COMPTABLE, CAISSIER, SUPERVISEUR had no
+        privileges at all, which is why @PreAuthorize annotations rejected
+        non-admin users. This changeset wires up the missing assignments using
+        the responsibility matrix below.
+
+        Responsibility matrix (legacy parity):
+            ADMIN          : ALL (already done in P9-007-C, also catches new privs via P12-004-D)
+            AGENT_CREDIT   : CREATE_CREDIT, ANALYSE_FINANCIERE
+            COMITE_CREDIT  : COMPLETUDE_DOSSIER, VISA_RC, COMITE_CREDIT, REJECT_CREDIT, VALIDATE_CREDIT
+            COMPTABLE      : VISA_SF, RECORD_MOVEMENT, CREATE_BUDGET
+            CAISSIER       : DEBLOQUER_CREDIT, DISBURSE_CREDIT, POST_REGLEMENT,
+                             OPEN_COMPTE_EPS, DEPOSIT_EPARGNE, WITHDRAW_EPARGNE, MANAGE_CASH
+            SUPERVISEUR    : VIEW_REPORTS, EXPORT_REPORTS, CLOSE_DAY, VIEW_AUDIT
+            AUDITEUR       : VIEW_REPORTS, VIEW_AUDIT
+    -->
+
+    <!-- ================================================================
+         P12-004-A : AGENT_CREDIT
+         ================================================================ -->
+    <changeSet id="P12-004-A-role-privileges-agent_credit" author="microfina-phase12">
+        <comment>Grant credit-officer privileges to AGENT_CREDIT role</comment>
+
+        <sql>
+INSERT INTO RolePrivilege (id_role, id_privilege)
+SELECT r.id, p.id
+  FROM Role r CROSS JOIN Privilege p
+ WHERE r.code_role = 'AGENT_CREDIT'
+   AND p.code_privilege IN ('CREATE_CREDIT', 'ANALYSE_FINANCIERE')
+   AND NOT EXISTS (
+       SELECT 1 FROM RolePrivilege rp
+        WHERE rp.id_role = r.id AND rp.id_privilege = p.id
+   )
+        </sql>
+
+        <rollback>
+            <sql>
+DELETE rp
+  FROM RolePrivilege rp
+  INNER JOIN Role      r ON rp.id_role      = r.id
+  INNER JOIN Privilege p ON rp.id_privilege = p.id
+ WHERE r.code_role = 'AGENT_CREDIT'
+   AND p.code_privilege IN ('CREATE_CREDIT', 'ANALYSE_FINANCIERE')
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ================================================================
+         P12-004-B : COMITE_CREDIT
+         ================================================================ -->
+    <changeSet id="P12-004-B-role-privileges-comite_credit" author="microfina-phase12">
+        <comment>Grant complétude / visa RC / comité / decision privileges to COMITE_CREDIT role</comment>
+
+        <sql>
+INSERT INTO RolePrivilege (id_role, id_privilege)
+SELECT r.id, p.id
+  FROM Role r CROSS JOIN Privilege p
+ WHERE r.code_role = 'COMITE_CREDIT'
+   AND p.code_privilege IN (
+       'COMPLETUDE_DOSSIER',
+       'VISA_RC',
+       'COMITE_CREDIT',
+       'REJECT_CREDIT',
+       'VALIDATE_CREDIT'
+   )
+   AND NOT EXISTS (
+       SELECT 1 FROM RolePrivilege rp
+        WHERE rp.id_role = r.id AND rp.id_privilege = p.id
+   )
+        </sql>
+
+        <rollback>
+            <sql>
+DELETE rp
+  FROM RolePrivilege rp
+  INNER JOIN Role      r ON rp.id_role      = r.id
+  INNER JOIN Privilege p ON rp.id_privilege = p.id
+ WHERE r.code_role = 'COMITE_CREDIT'
+   AND p.code_privilege IN (
+       'COMPLETUDE_DOSSIER','VISA_RC','COMITE_CREDIT','REJECT_CREDIT','VALIDATE_CREDIT'
+   )
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ================================================================
+         P12-004-C : COMPTABLE
+         ================================================================ -->
+    <changeSet id="P12-004-C-role-privileges-comptable" author="microfina-phase12">
+        <comment>Grant Visa SF + budget + accounting privileges to COMPTABLE role</comment>
+
+        <sql>
+INSERT INTO RolePrivilege (id_role, id_privilege)
+SELECT r.id, p.id
+  FROM Role r CROSS JOIN Privilege p
+ WHERE r.code_role = 'COMPTABLE'
+   AND p.code_privilege IN (
+       'VISA_SF',
+       'RECORD_MOVEMENT',
+       'CREATE_BUDGET',
+       'VALIDATE_BUDGET',
+       'MANAGE_BUDGET',
+       'BANK_OPERATION',
+       'MANAGE_BANK_OP',
+       'MANAGE_CHEQUE'
+   )
+   AND NOT EXISTS (
+       SELECT 1 FROM RolePrivilege rp
+        WHERE rp.id_role = r.id AND rp.id_privilege = p.id
+   )
+        </sql>
+
+        <rollback>
+            <sql>
+DELETE rp
+  FROM RolePrivilege rp
+  INNER JOIN Role      r ON rp.id_role      = r.id
+  INNER JOIN Privilege p ON rp.id_privilege = p.id
+ WHERE r.code_role = 'COMPTABLE'
+   AND p.code_privilege IN (
+       'VISA_SF','RECORD_MOVEMENT','CREATE_BUDGET','VALIDATE_BUDGET',
+       'MANAGE_BUDGET','BANK_OPERATION','MANAGE_BANK_OP','MANAGE_CHEQUE'
+   )
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ================================================================
+         P12-004-D : CAISSIER
+         ================================================================ -->
+    <changeSet id="P12-004-D-role-privileges-caissier" author="microfina-phase12">
+        <comment>Grant cash / deblocage / epargne privileges to CAISSIER role</comment>
+
+        <sql>
+INSERT INTO RolePrivilege (id_role, id_privilege)
+SELECT r.id, p.id
+  FROM Role r CROSS JOIN Privilege p
+ WHERE r.code_role = 'CAISSIER'
+   AND p.code_privilege IN (
+       'DEBLOQUER_CREDIT',
+       'DISBURSE_CREDIT',
+       'POST_REGLEMENT',
+       'OPEN_COMPTE_EPS',
+       'DEPOSIT_EPARGNE',
+       'WITHDRAW_EPARGNE',
+       'MANAGE_CASH',
+       'MANAGE_SAVINGS'
+   )
+   AND NOT EXISTS (
+       SELECT 1 FROM RolePrivilege rp
+        WHERE rp.id_role = r.id AND rp.id_privilege = p.id
+   )
+        </sql>
+
+        <rollback>
+            <sql>
+DELETE rp
+  FROM RolePrivilege rp
+  INNER JOIN Role      r ON rp.id_role      = r.id
+  INNER JOIN Privilege p ON rp.id_privilege = p.id
+ WHERE r.code_role = 'CAISSIER'
+   AND p.code_privilege IN (
+       'DEBLOQUER_CREDIT','DISBURSE_CREDIT','POST_REGLEMENT',
+       'OPEN_COMPTE_EPS','DEPOSIT_EPARGNE','WITHDRAW_EPARGNE',
+       'MANAGE_CASH','MANAGE_SAVINGS'
+   )
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ================================================================
+         P12-004-E : SUPERVISEUR
+         ================================================================ -->
+    <changeSet id="P12-004-E-role-privileges-superviseur" author="microfina-phase12">
+        <comment>Grant supervisory and reporting privileges to SUPERVISEUR role</comment>
+
+        <sql>
+INSERT INTO RolePrivilege (id_role, id_privilege)
+SELECT r.id, p.id
+  FROM Role r CROSS JOIN Privilege p
+ WHERE r.code_role = 'SUPERVISEUR'
+   AND p.code_privilege IN (
+       'VIEW_REPORTS',
+       'EXPORT_REPORTS',
+       'CLOSE_DAY',
+       'VIEW_AUDIT'
+   )
+   AND NOT EXISTS (
+       SELECT 1 FROM RolePrivilege rp
+        WHERE rp.id_role = r.id AND rp.id_privilege = p.id
+   )
+        </sql>
+
+        <rollback>
+            <sql>
+DELETE rp
+  FROM RolePrivilege rp
+  INNER JOIN Role      r ON rp.id_role      = r.id
+  INNER JOIN Privilege p ON rp.id_privilege = p.id
+ WHERE r.code_role = 'SUPERVISEUR'
+   AND p.code_privilege IN (
+       'VIEW_REPORTS','EXPORT_REPORTS','CLOSE_DAY','VIEW_AUDIT'
+   )
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ================================================================
+         P12-004-F : AUDITEUR (read-only)
+         ================================================================ -->
+    <changeSet id="P12-004-F-role-privileges-auditeur" author="microfina-phase12">
+        <comment>Grant read-only reports + audit privileges to AUDITEUR role</comment>
+
+        <sql>
+INSERT INTO RolePrivilege (id_role, id_privilege)
+SELECT r.id, p.id
+  FROM Role r CROSS JOIN Privilege p
+ WHERE r.code_role = 'AUDITEUR'
+   AND p.code_privilege IN ('VIEW_REPORTS', 'VIEW_AUDIT')
+   AND NOT EXISTS (
+       SELECT 1 FROM RolePrivilege rp
+        WHERE rp.id_role = r.id AND rp.id_privilege = p.id
+   )
+        </sql>
+
+        <rollback>
+            <sql>
+DELETE rp
+  FROM RolePrivilege rp
+  INNER JOIN Role      r ON rp.id_role      = r.id
+  INNER JOIN Privilege p ON rp.id_privilege = p.id
+ WHERE r.code_role = 'AUDITEUR'
+   AND p.code_privilege IN ('VIEW_REPORTS', 'VIEW_AUDIT')
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ================================================================
+         P12-004-G : ADMIN catch-up — re-grant ALL privileges to ADMIN
+         (ensures the new P12-003 privileges are also given to ADMIN, since
+         the P9-007-C cross-join only ran once on initial migration)
+         ================================================================ -->
+    <changeSet id="P12-004-G-role-privileges-admin-catchup" author="microfina-phase12">
+        <comment>Grant any newly-created privileges (P12-003) to ADMIN role — catch-up cross-join</comment>
+
+        <sql>
+INSERT INTO RolePrivilege (id_role, id_privilege)
+SELECT r.id, p.id
+  FROM Role r CROSS JOIN Privilege p
+ WHERE r.code_role = 'ADMIN'
+   AND NOT EXISTS (
+       SELECT 1 FROM RolePrivilege rp
+        WHERE rp.id_role = r.id AND rp.id_privilege = p.id
+   )
+        </sql>
+
+        <rollback>
+            <!-- No-op: we don't strip ADMIN privileges on rollback to avoid lock-out. -->
+            <sql>SELECT 1</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

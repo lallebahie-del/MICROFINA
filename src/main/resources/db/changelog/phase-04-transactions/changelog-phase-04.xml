@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        Phase 4 – Transactional Logic
+        Chapter 3, Sections 7–11: Credit management, workflow, amortization,
+        guarantees, and repayments.
+
+        Execution order (dependency-safe):
+          P4-001  Credits                 – deps: membres, produitcredit, AGENCE,
+                                                   mode_de_calcul_interet, AgentCredit
+          P4-002  Creditsgroupe           – JOINED subtype of Credits
+          P4-003  creditGroupeMembre      – deps: Credits, membres
+          P4-004  historique_visa_credit  – deps: Credits
+          P4-005  Amortp                  – deps: Credits  ← MOST IMPORTANT
+          P4-006  garant                  – deps: Credits, membres
+          P4-007  HYPOTHEQUE_CREDIT       – deps: Credits
+          P4-008  gageCredit              – deps: Credits
+          P4-009  Caution                 – deps: Credits
+          P4-010  Nantissement            – deps: Credits
+          P4-011  Reglement               – deps: Credits, AGENCE, comptabilite
+          P4-012  detail_reglement        – deps: Reglement, Amortp
+          P4-013  hotfix-integrity        – TAXE cols, idcomptabilite NOT NULL,
+                                            STATUT default → BROUILLON
+    -->
+
+    <include file="db/changelog/phase-04-transactions/P4-001-CREATE-TABLE-Credits.xml"
+/>
+
+    <include file="db/changelog/phase-04-transactions/P4-002-CREATE-TABLE-Creditsgroupe.xml"
+/>
+
+    <include file="db/changelog/phase-04-transactions/P4-003-CREATE-TABLE-creditGroupeMembre.xml"
+/>
+
+    <include file="db/changelog/phase-04-transactions/P4-004-CREATE-TABLE-historique_visa_credit.xml"
+/>
+
+    <include file="db/changelog/phase-04-transactions/P4-005-CREATE-TABLE-Amortp.xml"
+/>
+
+    <include file="db/changelog/phase-04-transactions/P4-006-CREATE-TABLE-garant.xml"
+/>
+
+    <include file="db/changelog/phase-04-transactions/P4-007-CREATE-TABLE-HYPOTHEQUE_CREDIT.xml"
+/>
+
+    <include file="db/changelog/phase-04-transactions/P4-008-CREATE-TABLE-gageCredit.xml"
+/>
+
+    <include file="db/changelog/phase-04-transactions/P4-009-CREATE-TABLE-Caution.xml"
+/>
+
+    <include file="db/changelog/phase-04-transactions/P4-010-CREATE-TABLE-Nantissement.xml"
+/>
+
+    <include file="db/changelog/phase-04-transactions/P4-011-CREATE-TABLE-Reglement.xml"
+/>
+
+    <include file="db/changelog/phase-04-transactions/P4-012-CREATE-TABLE-detail_reglement.xml"
+/>
+
+    <include file="db/changelog/phase-04-transactions/P4-013-hotfix-phase4-integrity.xml"
+/>
+
+</databaseChangeLog>

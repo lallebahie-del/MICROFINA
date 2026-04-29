@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P3-002 – produit_islamic
+        Reference table for Islamic finance product types:
+        Mourabaha, Moucharaka, Ijara, etc.
+        No external FK dependencies.
+        DDL source of truth: Phase 3 spec – Section 1.
+    -->
+    <changeSet id="P3-002-create-produit_islamic" author="microfina">
+
+        <createTable tableName="produit_islamic">
+
+            <!-- PK – short code, e.g. "MOURABAHA", "MOUCHARAKA", "IJARA" -->
+            <column name="code_produit" type="NVARCHAR(50)">
+                <constraints primaryKey="true"
+                             primaryKeyName="PK_produit_islamic"
+                             nullable="false"/>
+            </column>
+
+            <!-- Human-readable label -->
+            <column name="libelle" type="NVARCHAR(200)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Description / details -->
+            <column name="description" type="NVARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- 1 = active -->
+            <column name="actif" type="INT" defaultValueNumeric="1">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Profit-sharing ratio for Moucharaka (%) -->
+            <column name="taux_partage_benefice" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Optimistic lock -->
+            <column name="VERSION" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="produit_islamic"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

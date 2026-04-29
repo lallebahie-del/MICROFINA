@@ -1,0 +1,22 @@
+<div class="page-container">
+  <h2 class="page-title">Rôles système</h2>
+
+  <div *ngIf="loading" class="loading">Chargement…</div>
+
+  <table *ngIf="!loading && roles.length > 0" class="table">
+    <thead>
+      <tr>
+        <th>Code rôle</th><th>Libellé</th><th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let r of roles">
+        <td><code>{{ r.codeRole }}</code></td>
+        <td>{{ r.libelle }}</td>
+        <td>—</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p *ngIf="!loading && roles.length === 0" class="empty-state">Aucun rôle configuré.</p>
+</div>

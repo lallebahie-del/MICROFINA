@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P12-001 – ALTER TABLE Credits : add etape_courante (fine-grained workflow position)
+
+        The existing STATUT column (BROUILLON | SOUMIS | VALIDE_AGENT | VALIDE_COMITE |
+        DEBLOQUE | SOLDE | REJETE) stays untouched for backward compatibility.
+
+        etape_courante adds the legacy 6-stage visa workflow on top:
+            SAISIE              → dossier en cours de saisie
+            COMPLETUDE          → vérification documentaire (back-office)
+            ANALYSE_FINANCIERE  → analyse financière en cours / soumise
+            VISA_RC             → en attente du visa Responsable Crédit
+            COMITE              → en attente du comité de crédit
+            VISA_SF             → en attente du visa Service Financier
+            DEBLOCAGE_PENDING   → prêt à débloquer (caisse / chèque / virement)
+            DEBLOQUE            → décaissé (= STATUT.DEBLOQUE)
+            CLOTURE             → soldé              (= STATUT.SOLDE)
+            REJETE              → refus à n'importe quelle étape (= STATUT.REJETE)
+
+        Default = SAISIE so legacy rows continue to behave like BROUILLON.
+    -->
+    <changeSet id="P12-001-add-column-etape_courante" author="microfina-phase12">
+        <comment>Add etape_courante to Credits to track fine-grained position in the visa workflow</comment>
+
+        <addColumn tableName="Credits">
+            <column name="etape_courante" type="NVARCHAR(30)" defaultValue="SAISIE">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <!-- Index for fast filtering ("dossiers en attente du comité", etc.) -->
+        <createIndex tableName="Credits" indexName="IDX_Credits_etape_courante">
+            <column name="etape_courante"/>
+        </createIndex>
+
+        <rollback>
+            <dropIndex tableName="Credits" indexName="IDX_Credits_etape_courante"/>
+            <dropColumn tableName="Credits" columnName="etape_courante"/>
+        </rollback>
+    </changeSet>
+
+    <!--
+        P12-001-B – Backfill legacy rows so they have a coherent etape_courante
+        even though they were created before this column existed.
+
+        Mapping:
+            STATUT = BROUILLON       → etape_courante = SAISIE
+            STATUT = SOUMIS          → etape_courante = COMPLETUDE
+            STATUT = VALIDE_AGENT    → etape_courante = COMITE
+            STATUT = VALIDE_COMITE   → etape_courante = DEBLOCAGE_PENDING
+            STATUT = DEBLOQUE        → etape_courante = DEBLOQUE
+            STATUT = SOLDE           → etape_courante = CLOTURE
+            STATUT = REJETE          → etape_courante = REJETE
+    -->
+    <changeSet id="P12-001-B-backfill-etape_courante" author="microfina-phase12">
+        <comment>Backfill etape_courante on existing credits based on legacy STATUT</comment>
+
+        <sql>
+UPDATE Credits SET etape_courante = 'SAISIE'             WHERE STATUT = 'BROUILLON'    AND etape_courante = 'SAISIE';
+UPDATE Credits SET etape_courante = 'COMPLETUDE'         WHERE STATUT = 'SOUMIS';
+UPDATE Credits SET etape_courante = 'COMITE'             WHERE STATUT = 'VALIDE_AGENT';
+UPDATE Credits SET etape_courante = 'DEBLOCAGE_PENDING'  WHERE STATUT = 'VALIDE_COMITE';
+UPDATE Credits SET etape_courante = 'DEBLOQUE'           WHERE STATUT = 'DEBLOQUE';
+UPDATE Credits SET etape_courante = 'CLOTURE'            WHERE STATUT = 'SOLDE';
+UPDATE Credits SET etape_courante = 'REJETE'             WHERE STATUT = 'REJETE';
+        </sql>
+
+        <rollback>
+            <sql>UPDATE Credits SET etape_courante = 'SAISIE'</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

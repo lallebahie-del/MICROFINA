@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ============================================================
+  MICROFINA++ – Phase 2: Member Management (Adhésion)
+  Master changelog – includes all Phase 2 change files in order.
+  Dependency order:
+    TIERS (root) → personne → membres → MembreGroupe → SIGNATAIRE
+    → COMPTEEPS → EPARGNE → EpargneGroupeDetail → ValeurFraisMembre
+  ============================================================
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!-- ── TIERS hierarchy (root first) ───────────────────── -->
+    <include file="db/changelog/phase-02-member-management/P2-001-CREATE-TABLE-TIERS.xml"/>
+    <include file="db/changelog/phase-02-member-management/P2-002-CREATE-TABLE-personne.xml"/>
+
+    <!-- ── Core member table ──────────────────────────────── -->
+    <include file="db/changelog/phase-02-member-management/P2-003-CREATE-TABLE-membres.xml"/>
+
+    <!-- ── TIERS subtypes that depend on membres ──────────── -->
+    <include file="db/changelog/phase-02-member-management/P2-004-CREATE-TABLE-MembreGroupe.xml"/>
+    <include file="db/changelog/phase-02-member-management/P2-005-CREATE-TABLE-SIGNATAIRE.xml"/>
+
+    <!-- ── Savings chain: account → movement → detail ─────── -->
+    <include file="db/changelog/phase-02-member-management/P2-006-CREATE-TABLE-COMPTEEPS.xml"/>
+    <include file="db/changelog/phase-02-member-management/P2-007-CREATE-TABLE-EPARGNE.xml"/>
+    <include file="db/changelog/phase-02-member-management/P2-008-CREATE-TABLE-EpargneGroupeDetail.xml"/>
+
+    <!-- ── Adhesion fee snapshot ──────────────────────────── -->
+    <include file="db/changelog/phase-02-member-management/P2-009-CREATE-TABLE-ValeurFraisMembre.xml"/>
+
+</databaseChangeLog>

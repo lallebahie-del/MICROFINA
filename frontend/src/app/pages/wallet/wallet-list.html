@@ -1,0 +1,126 @@
+<div class="wallet-container">
+
+  <!-- ── En-tête ───────────────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="header-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
+        <path d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+      </svg>
+      <span>Opérations Wallet Bankily</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn-primary" (click)="ouvrirDeblocage()">+ Déblocage</button>
+      <button class="btn-secondary" (click)="ouvrirRemboursement()">+ Remboursement</button>
+    </div>
+  </div>
+
+  <!-- ── Messages ──────────────────────────────────────────────────────────── -->
+  @if (success()) { <div class="alert alert-success">{{ success() }}</div> }
+  @if (error())   { <div class="alert alert-error">{{ error() }}</div> }
+
+  <!-- ── Filtres ───────────────────────────────────────────────────────────── -->
+  <div class="filters-bar">
+    <input class="filter-input" [(ngModel)]="filtreAgence" placeholder="Agence…"/>
+    <select class="filter-select" [(ngModel)]="filtreType">
+      <option value="">Tous les types</option>
+      @for (t of types; track t) { <option [value]="t">{{ t }}</option> }
+    </select>
+    <select class="filter-select" [(ngModel)]="filtreStatut">
+      <option value="">Tous les statuts</option>
+      @for (s of statuts; track s) { <option [value]="s">{{ s }}</option> }
+    </select>
+    <button class="btn-filter" (click)="onFilter()">Rechercher</button>
+    <button class="btn-reset"  (click)="onReset()">Réinitialiser</button>
+  </div>
+
+  <!-- ── Loading ───────────────────────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="state-loading"><div class="spinner"></div> Chargement…</div>
+  }
+
+  <!-- ── Tableau ───────────────────────────────────────────────────────────── -->
+  @if (!loading()) {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Référence MFI</th><th>Type</th><th>Téléphone</th>
+            <th class="num">Montant</th><th>Statut</th>
+            <th>Date</th><th>Membre</th><th>Crédit</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (op of operations(); track op.id) {
+            <tr>
+              <td class="mono">{{ op.referenceMfi }}</td>
+              <td><span class="type-badge" [class]="couleurType(op.typeOperation)">{{ op.typeOperation }}</span></td>
+              <td>{{ op.numeroTelephone }}</td>
+              <td class="num">{{ formatMontant(op.montant) }}</td>
+              <td><span class="badge" [class]="couleurStatut(op.statut)">{{ op.statut }}</span></td>
+              <td>{{ op.dateOperation }}</td>
+              <td class="mono">{{ op.numMembre ?? '—' }}</td>
+              <td class="mono">{{ op.idCredit ?? '—' }}</td>
+              <td class="actions">
+                @if (isEnAttente(op)) {
+                  <button class="btn-sm btn-refresh" (click)="rafraichir(op)" title="Rafraîchir statut">↻</button>
+                  <button class="btn-sm btn-cancel"  (click)="annuler(op)"    title="Annuler">✕</button>
+                }
+                @if (!isEnAttente(op)) {
+                  <span class="terminal">—</span>
+                }
+              </td>
+            </tr>
+          }
+          @if (operations().length === 0) {
+            <tr><td colspan="9" class="empty">Aucune opération wallet</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL — Initiation opération
+══════════════════════════════════════════════════════════════ -->
+@if (showModal) {
+  <div class="modal-overlay" (click)="fermerModal()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ modeModal === 'deblocage' ? 'Initier un déblocage wallet' : 'Initier un remboursement wallet' }}</h3>
+        <button class="modal-close" (click)="fermerModal()">✕</button>
+      </div>
+
+      @if (modalError) { <div class="alert alert-error">{{ modalError }}</div> }
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label>ID Crédit *</label>
+          <input type="number" [(ngModel)]="form.idCredit" placeholder="ex. 42"/>
+        </div>
+        <div class="form-group">
+          <label>Numéro de téléphone Bankily *</label>
+          <input type="text" [(ngModel)]="form.numeroTelephone" placeholder="+22222000001"/>
+        </div>
+        @if (modeModal === 'remboursement') {
+          <div class="form-group">
+            <label>Montant (MRU) *</label>
+            <input type="number" [(ngModel)]="form.montant" placeholder="ex. 5000" min="1"/>
+          </div>
+        }
+        <div class="form-group">
+          <label>Motif (optionnel)</label>
+          <input type="text" [(ngModel)]="form.motif" placeholder="Description de l'opération"/>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="fermerModal()">Annuler</button>
+        <button class="btn-primary" [disabled]="savingModal" (click)="soumettre()">
+          {{ savingModal ? 'Envoi…' : 'Confirmer' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

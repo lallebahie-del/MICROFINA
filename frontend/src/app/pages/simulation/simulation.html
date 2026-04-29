@@ -1,0 +1,58 @@
+<div class="page-container">
+  <div class="page-header"><h1>Simulateur de Crédit</h1></div>
+
+  <div class="form-card">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Montant principal (MRU)</label>
+        <input type="number" [(ngModel)]="montantPrincipal" class="form-input" min="1">
+      </div>
+      <div class="form-group">
+        <label>Taux annuel (%)</label>
+        <input type="number" [(ngModel)]="tauxAnnuel" class="form-input" min="0" step="0.1">
+      </div>
+      <div class="form-group">
+        <label>Nombre d'échéances</label>
+        <input type="number" [(ngModel)]="nombreEcheances" class="form-input" min="1">
+      </div>
+      <div class="form-group">
+        <label>Périodicité</label>
+        <select [(ngModel)]="periodicite" class="form-input">
+          @for (p of periodicites; track p) {
+            <option [value]="p">{{ p }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary" (click)="simuler()" [disabled]="loading()">
+      {{ loading() ? 'Calcul...' : 'Simuler' }}
+    </button>
+  </div>
+
+  @if (error()) { <div class="alert alert-danger">{{ error() }}</div> }
+
+  @if (result(); as r) {
+    <div class="result-summary">
+      <div class="summary-card"><span>Échéance</span><strong>{{ r.echeanceMensuelle | number:'1.2-2' }} MRU</strong></div>
+      <div class="summary-card"><span>Total remboursé</span><strong>{{ r.totalRembourse | number:'1.2-2' }} MRU</strong></div>
+      <div class="summary-card"><span>Total intérêts</span><strong>{{ r.totalInteret | number:'1.2-2' }} MRU</strong></div>
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr><th>#</th><th>Capital dû</th><th>Intérêts</th><th>Capital remboursé</th><th>Échéance</th></tr>
+      </thead>
+      <tbody>
+        @for (e of r.tableau; track e.numero) {
+          <tr>
+            <td>{{ e.numero }}</td>
+            <td>{{ e.capitalDu | number:'1.2-2' }}</td>
+            <td>{{ e.interet | number:'1.2-2' }}</td>
+            <td>{{ e.capitalRembourse | number:'1.2-2' }}</td>
+            <td><strong>{{ e.echeance | number:'1.2-2' }}</strong></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

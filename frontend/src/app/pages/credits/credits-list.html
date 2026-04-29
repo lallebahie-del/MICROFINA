@@ -1,0 +1,74 @@
+<div class="page-container">
+
+  <div class="page-header">
+    <h2 class="page-title">Crédits</h2>
+    <button class="btn btn-primary" (click)="nouveau()">+ Nouveau crédit</button>
+  </div>
+
+  <div class="filter-bar">
+    <input class="filter-input" type="text"
+           placeholder="Rechercher (N° crédit, membre, produit…)"
+           [(ngModel)]="search" (keyup.enter)="onSearch()"/>
+    <select class="filter-select" [(ngModel)]="statut" (change)="onSearch()">
+      <option value="">Tous les statuts</option>
+      <option *ngFor="let s of statuts" [value]="s">{{ s }}</option>
+    </select>
+    <input class="filter-input" type="text"
+           placeholder="N° membre"
+           [(ngModel)]="numMembre" (keyup.enter)="onSearch()"
+           style="max-width:160px"/>
+    <button class="btn btn-secondary" (click)="onSearch()">Rechercher</button>
+    <button class="btn btn-outline"   (click)="onReset()">Réinitialiser</button>
+  </div>
+
+  <div class="alert alert-error" *ngIf="error()">{{ error() }}</div>
+  <div class="loading-indicator" *ngIf="loading()">Chargement…</div>
+
+  <div class="table-wrapper" *ngIf="!loading() && result()">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>N° Crédit</th>
+          <th>Membre</th>
+          <th>Produit</th>
+          <th>Montant demandé</th>
+          <th>Montant accordé</th>
+          <th>Date demande</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let c of result()!.content">
+          <td class="mono">{{ c.numCredit }}</td>
+          <td>
+            <strong>{{ c.membreNom }} {{ c.membrePrenom }}</strong>
+            <div class="sub-text mono">{{ c.membreNum }}</div>
+          </td>
+          <td>{{ c.produitNom }}</td>
+          <td class="amount">{{ c.montantDemande | number:'1.0-0' }}</td>
+          <td class="amount">{{ c.montantAccorde | number:'1.0-0' }}</td>
+          <td>{{ c.dateDemande | date:'dd/MM/yyyy' }}</td>
+          <td><span [class]="badgeClass(c.statut!)">{{ c.statut }}</span></td>
+          <td class="actions-cell">
+            <button class="btn btn-sm btn-secondary" (click)="detail(c.idCredit!)">Détail</button>
+            <button class="btn btn-sm btn-primary"
+                    *ngIf="c.statut === 'BROUILLON'"
+                    (click)="soumettre(c)">Soumettre</button>
+          </td>
+        </tr>
+        <tr *ngIf="result()!.content.length === 0">
+          <td colspan="8" class="empty-row">Aucun crédit trouvé.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="pagination" *ngIf="result()!.totalPages > 1">
+      <button class="page-btn" [disabled]="page === 0" (click)="goPage(page - 1)">‹</button>
+      <button class="page-btn" *ngFor="let p of pages"
+              [class.active]="p === page" (click)="goPage(p)">{{ p + 1 }}</button>
+      <button class="page-btn" [disabled]="page >= result()!.totalPages - 1" (click)="goPage(page + 1)">›</button>
+      <span class="page-info">{{ result()!.totalElements }} résultat(s)</span>
+    </div>
+  </div>
+</div>

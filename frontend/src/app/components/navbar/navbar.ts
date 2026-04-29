@@ -1,4 +1,6 @@
 import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { AuthService } from '../../core/auth.service';
 
 interface SubMenuItem {
   label: string;
@@ -15,185 +17,20 @@ interface NavItem {
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './navbar.html',
   styleUrl: './navbar.css'
 })
 export class NavbarComponent {
-  navItems: NavItem[] = [
-    {
-      label: 'Client',
-      icon: 'person',
-      children: [
-        {
-          label: 'Enrolement',
-          icon: 'user-plus',
-          children: [
-            { label: 'Physique', icon: 'person' },
-            { label: 'Entreprise', icon: 'building' },
-            { label: 'Groupe', icon: 'group' }
-          ]
-        },
-        {
-          label: 'Visa',
-          icon: 'eye',
-          children: [
-            { label: 'Viser un client', icon: 'eye' },
-            { label: 'Modifier Frais', icon: 'edit' },
-            { label: 'client modifié', icon: 'document' }
-          ]
-        },
-        { label: 'Consulter client', icon: 'document' },
-        { label: 'Groupe solidaire', icon: 'group' },
-        { label: 'Nouveau prospect', icon: 'file' },
-        { label: 'Mise à jour d\'un client', icon: 'refresh' },
-        { label: 'Gestion des Procurations', icon: 'arrow', children: [] },
-        { label: 'Resilier Contrat', icon: 'document' },
-        { label: 'Gestion Photo/Signature', icon: 'camera' },
-        { label: 'Gestion Chequier', icon: 'book', children: [] },
-        { label: 'Gestion de transferts', icon: 'card' },
-        { label: 'Rapport', icon: 'report', children: [] }
-      ]
-    },
-    {
-      label: 'Part sociale',
-      icon: 'part',
-      children: [
-        {
-          label: 'Mouvement part sociale',
-          icon: 'refresh',
-          children: [
-            { label: 'Achat par virement', icon: 'card' },
-            { label: 'Retrait par virement', icon: 'cash' },
-            { label: 'Transfert', icon: 'arrow' }
-          ]
-        },
-        {
-          label: 'Transfert Part sociale',
-          icon: 'arrow',
-          children: [
-            { label: 'Visa', icon: 'eye' },
-            { label: 'Validation', icon: 'check' }
-          ]
-        },
-        {
-          label: 'Rapport',
-          icon: 'report',
-          children: [
-            { label: 'Rapport multicritère', icon: 'report' }
-          ]
-        }
-      ]
-    },
-    {
-      label: 'Banque',
-      icon: 'bank',
-      children: [
-        { label: 'Opération', icon: 'card' },
-        { label: 'Virement Prélèvement', icon: 'refresh' },
-        { label: 'Déblocage crédit', icon: 'credit' },
-        { label: 'Remboursement de crédit', icon: 'cash' },
-        {
-          label: 'Visa',
-          icon: 'eye',
-          children: [
-            { label: 'Encaissement Décaissement', icon: 'cash' },
-            { label: 'Virement Banque vers Caisse', icon: 'arrow' },
-            { label: 'Virement Banque Vers Banque', icon: 'bank' },
-            { label: 'Virement / Prélèvement', icon: 'refresh' }
-          ]
-        },
-        { label: 'Validation', icon: 'check', children: [] },
-        { label: 'Création banque', icon: 'bank', children: [] },
-        { label: 'Gestion Chèque Client', icon: 'document', children: [] },
-        { label: 'Gestion Chèque Institution', icon: 'document', children: [] },
-        { label: 'Emprunts bancaires', icon: 'document', children: [] },
-        { label: 'Emprunts DAT', icon: 'document', children: [] },
-        { label: 'Rapport', icon: 'report' }
-      ]
-    },
-    { label: 'Compte', icon: 'account' },
-    {
-      label: 'Caisse',
-      icon: 'cash',
-      children: [
-        { label: 'Opération', icon: 'card' },
-        { label: 'Billetage', icon: 'cash', children: [] },
-        { label: 'Transfert entre caisse', icon: 'refresh', children: [] },
-        { label: 'Valider opérations', icon: 'check', children: [] },
-        { label: 'Règlement facture espèce', icon: 'document' },
-        { label: 'Opérations mobile', icon: 'card', children: [] },
-        {
-          label: 'Rapport',
-          icon: 'report',
-          children: [
-            { label: 'Journal de Caisse', icon: 'report' },
-            { label: 'Journal administrateur', icon: 'report' }
-          ]
-        }
-      ]
-    },
-    {
-      label: 'Crédit',
-      icon: 'credit',
-      children: [
-        { label: 'Plan d\'amortissement', icon: 'table' },
-        { label: 'Analyse financière', icon: 'card', children: [] },
-        { label: 'Ligne de credit', icon: 'flag', children: [] },
-        { label: 'Achat crédit islamique', icon: 'cube' },
-        { label: 'Dossier de crédit', icon: 'cube' },
-        { label: 'Crédit mobile', icon: 'phone' },
-        { label: 'Suivi dossier credit', icon: 'flag', children: [] },
-        { label: 'Ajout / libérat° Caution et nantis', icon: 'table', children: [] },
-        { label: 'Consulter prêt', icon: 'book' },
-        { label: 'Document crédit', icon: 'document' },
-        { label: 'Report d\'écheance', icon: 'table', children: [] },
-        { label: 'Rééchelonnement crédit', icon: 'settings' },
-        { label: 'Affectation de dossier', icon: 'book' },
-        { label: 'Envoi notif. SMS', icon: 'table', children: [] },
-        { label: 'Liste rouge', icon: 'red-list' },
-        { label: 'Liste des cautions', icon: 'book' },
-        { label: 'Génération de balance agée', icon: 'refresh' },
-        { label: 'Déclassement / Provision crédit', icon: 'refresh' },
-        { label: 'Engagement par signature', icon: 'card', children: [] },
-        { label: 'Remboursement groupement', icon: 'group', children: [] }
-      ]
-    },
-    { label: 'Comptabilité', icon: 'table' },
-    { label: 'Budget', icon: 'table' },
-    { label: 'Autres', icon: 'more' },
-    {
-      label: 'Paramétrages',
-      icon: 'settings',
-      children: [
-        { label: 'Info de base', icon: 'document', children: [] },
-        { label: 'Produits', icon: 'document', children: [] },
-        { label: 'Comptabilité', icon: 'document', children: [] },
-        { label: 'Info société', icon: 'document' },
-        { label: 'Agence', icon: 'document', children: [] },
-        { label: 'Préferences', icon: 'document', children: [] },
-        { label: 'Facture', icon: 'document', children: [] },
-        { label: 'Virement Salaire', icon: 'document' },
-        { label: 'Plan Epargne', icon: 'document', children: [] },
-        { label: 'Change', icon: 'document', children: [] },
-        { label: 'Paramètre général', icon: 'document' }
-      ]
-    },
-    {
-      label: 'Administration',
-      icon: 'admin',
-      children: [
-        { label: 'Profil', icon: 'person', children: [] },
-        { label: 'Utilisateur', icon: 'person', children: [] },
-        { label: 'Guichet', icon: 'bank', children: [] },
-        { label: 'Exercice', icon: 'document', children: [] },
-        { label: 'Ouverture de journée', icon: 'document' },
-        { label: 'Affectation journée agence', icon: 'document' },
-        { label: 'Réouverture de journée', icon: 'document' },
-        { label: 'Rapport des transactions', icon: 'report' }
-      ]
-    }
-  ];
+
+  constructor(public authService: AuthService) {}
+
+  logout(): void {
+    this.authService.logout();
+  }
+  // Navigation principale gérée par la sidebar — la barre du haut ne contient
+  // plus que le branding, l'utilisateur courant et le bouton de déconnexion.
+  navItems: NavItem[] = [];
 
   iconPaths: Record<string, string> = {
     person: 'M12 12a4 4 0 100-8 4 4 0 000 8zm0 2c-4 0-7 2-7 5v1h14v-1c0-3-3-5-7-5z',

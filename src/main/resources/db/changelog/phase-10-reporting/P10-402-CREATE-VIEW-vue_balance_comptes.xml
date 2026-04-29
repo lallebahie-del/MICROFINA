@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P10-402 – vue_balance_comptes
+        ══════════════════════════════════════════════════════════════════════════
+        Balance des comptes du plan comptable général — une ligne par compte
+        et par agence.
+
+        Calculs :
+          total_debit    = ΣDébit de toutes les écritures du compte
+          total_credit   = ΣCrédit de toutes les écritures du compte
+          solde_debiteur = MAX(0, total_debit - total_credit)
+          solde_crediteur= MAX(0, total_credit - total_debit)
+          solde_net      = total_debit - total_credit
+                          (positif → solde débiteur, négatif → solde créditeur)
+
+        Table source : comptabilite (P1-017)
+          planComptable  — numéro de compte du plan comptable
+          DEBIT / CREDIT — montants de l'écriture
+          agence         — agence comptable (FK vers AGENCE.CODE_AGENCE)
+
+        Usage : état de balance avant inventaire, réconciliation BCM.
+        ══════════════════════════════════════════════════════════════════════════
+    -->
+
+    <changeSet id="P10-402-create-vue-balance-comptes" author="microfina">
+        <comment>
+            Balance des comptes par plan comptable et agence.
+            Utilisée pour la réconciliation comptable BCM.
+        </comment>
+
+        <createView viewName="vue_balance_comptes" replaceIfExists="true">
+            SELECT
+                /* ── Identification du compte ────────────────────────────── */
+                cpt.planComptable                               AS num_compte,
+                cpt.agence                                      AS code_agence,
+                ag.NOMAGENCE                                    AS nom_agence,
+
+                /* ── Cumuls ──────────────────────────────────────────────── */
+                COUNT(*)                                        AS nb_ecritures,
+                COALESCE(SUM(cpt.DEBIT),  0)                   AS total_debit,
+                COALESCE(SUM(cpt.CREDIT), 0)                   AS total_credit,
+
+                /* ── Soldes ──────────────────────────────────────────────── */
+                COALESCE(SUM(cpt.DEBIT),  0)
+                    - COALESCE(SUM(cpt.CREDIT), 0)             AS solde_net,
+
+                CASE
+                    WHEN COALESCE(SUM(cpt.DEBIT), 0)
+                         > COALESCE(SUM(cpt.CREDIT), 0)
+                    THEN COALESCE(SUM(cpt.DEBIT),  0)
+                         - COALESCE(SUM(cpt.CREDIT), 0)
+                    ELSE 0
+                END                                             AS solde_debiteur,
+
+                CASE
+                    WHEN COALESCE(SUM(cpt.CREDIT), 0)
+                         > COALESCE(SUM(cpt.DEBIT), 0)
+                    THEN COALESCE(SUM(cpt.CREDIT), 0)
+                         - COALESCE(SUM(cpt.DEBIT),  0)
+                    ELSE 0
+                END                                             AS solde_crediteur,
+
+                /* ── Fenêtre temporelle ──────────────────────────────────── */
+                MIN(cpt.DATEOPERATION)                         AS date_premiere_ecriture,
+                MAX(cpt.DATEOPERATION)                         AS date_derniere_ecriture
+
+            FROM comptabilite cpt
+
+            LEFT JOIN AGENCE ag
+                   ON ag.CODE_AGENCE = cpt.agence
+
+            WHERE cpt.planComptable IS NOT NULL
+
+            GROUP BY
+                cpt.planComptable,
+                cpt.agence,
+                ag.NOMAGENCE
+        </createView>
+
+        <rollback>
+            <dropView viewName="vue_balance_comptes"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

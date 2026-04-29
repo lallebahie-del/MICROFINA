@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P4-001 – Credits
+        Root credit loan table. Uses SINGLE_TABLE/JOINED inheritance:
+        CreditsGroupe extends this via a joined sub-table (P4-002).
+
+        FK dependencies (all pre-existing):
+          membres     (NUM_MEMBRE)    – Phase 2
+          produitcredit (NUMPRODUIT)  – Phase 3
+          AGENCE      (CODE_AGENCE)   – Phase 1
+          mode_de_calcul_interet (CODEMODE) – Phase 1
+
+        DDL source of truth: Phase 4 spec – Section 8 (Mise en place de crédits).
+    -->
+
+    <!-- ═══════════════════════════════════════════════════════
+         1. Create table
+         ═══════════════════════════════════════════════════════ -->
+    <changeSet id="P4-001-create-Credits" author="microfina">
+
+        <createTable tableName="Credits">
+
+            <!-- ── PK ──────────────────────────────────────────────── -->
+            <column name="IDCREDIT" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"
+                             primaryKeyName="PK_Credits"
+                             nullable="false"/>
+            </column>
+
+            <!-- ── Inheritance discriminator ───────────────────────── -->
+            <!-- "Credits" | "CreditsGroupe" -->
+            <column name="DTYPE" type="NVARCHAR(31)" defaultValue="Credits">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- ── Business key ─────────────────────────────────────── -->
+            <!-- Human-readable credit reference, e.g. CR-2024-00123 -->
+            <column name="NUMCREDIT" type="NVARCHAR(25)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Lifecycle status ──────────────────────────────────── -->
+            <!-- DRAFT | SUBMITTED | VALIDATED | DISBURSED | CLOSED -->
+            <column name="STATUT" type="NVARCHAR(20)" defaultValue="DRAFT">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- ── Amounts ───────────────────────────────────────────── -->
+            <!-- Amount requested by the member -->
+            <column name="MONTANT_DEMANDE" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Amount approved by the committee -->
+            <column name="MONTANT_ACCORDE" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Amount actually disbursed (may differ from MONTANT_ACCORDE) -->
+            <column name="MONTANT_DEBLOQUER" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Current outstanding balances ─────────────────────── -->
+            <column name="SOLDE_CAPITAL"   type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="SOLDE_INTERET"   type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="SOLDE_PENALITE"  type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Interest / fee rates ──────────────────────────────── -->
+            <column name="TAUX_INTERET"    type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="TAUX_PENALITE"   type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="TAUX_COMMISSION" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="TAUX_ASSURANCE"  type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Schedule parameters ───────────────────────────────── -->
+            <!-- Total loan duration in the unit of PERIODICITE -->
+            <column name="DUREE"            type="INT">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Number of repayment instalments -->
+            <column name="NOMBRE_ECHEANCE"  type="INT">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Grace period length (same unit as PERIODICITE) -->
+            <column name="DELAI_GRACE"      type="INT">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- M=Monthly, W=Weekly, Q=Fortnightly, T=Quarterly, A=Annual -->
+            <column name="PERIODICITE"      type="NVARCHAR(10)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Key dates ─────────────────────────────────────────── -->
+            <column name="DATE_DEMANDE"     type="DATE">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="DATE_ACCORD"      type="DATE">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Date the loan was actually disbursed -->
+            <column name="DATE_DEBLOCAGE"   type="DATE">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- First instalment due date -->
+            <column name="DATE_PREMIERE_ECHEANCE" type="DATE">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Final maturity date -->
+            <column name="DATE_ECHEANCE"    type="DATE">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Date the credit was fully settled / closed -->
+            <column name="DATE_CLOTURE"     type="DATE">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Descriptive / classification fields ───────────────── -->
+            <column name="OBJET_CREDIT"     type="NVARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Credit object / sector code (links to PRODUIT_CREDIT_AGENCE.CODE_OBJET_CREDIT) -->
+            <column name="CODE_OBJET_CREDIT" type="NVARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Progressive / solidarity cycle counter -->
+            <column name="NUMEROCYCLE"      type="INT">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Rank within the member's credit history for this product -->
+            <column name="RANG_CREDIT"      type="INT">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Accounting reference ──────────────────────────────── -->
+            <column name="COMPTE_COMPTABLE" type="NVARCHAR(30)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- 1 = detail breakdown validated by accountant -->
+            <column name="DETAILOK"         type="INT" defaultValueNumeric="0">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Audit ─────────────────────────────────────────────── -->
+            <column name="utilisateur"      type="NVARCHAR(48)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Optimistic lock ───────────────────────────────────── -->
+            <column name="VERSION"          type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+
+        <!-- Business-key uniqueness -->
+        <addUniqueConstraint
+            tableName      = "Credits"
+            columnNames    = "NUMCREDIT"
+            constraintName = "UQ_Credits_NUMCREDIT"/>
+
+        <rollback>
+            <dropTable tableName="Credits"/>
+        </rollback>
+
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════
+         2. FK → membres
+         ═══════════════════════════════════════════════════════ -->
+    <changeSet id="P4-001-fk-Credits-membres" author="microfina">
+
+        <addColumn tableName="Credits">
+            <column name="nummembre" type="NVARCHAR(25)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addForeignKeyConstraint
+            constraintName        = "FK_Credits_membres"
+            baseTableName         = "Credits"
+            baseColumnNames       = "nummembre"
+            referencedTableName   = "membres"
+            referencedColumnNames = "NUM_MEMBRE"
+            onDelete                 = "NO ACTION"
+            onUpdate              = "NO ACTION"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="Credits"
+                                      constraintName="FK_Credits_membres"/>
+            <dropColumn tableName="Credits" columnName="nummembre"/>
+        </rollback>
+
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════
+         3. FK → produitcredit
+         ═══════════════════════════════════════════════════════ -->
+    <changeSet id="P4-001-fk-Credits-produitcredit" author="microfina">
+
+        <addColumn tableName="Credits">
+            <column name="numproduit" type="NVARCHAR(20)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addForeignKeyConstraint
+            constraintName        = "FK_Credits_produitcredit"
+            baseTableName         = "Credits"
+            baseColumnNames       = "numproduit"
+            referencedTableName   = "produitcredit"
+            referencedColumnNames = "NUMPRODUIT"
+            onDelete                 = "NO ACTION"
+            onUpdate              = "NO ACTION"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="Credits"
+                                      constraintName="FK_Credits_produitcredit"/>
+            <dropColumn tableName="Credits" columnName="numproduit"/>
+        </rollback>
+
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════
+         4. FK → AGENCE
+         ═══════════════════════════════════════════════════════ -->
+    <changeSet id="P4-001-fk-Credits-agence" author="microfina">
+
+        <addColumn tableName="Credits">
+            <column name="agence" type="NVARCHAR(25)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addForeignKeyConstraint
+            constraintName        = "FK_Credits_AGENCE"
+            baseTableName         = "Credits"
+            baseColumnNames       = "agence"
+            referencedTableName   = "AGENCE"
+            referencedColumnNames = "CODE_AGENCE"
+            onDelete                 = "NO ACTION"
+            onUpdate              = "NO ACTION"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="Credits"
+                                      constraintName="FK_Credits_AGENCE"/>
+            <dropColumn tableName="Credits" columnName="agence"/>
+        </rollback>
+
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════
+         5. FK → mode_de_calcul_interet
+         ═══════════════════════════════════════════════════════ -->
+    <changeSet id="P4-001-fk-Credits-modeinteret" author="microfina">
+
+        <addColumn tableName="Credits">
+            <column name="codemode" type="BIGINT">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addForeignKeyConstraint
+            constraintName        = "FK_Credits_mode_de_calcul_interet"
+            baseTableName         = "Credits"
+            baseColumnNames       = "codemode"
+            referencedTableName   = "mode_de_calcul_interet"
+            referencedColumnNames = "CODEMODE"
+            onDelete                 = "NO ACTION"
+            onUpdate              = "NO ACTION"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="Credits"
+                                      constraintName="FK_Credits_mode_de_calcul_interet"/>
+            <dropColumn tableName="Credits" columnName="codemode"/>
+        </rollback>
+
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════
+         6. FK → AgentCredit (loan officer)
+         ═══════════════════════════════════════════════════════ -->
+    <changeSet id="P4-001-fk-Credits-agentcredit" author="microfina">
+
+        <addColumn tableName="Credits">
+            <column name="agentcredit" type="NVARCHAR(25)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addForeignKeyConstraint
+            constraintName        = "FK_Credits_AgentCredit"
+            baseTableName         = "Credits"
+            baseColumnNames       = "agentcredit"
+            referencedTableName   = "AGENT_CREDIT"
+            referencedColumnNames = "CODE_AGENT"
+            onDelete              = "SET NULL"
+            onUpdate="NO ACTION"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="Credits"
+                                      constraintName="FK_Credits_AgentCredit"/>
+            <dropColumn tableName="Credits" columnName="agentcredit"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

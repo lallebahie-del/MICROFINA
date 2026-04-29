@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  changelog-phase-10-reporting.xml — Sous-changelog Phase 10.4 (Vues de reporting BCM)
+  ─────────────────────────────────────────────────────────────────────────────────────
+  Neuf vues SQL Server de reporting réglementaire et de gestion :
+
+    P10-401  vue_etat_credits            — Portefeuille crédit complet (PAR + garanties)
+    P10-402  vue_balance_comptes         — Balance des comptes du plan comptable
+    P10-403  vue_journal_comptable       — Journal des écritures enrichi
+    P10-404  vue_bilan                   — Bilan simplifié par classe de compte
+    P10-405  vue_compte_resultat         — Compte de résultat mensuel par agence
+    P10-406  vue_tableau_financement     — Tableau de financement quotidien (flux)
+    P10-407  vue_ratios_bcm             — Ratios prudentiels BCM par agence
+    P10-408  vue_indicateurs_performance — KPIs opérationnels par agence
+    P10-409  vue_liste_clients           — Fiche client consolidée par membre
+
+  RÈGLE D'USAGE :
+    Toutes ces vues s'appuient sur vue_garanties_unifiee (P10-001d) et/ou
+    vue_par_bcm (P5-001). Ces deux vues doivent être déployées AVANT ce changelog.
+    L'ordre dans db.changelog-master.xml garantit cette contrainte :
+      phase-05-reporting → phase-10-referentiel → phase-10-reporting
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!-- ── P10-401 : Portefeuille crédit ── -->
+    <include file="db/changelog/phase-10-reporting/P10-401-CREATE-VIEW-vue_etat_credits.xml"/>
+
+    <!-- ── P10-402 : Balance comptable ── -->
+    <include file="db/changelog/phase-10-reporting/P10-402-CREATE-VIEW-vue_balance_comptes.xml"/>
+
+    <!-- ── P10-403 : Journal comptable enrichi ── -->
+    <include file="db/changelog/phase-10-reporting/P10-403-CREATE-VIEW-vue_journal_comptable.xml"/>
+
+    <!-- ── P10-404 : Bilan simplifié ── -->
+    <include file="db/changelog/phase-10-reporting/P10-404-CREATE-VIEW-vue_bilan.xml"/>
+
+    <!-- ── P10-405 : Compte de résultat ── -->
+    <include file="db/changelog/phase-10-reporting/P10-405-CREATE-VIEW-vue_compte_resultat.xml"/>
+
+    <!-- ── P10-406 : Tableau de financement ── -->
+    <include file="db/changelog/phase-10-reporting/P10-406-CREATE-VIEW-vue_tableau_financement.xml"/>
+
+    <!-- ── P10-407 : Ratios BCM ── -->
+    <include file="db/changelog/phase-10-reporting/P10-407-CREATE-VIEW-vue_ratios_bcm.xml"/>
+
+    <!-- ── P10-408 : Indicateurs de performance ── -->
+    <include file="db/changelog/phase-10-reporting/P10-408-CREATE-VIEW-vue_indicateurs_performance.xml"/>
+
+    <!-- ── P10-409 : Liste clients consolidée ── -->
+    <include file="db/changelog/phase-10-reporting/P10-409-CREATE-VIEW-vue_liste_clients.xml"/>
+
+</databaseChangeLog>

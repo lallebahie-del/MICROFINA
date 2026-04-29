@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P4-005 – Amortp (Amortissement / Repayment Schedule)
+        THE most important table for the credit repayment flow.
+
+        One row per instalment for a credit loan, generated at disbursement
+        time by AmortissementService. Each row is updated in-place as
+        Reglement rows are posted against it (via detail_reglement).
+
+        Unique constraint: one instalment row per (IDCREDIT, NUMECHEANCE).
+
+        FK dependencies:
+          Credits (IDCREDIT) – P4-001
+        DDL source of truth: Phase 4 spec – Section 10 (tableau d'amortissement).
+    -->
+    <changeSet id="P4-005-create-Amortp" author="microfina">
+
+        <createTable tableName="Amortp">
+
+            <!-- PK -->
+            <column name="IDAMORTP" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"
+                             primaryKeyName="PK_Amortp"
+                             nullable="false"/>
+            </column>
+
+            <!-- ── Instalment identity ──────────────────────────────── -->
+            <!-- Sequential instalment number (1 = first, N = last) -->
+            <column name="NUMECHEANCE" type="INT">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Scheduled due date for this instalment -->
+            <column name="DATE_ECHEANCE" type="DATE">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Actual payment date (NULL until settled) -->
+            <column name="DATE_REGLEMENT" type="DATE">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Scheduled amounts (set at generation time) ─────────
+                 All DECIMAL(19,4) as required.                          -->
+
+            <!-- Principal portion due this period -->
+            <column name="CAPITAL" type="DECIMAL(19,4)">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Interest portion due this period -->
+            <column name="INTERET" type="DECIMAL(19,4)">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Late-payment penalties accrued on this instalment -->
+            <column name="PENALITE" type="DECIMAL(19,4)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Insurance premium portion due this period -->
+            <column name="ASSURANCE" type="DECIMAL(19,4)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Commission portion due this period -->
+            <column name="COMMISSION" type="DECIMAL(19,4)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- CAPITAL + INTERET + PENALITE + ASSURANCE + COMMISSION -->
+            <column name="TOTAL_ECHEANCE" type="DECIMAL(19,4)">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Outstanding (declining) principal balance AFTER this instalment -->
+            <column name="SOLDE_CAPITAL" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Amounts actually settled (updated by Reglement) ─────
+                 These start at 0 and are incremented as payments arrive.  -->
+
+            <column name="CAPITAL_REMBOURSE"   type="DECIMAL(19,4)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="INTERET_REMBOURSE"   type="DECIMAL(19,4)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="PENALITE_REGLEE"     type="DECIMAL(19,4)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="ASSURANCE_REGLEE"    type="DECIMAL(19,4)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="COMMISSION_REGLEE"   type="DECIMAL(19,4)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- ── Instalment status ────────────────────────────────── -->
+            <!-- EN_ATTENTE | EN_RETARD | PARTIELLEMENT_REGLE | REGLE -->
+            <column name="STATUT_ECHEANCE" type="NVARCHAR(25)" defaultValue="EN_ATTENTE">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- ── Optimistic lock ───────────────────────────────────── -->
+            <column name="VERSION" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="Amortp"/>
+        </rollback>
+
+    </changeSet>
+
+    <!-- FK + unique constraint + index (all in one changeSet for atomicity) -->
+    <changeSet id="P4-005-fk-uq-Amortp" author="microfina">
+
+        <addColumn tableName="Amortp">
+            <column name="idcredit" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <!-- One instalment number per credit -->
+        <addUniqueConstraint
+            tableName      = "Amortp"
+            columnNames    = "idcredit, NUMECHEANCE"
+            constraintName = "UQ_Amortp_credit_echeance"/>
+
+        <!-- Clustered-friendly index: fetch all instalments for a credit -->
+        <createIndex tableName="Amortp" indexName="IDX_Amortp_idcredit_NUMECHEANCE">
+            <column name="idcredit"/>
+            <column name="NUMECHEANCE"/>
+        </createIndex>
+
+        <addForeignKeyConstraint
+            constraintName        = "FK_Amortp_Credits"
+            baseTableName         = "Amortp"
+            baseColumnNames       = "idcredit"
+            referencedTableName   = "Credits"
+            referencedColumnNames = "IDCREDIT"
+            onDelete              = "CASCADE"
+            onUpdate="NO ACTION"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="Amortp"
+                                      constraintName="FK_Amortp_Credits"/>
+            <dropIndex tableName="Amortp"
+                       indexName="IDX_Amortp_idcredit_NUMECHEANCE"/>
+            <dropUniqueConstraint tableName="Amortp"
+                                  constraintName="UQ_Amortp_credit_echeance"/>
+            <dropColumn tableName="Amortp" columnName="idcredit"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,39 @@
+<div class="page-container">
+  <h2 class="page-title">Opérations bancaires</h2>
+
+  <div class="filters">
+    <input type="text" [(ngModel)]="agenceFilter" placeholder="Agence" class="form-control" />
+    <button (click)="load()" class="btn btn-primary">Filtrer</button>
+  </div>
+
+  <div *ngIf="loading" class="loading">Chargement…</div>
+
+  <table *ngIf="!loading && operations.length > 0" class="table">
+    <thead>
+      <tr>
+        <th>ID</th><th>Type</th><th>Montant</th><th>Devise</th>
+        <th>Date</th><th>Banque</th><th>Réf. virement</th><th>Statut</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let op of operations">
+        <td>{{ op.id }}</td>
+        <td>{{ op.typeOperation }}</td>
+        <td class="montant">{{ op.montant | number:'1.2-2' }}</td>
+        <td>{{ op.devise }}</td>
+        <td>{{ op.dateOperation }}</td>
+        <td>{{ op.codeBanque ?? '—' }}</td>
+        <td>{{ op.referenceVirement ?? '—' }}</td>
+        <td><span class="badge">{{ op.statut }}</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="totalPages > 1" class="pagination">
+    <button (click)="prev()" [disabled]="page === 0" class="btn btn-sm btn-secondary">‹ Précédent</button>
+    <span>Page {{ page + 1 }} / {{ totalPages }}</span>
+    <button (click)="next()" [disabled]="page >= totalPages - 1" class="btn btn-sm btn-secondary">Suivant ›</button>
+  </div>
+
+  <p *ngIf="!loading && operations.length === 0" class="empty-state">Aucune opération bancaire.</p>
+</div>

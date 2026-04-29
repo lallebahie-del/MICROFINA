@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        Phase 5 – Reporting & Finalisation
+        Chapter 4: États BCM, Grand Livre, Clôture Journalière.
+
+        Execution order (dependency-safe):
+          P5-001  vue_par_bcm          – VIEW  deps: Credits, membres, AGENCE, Amortp
+          P5-002  vue_grand_livre      – VIEW  deps: comptabilite, Reglement, Credits
+          P5-003  cloture_journaliere  – TABLE deps: AGENCE
+    -->
+
+    <include file="db/changelog/phase-05-reporting/P5-001-CREATE-VIEW-vue_par_bcm.xml"
+/>
+
+    <include file="db/changelog/phase-05-reporting/P5-002-CREATE-VIEW-vue_grand_livre.xml"
+/>
+
+    <include file="db/changelog/phase-05-reporting/P5-003-CREATE-TABLE-cloture_journaliere.xml"
+/>
+
+</databaseChangeLog>

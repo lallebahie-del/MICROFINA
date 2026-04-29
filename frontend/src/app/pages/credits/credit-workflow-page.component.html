@@ -1,0 +1,154 @@
+<div class="page-container">
+
+  <div class="page-header">
+    <button class="btn btn-secondary" (click)="retourListe()">← Retour</button>
+    <h1>Workflow crédit
+      <span *ngIf="credit?.numCredit"> — {{ credit!.numCredit }}</span>
+    </h1>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+  <div *ngIf="loading" class="loading">Chargement…</div>
+
+  <!-- ── Résumé crédit ── -->
+  <div *ngIf="credit" class="card mb-3">
+    <div class="card-body row">
+      <div class="col">
+        <strong>Membre :</strong> {{ credit.membreNom }} {{ credit.membrePrenom }} ({{ credit.membreNum }})
+      </div>
+      <div class="col">
+        <strong>Montant demandé :</strong> {{ credit.montantDemande | number:'1.0-0' }} MRU
+      </div>
+      <div class="col">
+        <strong>Statut :</strong> {{ credit.statut }}
+      </div>
+      <div class="col">
+        <strong>Étape :</strong>
+        <span class="badge"
+              [class.badge-success]="etapeCourante === 'DEBLOQUE'"
+              [class.badge-danger]="etapeCourante === 'REJETE'"
+              [class.badge-warning]="etapeCourante !== 'DEBLOQUE' && etapeCourante !== 'REJETE'">
+          {{ etapeLabel(etapeCourante) }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Timeline verticale ── -->
+  <div class="workflow-timeline">
+    <div *ngFor="let etape of ETAPES" class="timeline-step"
+         [class.completed]="isComplete(etape)"
+         [class.current]="isCurrent(etape)"
+         [class.rejected]="etape === 'REJETE' && etapeCourante === 'REJETE'">
+      <div class="step-indicator">
+        <span *ngIf="isComplete(etape)">✓</span>
+        <span *ngIf="isCurrent(etape)">●</span>
+        <span *ngIf="!isComplete(etape) && !isCurrent(etape)">○</span>
+      </div>
+      <div class="step-content">
+        <div class="step-label">{{ etapeLabel(etape) }}</div>
+        <div *ngIf="histFor(etape) as h" class="step-meta">
+          <small>{{ h.dateVisa }} — {{ h.utilisateur }} — {{ h.decision }}</small>
+          <small *ngIf="h.commentaire"> — {{ h.commentaire }}</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Action bouton ── -->
+  <div class="action-zone mt-4" *ngIf="credit">
+    <ng-container [ngSwitch]="etapeCourante">
+      <button *ngSwitchCase="'SAISIE'"              class="btn btn-primary" (click)="openModal('soumettre')">Soumettre le dossier</button>
+      <button *ngSwitchCase="'COMPLETUDE'"          class="btn btn-primary" (click)="openModal('completude')">Valider la complétude</button>
+      <button *ngSwitchCase="'ANALYSE_FINANCIERE'"  class="btn btn-primary" (click)="openModal('analyse')">Saisir l'analyse financière</button>
+      <button *ngSwitchCase="'VISA_RC'"             class="btn btn-primary" (click)="openModal('visa-rc')">Visa Responsable Crédit</button>
+      <ng-container *ngSwitchCase="'COMITE'">
+        <button class="btn btn-success me-2" (click)="openModal('comite-approuver')">Approuver (Comité)</button>
+        <button class="btn btn-danger"       (click)="openModal('comite-rejeter')">Rejeter (Comité)</button>
+      </ng-container>
+      <button *ngSwitchCase="'VISA_SF'"             class="btn btn-primary" (click)="openModal('visa-sf')">Visa Service Financier</button>
+      <button *ngSwitchCase="'DEBLOCAGE_PENDING'"   class="btn btn-success" (click)="openModal('debloquer')">Débloquer le crédit</button>
+      <span   *ngSwitchCase="'DEBLOQUE'"            class="badge badge-success">Crédit débloqué</span>
+      <span   *ngSwitchCase="'CLOTURE'"             class="badge badge-secondary">Crédit clôturé</span>
+      <span   *ngSwitchCase="'REJETE'"              class="badge badge-danger">Crédit rejeté</span>
+    </ng-container>
+
+    <!-- Bouton Rejeter générique (toutes étapes actives sauf terminales) -->
+    <button *ngIf="!['DEBLOQUE','CLOTURE','REJETE'].includes(etapeCourante)"
+            class="btn btn-outline-danger ms-3" (click)="openModal('rejeter')">
+      Rejeter le dossier
+    </button>
+  </div>
+
+  <!-- ── Analyse financière résumé ── -->
+  <div *ngIf="analyse" class="card mt-4">
+    <div class="card-header"><strong>Analyse financière</strong></div>
+    <div class="card-body row">
+      <div class="col">Revenus mensuels : {{ analyse.revenusMensuels | number:'1.0-2' }} MRU</div>
+      <div class="col">Charges mensuelles : {{ analyse.chargesMensuelles | number:'1.0-2' }} MRU</div>
+      <div class="col">Capacité : {{ analyse.capaciteRemboursement | number:'1.0-2' }} MRU</div>
+      <div class="col">Ratio endettement : {{ (analyse.ratioEndettement * 100) | number:'1.1-1' }}%</div>
+    </div>
+  </div>
+
+  <!-- ── Modal ── -->
+  <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h5>{{ modalType | titlecase }}</h5>
+        <button class="btn-close" (click)="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Analyse financière form -->
+        <ng-container *ngIf="modalType === 'analyse'">
+          <label>Revenus mensuels *</label>
+          <input type="number" class="form-control" [(ngModel)]="revenusMensuels" />
+          <label>Charges mensuelles *</label>
+          <input type="number" class="form-control" [(ngModel)]="chargesMensuelles" />
+          <label>Total actif</label>
+          <input type="number" class="form-control" [(ngModel)]="totalActif" />
+          <label>Total passif</label>
+          <input type="number" class="form-control" [(ngModel)]="totalPassif" />
+          <label>Avis agent</label>
+          <select class="form-control" [(ngModel)]="avisAgent">
+            <option value="">--</option>
+            <option value="FAVORABLE">Favorable</option>
+            <option value="DEFAVORABLE">Défavorable</option>
+            <option value="RESERVE">Réservé</option>
+          </select>
+        </ng-container>
+
+        <!-- Déblocage form -->
+        <ng-container *ngIf="modalType === 'debloquer'">
+          <label>Montant déblocage *</label>
+          <input type="number" class="form-control" [(ngModel)]="montantDeblocage" />
+          <label>Date 1ère échéance *</label>
+          <input type="date" class="form-control" [(ngModel)]="datePremiereEcheance" />
+          <label>Périodicité *</label>
+          <select class="form-control" [(ngModel)]="periodicite">
+            <option value="MENSUEL">Mensuel</option>
+            <option value="TRIMESTRIEL">Trimestriel</option>
+            <option value="SEMESTRIEL">Semestriel</option>
+            <option value="ANNUEL">Annuel</option>
+          </select>
+          <label>Nombre d'échéances *</label>
+          <input type="number" class="form-control" [(ngModel)]="nombreEcheance" />
+          <label>Délai de grâce</label>
+          <input type="number" class="form-control" [(ngModel)]="delaiGrace" />
+        </ng-container>
+
+        <!-- Commentaire pour toutes les autres actions -->
+        <ng-container *ngIf="modalType !== 'analyse' && modalType !== 'debloquer' && modalType !== 'soumettre'">
+          <label>Commentaire</label>
+          <textarea class="form-control" rows="3" [(ngModel)]="commentaire"></textarea>
+        </ng-container>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+        <button class="btn btn-primary"   (click)="executeAction()">Confirmer</button>
+      </div>
+    </div>
+  </div>
+
+</div>

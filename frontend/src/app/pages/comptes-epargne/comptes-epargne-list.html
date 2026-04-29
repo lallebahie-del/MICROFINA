@@ -1,0 +1,40 @@
+<div class="page-container">
+  <h2 class="page-title">Comptes épargne</h2>
+
+  <div class="filters">
+    <input type="text" [(ngModel)]="agenceFilter" placeholder="Agence" class="form-control" />
+    <button (click)="load()" class="btn btn-primary">Filtrer</button>
+  </div>
+
+  <div *ngIf="loading" class="loading">Chargement…</div>
+
+  <table *ngIf="!loading && comptes.length > 0" class="table">
+    <thead>
+      <tr>
+        <th>N° Compte</th><th>Membre</th><th>Solde (MRU)</th>
+        <th>Taux (%)</th><th>Date ouv.</th><th>Statut</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let c of comptes">
+        <td>{{ c.numCompte }}</td>
+        <td>{{ c.nomMembre ?? c.numMembre }}</td>
+        <td class="montant">{{ c.solde | number:'1.2-2' }}</td>
+        <td>{{ c.tauxInteret }}</td>
+        <td>{{ c.dateOuverture }}</td>
+        <td>
+          <span [class]="c.statut === 'ACTIF' ? 'badge badge-success' : 'badge badge-danger'">
+            {{ c.statut }}
+          </span>
+        </td>
+        <td>
+          <button *ngIf="c.statut === 'ACTIF'" (click)="bloquer(c.id)" class="btn btn-sm btn-warning">
+            Bloquer
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p *ngIf="!loading && comptes.length === 0" class="empty-state">Aucun compte épargne.</p>
+</div>

@@ -1,0 +1,45 @@
+<div class="page-container">
+  <h2 class="page-title">Bilan simplifié</h2>
+
+  <div *ngIf="loading" class="loading">Chargement…</div>
+
+  <div *ngIf="!loading" class="bilan-grid">
+    <div class="bilan-col">
+      <h3>ACTIF</h3>
+      <table class="table">
+        <thead><tr><th>Poste</th><th>Montant (MRU)</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let l of actif">
+            <td>{{ l.libellePoste }}</td>
+            <td class="montant">{{ l.montant | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td>Total Actif</td>
+            <td class="montant">{{ total(actif) | number:'1.2-2' }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="bilan-col">
+      <h3>PASSIF</h3>
+      <table class="table">
+        <thead><tr><th>Poste</th><th>Montant (MRU)</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let l of passif">
+            <td>{{ l.libellePoste }}</td>
+            <td class="montant">{{ l.montant | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td>Total Passif</td>
+            <td class="montant">{{ total(passif) | number:'1.2-2' }}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>

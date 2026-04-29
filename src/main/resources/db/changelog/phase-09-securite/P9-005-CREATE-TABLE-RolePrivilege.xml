@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P9-005-create-RolePrivilege" author="microfina">
+        <comment>Create RolePrivilege join table – composite PK linking Role and Privilege</comment>
+
+        <createTable tableName="RolePrivilege">
+            <column name="id_role" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="id_privilege" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey
+            tableName="RolePrivilege"
+            columnNames="id_role, id_privilege"
+            constraintName="PK_RolePrivilege"/>
+
+        <addForeignKeyConstraint
+            baseTableName="RolePrivilege"
+            baseColumnNames="id_role"
+            referencedTableName="Role"
+            referencedColumnNames="id"
+            constraintName="FK_RolePrivilege_Role"
+            onDelete="CASCADE"
+            onUpdate="CASCADE"/>
+
+        <addForeignKeyConstraint
+            baseTableName="RolePrivilege"
+            baseColumnNames="id_privilege"
+            referencedTableName="Privilege"
+            referencedColumnNames="id"
+            constraintName="FK_RolePrivilege_Privilege"
+            onDelete="CASCADE"
+            onUpdate="CASCADE"/>
+
+        <rollback>
+            <dropAllForeignKeyConstraints baseTableName="RolePrivilege"/>
+            <dropTable tableName="RolePrivilege"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
