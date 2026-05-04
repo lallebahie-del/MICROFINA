@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { Observable } from 'rxjs';
 import { CreditWorkflowService } from '../../services/credit-workflow.service';
 import { CreditsService, Credit } from '../../services/credits.service';
 import {
@@ -13,7 +14,7 @@ import {
   AnalyseFinanciereCreateRequest,
   DeblocageRequest,
 } from '../../models/credit-workflow.model';
-
+ 
 @Component({
   selector: 'app-credit-workflow-page',
   standalone: true,
@@ -21,19 +22,19 @@ import {
   templateUrl: './credit-workflow-page.component.html',
 })
 export class CreditWorkflowPageComponent implements OnInit {
-
+ 
   readonly ETAPES: Etape[] = [
     'SAISIE','COMPLETUDE','ANALYSE_FINANCIERE','VISA_RC',
     'COMITE','VISA_SF','DEBLOCAGE_PENDING','DEBLOQUE','CLOTURE','REJETE'
   ];
-
+ 
   creditId!: number;
   credit: Credit | null = null;
   timeline: WorkflowTimelineEntry[] = [];
   analyse: AnalyseFinanciereDTO | null = null;
   error: string | null = null;
   loading = false;
-
+ 
   // Modal state
   showModal = false;
   modalType: string = '';
@@ -50,21 +51,21 @@ export class CreditWorkflowPageComponent implements OnInit {
   periodicite = 'MENSUEL';
   nombreEcheance: number | null = null;
   delaiGrace: number | null = null;
-
+ 
   etapeLabel = etapeLabel;
-
+ 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private workflowSvc: CreditWorkflowService,
     private creditsSvc: CreditsService,
   ) {}
-
+ 
   ngOnInit(): void {
     this.creditId = Number(this.route.snapshot.paramMap.get('id'));
     this.charger();
   }
-
+ 
   charger(): void {
     this.loading = true;
     this.creditsSvc.getOne(this.creditId).subscribe({
@@ -83,40 +84,40 @@ export class CreditWorkflowPageComponent implements OnInit {
       error: () => this.analyse = null
     });
   }
-
+ 
   get etapeCourante(): Etape {
     return ((this.credit as any)?.etapeCourante ?? 'SAISIE') as Etape;
   }
-
+ 
   isComplete(etape: Etape): boolean {
     const idx = this.ETAPES.indexOf(etape);
     const cur = this.ETAPES.indexOf(this.etapeCourante);
     if (this.etapeCourante === 'REJETE') return false;
     return idx < cur;
   }
-
+ 
   isCurrent(etape: Etape): boolean {
     return etape === this.etapeCourante;
   }
-
+ 
   histFor(etape: Etape): WorkflowTimelineEntry | undefined {
     return this.timeline.find(t => t.etape === etape || t.etape?.startsWith(etape));
   }
-
+ 
   openModal(type: string): void {
     this.modalType = type;
     this.commentaire = '';
     this.showModal = true;
   }
-
+ 
   closeModal(): void {
     this.showModal = false;
   }
-
+ 
   executeAction(): void {
     this.error = null;
     const req: WorkflowDecisionRequest = { commentaire: this.commentaire };
-    let obs;
+    let obs: Observable<any>;
     switch (this.modalType) {
       case 'soumettre':
         obs = this.workflowSvc.soumettre(this.creditId);
@@ -165,14 +166,17 @@ export class CreditWorkflowPageComponent implements OnInit {
     }
     obs.subscribe({
       next: () => { this.closeModal(); this.charger(); },
-      error: err => {
+      error: (err: any) => {
         this.error = err.error?.message ?? 'Erreur lors de l\'action.';
         this.closeModal();
       }
     });
   }
-
+ 
   retourListe(): void {
     this.router.navigate(['/credits']);
   }
 }
+ 
+
+
