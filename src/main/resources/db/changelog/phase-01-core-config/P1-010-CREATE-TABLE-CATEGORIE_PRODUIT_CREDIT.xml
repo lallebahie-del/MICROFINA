@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P1-010-CREATE-TABLE-CATEGORIE_PRODUIT_CREDIT" author="microfina">
+        <comment>Create CATEGORIE_PRODUIT_CREDIT table – maps credit products to member categories</comment>
+
+        <createTable tableName="CATEGORIE_PRODUIT_CREDIT">
+            <column name="CODE_CATEGORIE"     type="NVARCHAR(25)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="CODE_PRODUIT_CREDIT" type="NVARCHAR(25)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ACTIF"              type="BIT" defaultValueBoolean="true"/>
+            <column name="VERSION"            type="INT" defaultValueNumeric="0"/>
+        </createTable>
+
+        <addPrimaryKey
+            tableName="CATEGORIE_PRODUIT_CREDIT"
+            columnNames="CODE_CATEGORIE, CODE_PRODUIT_CREDIT"
+            constraintName="PK_CATEGORIE_PRODUIT_CREDIT"/>
+
+        <rollback>
+            <dropTable tableName="CATEGORIE_PRODUIT_CREDIT"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

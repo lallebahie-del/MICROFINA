@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  changelog-phase-10.xml — Master sub-changelog de la Phase 10 (Complétion cahier de charge)
+  ────────────────────────────────────────────────────────────────────────────────────────────
+  Sous-phase 10.1 : Référentiel TypeGarantie + entité Garantie + vue d'unification
+    P10-001   type_garantie (table de référence)
+    P10-001b  Données seed type_garantie (10 valeurs BCM/MF)
+    P10-001c  Garantie (table générique) + FK vers type_garantie, Credits, membres
+    P10-001d  vue_garanties_unifiee (UNION ALL des 5 sources : Garantie + 4 tables Phase 4)
+
+  Sous-phase 10.4 : Vues de reporting BCM (9 vues SQL Server)
+    P10-401  vue_etat_credits            — Portefeuille crédit + PAR + couverture garanties
+    P10-402  vue_balance_comptes         — Balance des comptes du plan comptable
+    P10-403  vue_journal_comptable       — Journal des écritures enrichi
+    P10-404  vue_bilan                   — Bilan simplifié par classe de compte
+    P10-405  vue_compte_resultat         — Compte de résultat mensuel par agence
+    P10-406  vue_tableau_financement     — Tableau de financement quotidien
+    P10-407  vue_ratios_bcm             — Ratios prudentiels BCM (PAR30, PAR90, couverture)
+    P10-408  vue_indicateurs_performance — KPIs opérationnels par agence
+    P10-409  vue_liste_clients           — Fiche client consolidée par membre
+
+  Sous-phase 10.5 : Cartographie GeoJSON
+    P10-501  ALTER TABLE zoneGeographique — colonnes géo + FK auto-référentielle
+
+  Sous-phase 10.6 : Wallet Bankily (mobile money)
+    P10-601  OperationWallet — suivi des transactions mobile money Bankily
+
+  La sous-phase 10.7 sera ajoutée ici au fur et à mesure.
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!-- ── Sous-phase 10.1 — Référentiel TypeGarantie + vue d'unification ── -->
+    <include file="db/changelog/phase-10-referentiel/P10-001-CREATE-TABLE-type_garantie.xml"/>
+    <include file="db/changelog/phase-10-referentiel/P10-001b-data-type-garantie.xml"/>
+    <include file="db/changelog/phase-10-referentiel/P10-001c-CREATE-TABLE-Garantie.xml"/>
+    <include file="db/changelog/phase-10-referentiel/P10-001d-CREATE-VIEW-vue_garanties_unifiee.xml"/>
+
+    <!-- ── Sous-phase 10.4 — Vues de reporting BCM ── -->
+    <include file="db/changelog/phase-10-reporting/changelog-phase-10-reporting.xml"/>
+
+    <!-- ── Sous-phase 10.5 — Cartographie GeoJSON ── -->
+    <include file="db/changelog/phase-10-cartographie/changelog-phase-10-cartographie.xml"/>
+
+    <!-- ── Sous-phase 10.6 — Wallet Bankily (mobile money) ── -->
+    <include file="db/changelog/phase-10-wallet/changelog-phase-10-wallet.xml"/>
+
+</databaseChangeLog>

@@ -1,0 +1,192 @@
+<div class="page-container">
+
+  <div class="page-header">
+    <h2 class="page-title">{{ isNew ? 'Nouveau produit crédit' : 'Modifier le produit ' + numProduit }}</h2>
+    <button class="btn btn-outline" (click)="annuler()">← Retour</button>
+  </div>
+
+  <div class="alert alert-error"   *ngIf="error()">{{ error() }}</div>
+  <div class="alert alert-success" *ngIf="success()">{{ success() }}</div>
+  <div class="loading-indicator"   *ngIf="loading()">Chargement…</div>
+
+  <form class="form-card" (ngSubmit)="submit()" *ngIf="!loading()">
+
+    <!-- ── Identité ── -->
+    <fieldset class="form-section">
+      <legend>Identité du produit</legend>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Code produit *</label>
+          <input type="text" [(ngModel)]="form.numProduit" name="numProduit"
+                 [disabled]="!isNew" required placeholder="ex: CREDIT_MICRO"/>
+        </div>
+        <div class="form-group">
+          <label>Nom du produit *</label>
+          <input type="text" [(ngModel)]="form.nomProduit" name="nomProduit" required/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Description</label>
+          <textarea [(ngModel)]="form.description" name="description" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Type de crédit</label>
+          <select [(ngModel)]="form.typeCredit" name="typeCredit">
+            <option value="">–</option>
+            <option value="INDIVIDUEL">Individuel</option>
+            <option value="GROUPE">Groupe</option>
+            <option value="SOLIDAIRE">Solidaire</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Type de client</label>
+          <select [(ngModel)]="form.typeClient" name="typeClient">
+            <option value="">–</option>
+            <option value="PP">Personne physique</option>
+            <option value="PM">Personne morale</option>
+            <option value="G">Groupe</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Actif</label>
+          <select [(ngModel)]="form.actif" name="actif">
+            <option [ngValue]="1">Oui</option>
+            <option [ngValue]="0">Non</option>
+          </select>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- ── Montants & Durée ── -->
+    <fieldset class="form-section">
+      <legend>Montants &amp; Durée</legend>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Montant min (MRU)</label>
+          <input type="number" [(ngModel)]="form.montantMin" name="montantMin" min="0"/>
+        </div>
+        <div class="form-group">
+          <label>Montant max (MRU)</label>
+          <input type="number" [(ngModel)]="form.montantMax" name="montantMax" min="0"/>
+        </div>
+        <div class="form-group">
+          <label>Durée min (mois)</label>
+          <input type="number" [(ngModel)]="form.dureeMin" name="dureeMin" min="1"/>
+        </div>
+        <div class="form-group">
+          <label>Durée max (mois)</label>
+          <input type="number" [(ngModel)]="form.dureeMax" name="dureeMax" min="1"/>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- ── Taux ── -->
+    <fieldset class="form-section">
+      <legend>Taux (%)</legend>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Taux intérêt</label>
+          <input type="number" [(ngModel)]="form.tauxInteret" name="tauxInteret" step="0.01" min="0"/>
+        </div>
+        <div class="form-group">
+          <label>Taux min</label>
+          <input type="number" [(ngModel)]="form.tauxInteretMin" name="tauxInteretMin" step="0.01" min="0"/>
+        </div>
+        <div class="form-group">
+          <label>Taux max</label>
+          <input type="number" [(ngModel)]="form.tauxInteretMax" name="tauxInteretMax" step="0.01" min="0"/>
+        </div>
+        <div class="form-group">
+          <label>Taux pénalité</label>
+          <input type="number" [(ngModel)]="form.tauxPenalite" name="tauxPenalite" step="0.01" min="0"/>
+        </div>
+        <div class="form-group">
+          <label>Taux commission</label>
+          <input type="number" [(ngModel)]="form.tauxCommission" name="tauxCommission" step="0.01" min="0"/>
+        </div>
+        <div class="form-group">
+          <label>Taux assurance</label>
+          <input type="number" [(ngModel)]="form.tauxAssurance" name="tauxAssurance" step="0.01" min="0"/>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- ── Échéances ── -->
+    <fieldset class="form-section">
+      <legend>Remboursement</legend>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Périodicité</label>
+          <select [(ngModel)]="form.periodiciteRemboursement" name="periodiciteRemboursement">
+            <option value="J">Journalier</option>
+            <option value="H">Hebdomadaire</option>
+            <option value="M">Mensuel</option>
+            <option value="T">Trimestriel</option>
+            <option value="S">Semestriel</option>
+            <option value="A">Annuel</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Nb échéances</label>
+          <input type="number" [(ngModel)]="form.nombreEcheance" name="nombreEcheance" min="1"/>
+        </div>
+        <div class="form-group">
+          <label>Délai de grâce</label>
+          <input type="number" [(ngModel)]="form.delaiGrace" name="delaiGrace" min="0"/>
+        </div>
+        <div class="form-group">
+          <label>Type de grâce</label>
+          <select [(ngModel)]="form.typeGrace" name="typeGrace">
+            <option value="">–</option>
+            <option value="P">Principal seulement</option>
+            <option value="T">Total (capital + intérêts)</option>
+          </select>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- ── Options ── -->
+    <fieldset class="form-section">
+      <legend>Options</legend>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Garantie requise</label>
+          <select [(ngModel)]="form.garantieRequise" name="garantieRequise">
+            <option [ngValue]="0">Non</option>
+            <option [ngValue]="1">Oui</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Renégociation autorisée</label>
+          <select [(ngModel)]="form.autoriserReneg" name="autoriserReneg">
+            <option [ngValue]="0">Non</option>
+            <option [ngValue]="1">Oui</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Remb. anticipé autorisé</label>
+          <select [(ngModel)]="form.autoriserRemboursementAnticipe" name="autoriserRemboursementAnticipe">
+            <option [ngValue]="0">Non</option>
+            <option [ngValue]="1">Oui</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Décaissement net</label>
+          <select [(ngModel)]="form.decaissementNet" name="decaissementNet">
+            <option [ngValue]="0">Brut</option>
+            <option [ngValue]="1">Net</option>
+          </select>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary" [disabled]="saving()">
+        {{ saving() ? 'Enregistrement…' : (isNew ? 'Créer le produit' : 'Enregistrer') }}
+      </button>
+      <button type="button" class="btn btn-outline" (click)="annuler()">Annuler</button>
+    </div>
+
+  </form>
+</div>

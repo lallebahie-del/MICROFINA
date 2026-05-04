@@ -1,0 +1,29 @@
+<div class="page-container">
+  <div class="page-header"><h1>Gestion des Utilisateurs</h1></div>
+  @if (loading()) { <div class="loading">Chargement...</div> }
+  @if (error()) { <div class="alert alert-danger">{{ error() }}</div> }
+  <table class="data-table">
+    <thead>
+      <tr><th>ID</th><th>Login</th><th>Nom complet</th><th>Email</th><th>Statut</th><th>Agence</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      @for (u of utilisateurs(); track u.id) {
+        <tr>
+          <td>{{ u.id }}</td>
+          <td><strong>{{ u.login }}</strong></td>
+          <td>{{ u.nomComplet ?? '—' }}</td>
+          <td>{{ u.email ?? '—' }}</td>
+          <td><span [class]="u.actif ? 'badge badge-success' : 'badge badge-secondary'">{{ u.actif ? 'Actif' : 'Inactif' }}</span></td>
+          <td>{{ u.codeAgence ?? '—' }}</td>
+          <td>
+            @if (u.actif) {
+              <button class="btn btn-sm btn-warning" (click)="desactiver(u.id)">Désactiver</button>
+            }
+          </td>
+        </tr>
+      } @empty {
+        <tr><td colspan="7" class="empty">Aucun utilisateur</td></tr>
+      }
+    </tbody>
+  </table>
+</div>

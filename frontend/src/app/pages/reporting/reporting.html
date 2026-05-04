@@ -1,0 +1,273 @@
+<div class="reporting-container">
+
+  <!-- ── En-tête ───────────────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="header-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
+        <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+      </svg>
+      <span>Reporting BCM</span>
+    </div>
+    <div class="header-actions">
+      <input class="filter-input" [(ngModel)]="agence" placeholder="Filtrer par agence…"
+             (keyup.enter)="onFilter()"/>
+      <button class="btn-filter" (click)="onFilter()">Actualiser</button>
+    </div>
+  </div>
+
+  <!-- ── Onglets ────────────────────────────────────────────────────────────── -->
+  <div class="tabs-bar">
+    @for (tab of tabs; track tab.id) {
+      <button class="tab-btn" [class.active]="activeTab() === tab.id"
+              (click)="selectTab(tab.id)">
+        {{ tab.label }}
+      </button>
+    }
+  </div>
+
+  <!-- ── Barre d'export ─────────────────────────────────────────────────────── -->
+  <div class="export-bar">
+    <span class="export-label">Exporter :</span>
+    @if (activeTab() === 'credits') {
+      <button class="btn-export excel" (click)="exportCreditsExcel()">📊 Excel</button>
+    }
+    @if (activeTab() === 'ratios') {
+      <button class="btn-export excel" (click)="exportRatiosExcel()">📊 Excel</button>
+      <button class="btn-export pdf"   (click)="exportRatiosPdf()">📄 PDF</button>
+    }
+    @if (activeTab() === 'bilan') {
+      <button class="btn-export excel" (click)="exportBilanExcel()">📊 Excel</button>
+      <button class="btn-export word"  (click)="exportRapportWord()">📝 Word</button>
+    }
+    @if (activeTab() === 'clients') {
+      <button class="btn-export pdf" (click)="exportClientsPdf()">📄 PDF</button>
+    }
+  </div>
+
+  <!-- ── État ───────────────────────────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="state-loading">
+      <div class="spinner"></div>Chargement…
+    </div>
+  }
+  @if (error()) {
+    <div class="state-error">{{ error() }}</div>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       ONGLET — État crédits
+  ═══════════════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'credits' && !loading()) {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>N° Crédit</th><th>Membre</th><th>Agence</th>
+            <th>Statut</th><th class="num">Montant accordé</th>
+            <th class="num">Solde capital</th><th class="num">Arriérés</th>
+            <th>Catégorie PAR</th><th class="num">Taux couverture</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of credits(); track c.idCredit) {
+            <tr [class.retard]="c.joursRetard > 0">
+              <td class="mono">{{ c.numCredit }}</td>
+              <td>{{ c.nomMembre }} {{ c.prenomMembre }}</td>
+              <td>{{ c.nomAgence }}</td>
+              <td><span class="badge" [class]="'badge-' + c.statutCredit?.toLowerCase()">{{ c.statutCredit }}</span></td>
+              <td class="num">{{ formatMontant(c.montantAccorde) }}</td>
+              <td class="num">{{ formatMontant(c.soldeCapital) }}</td>
+              <td class="num">{{ formatMontant(c.totalArrieres) }}</td>
+              <td>
+                <span class="par-badge" [style.background]="couleurPar(c.categoriePar)">
+                  {{ c.categoriePar || 'SAIN' }}
+                </span>
+              </td>
+              <td class="num">{{ c.tauxCouverturePct?.toFixed(1) ?? '—' }}%</td>
+            </tr>
+          }
+          @if (credits().length === 0) {
+            <tr><td colspan="9" class="empty">Aucun résultat</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       ONGLET — Ratios BCM
+  ═══════════════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'ratios' && !loading()) {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Agence</th>
+            <th class="num">Encours brut</th>
+            <th class="num">PAR30 (%)</th>
+            <th class="num">PAR90 (%)</th>
+            <th class="num">Arriérés</th>
+            <th class="num">Garanties</th>
+            <th class="num">Taux couverture</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of ratios(); track r.codeAgence) {
+            <tr>
+              <td>{{ r.nomAgence }}</td>
+              <td class="num">{{ formatMontant(r.encoursBrut) }}</td>
+              <td class="num" [class.alerte]="r.par30 > 0.05">{{ formatPct(r.par30) }}</td>
+              <td class="num" [class.alerte]="r.par90 > 0.03">{{ formatPct(r.par90) }}</td>
+              <td class="num">{{ formatMontant(r.totalArrieres) }}</td>
+              <td class="num">{{ formatMontant(r.totalGaranties) }}</td>
+              <td class="num">{{ r.tauxCouverture?.toFixed(1) ?? '—' }}%</td>
+            </tr>
+          }
+          @if (ratios().length === 0) {
+            <tr><td colspan="7" class="empty">Aucun résultat</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       ONGLET — Indicateurs de performance
+  ═══════════════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'indicateurs' && !loading()) {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Agence</th>
+            <th class="num">Membres</th><th class="num">Actifs</th>
+            <th class="num">Crédits actifs</th>
+            <th class="num">Encours brut</th>
+            <th class="num">Montant décaissé</th>
+            <th class="num">Montant remboursé</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (i of indicateurs(); track i.codeAgence) {
+            <tr>
+              <td>{{ i.nomAgence }}</td>
+              <td class="num">{{ i.nbMembres }}</td>
+              <td class="num">{{ i.nbMembresActifs }}</td>
+              <td class="num">{{ i.nbCreditsActifs }}</td>
+              <td class="num">{{ formatMontant(i.encoursBrut) }}</td>
+              <td class="num">{{ formatMontant(i.montantDecaisse) }}</td>
+              <td class="num">{{ formatMontant(i.montantRembourse) }}</td>
+            </tr>
+          }
+          @if (indicateurs().length === 0) {
+            <tr><td colspan="7" class="empty">Aucun résultat</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       ONGLET — Bilan
+  ═══════════════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'bilan' && !loading()) {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Compte</th><th>Catégorie</th><th>Agence</th>
+            <th class="num">Débit</th><th class="num">Crédit</th><th class="num">Solde net</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (b of bilan(); track b.planComptable + b.agence) {
+            <tr>
+              <td class="mono">{{ b.planComptable }}</td>
+              <td><span class="badge" [class]="b.categorie === 'ACTIF' ? 'badge-actif' : 'badge-passif'">{{ b.categorie }}</span></td>
+              <td>{{ b.agence }}</td>
+              <td class="num">{{ formatMontant(b.soldeDebiteur) }}</td>
+              <td class="num">{{ formatMontant(b.soldeCrediteur) }}</td>
+              <td class="num">{{ formatMontant(b.soldeNet) }}</td>
+            </tr>
+          }
+          @if (bilan().length === 0) {
+            <tr><td colspan="6" class="empty">Aucun résultat</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       ONGLET — Balance des comptes
+  ═══════════════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'balance' && !loading()) {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Compte</th><th>Agence</th>
+            <th class="num">Solde débiteur</th>
+            <th class="num">Solde créditeur</th>
+            <th class="num">Solde net</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (b of balance(); track b.planComptable + b.agence) {
+            <tr>
+              <td class="mono">{{ b.planComptable }}</td>
+              <td>{{ b.nomAgence || b.agence }}</td>
+              <td class="num">{{ formatMontant(b.soldeDebiteur) }}</td>
+              <td class="num">{{ formatMontant(b.soldeCrediteur) }}</td>
+              <td class="num">{{ formatMontant(b.soldeNet) }}</td>
+            </tr>
+          }
+          @if (balance().length === 0) {
+            <tr><td colspan="5" class="empty">Aucun résultat</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       ONGLET — Liste clients
+  ═══════════════════════════════════════════════════════════════════ -->
+  @if (activeTab() === 'clients' && !loading()) {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>N° Membre</th><th>Nom</th><th>Téléphone</th><th>Agence</th>
+            <th class="num">Crédits actifs</th>
+            <th class="num">Encours</th>
+            <th class="num">Épargne</th>
+            <th>PAR</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of clients(); track c.numMembre) {
+            <tr>
+              <td class="mono">{{ c.numMembre }}</td>
+              <td>{{ c.nomMembre }} {{ c.prenomMembre }}</td>
+              <td>{{ c.telephone }}</td>
+              <td>{{ c.nomAgence }}</td>
+              <td class="num">{{ c.nbCreditsActifs }}</td>
+              <td class="num">{{ formatMontant(c.encoursBrut) }}</td>
+              <td class="num">{{ formatMontant(c.soldeEpargne) }}</td>
+              <td>
+                <span class="par-badge" [style.background]="couleurPar(c.categoriePar)">
+                  {{ c.categoriePar || 'SAIN' }}
+                </span>
+              </td>
+            </tr>
+          }
+          @if (clients().length === 0) {
+            <tr><td colspan="8" class="empty">Aucun résultat</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+</div>

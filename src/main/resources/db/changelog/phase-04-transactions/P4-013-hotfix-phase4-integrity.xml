@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P4-013 – Hotfix: Phase 4 financial & compliance integrity
+        Architect Green Light conditions – Mauritanian compliance requirements.
+
+        Fix 1 – Amortp: add TAXE and TAXE_REGLEE columns
+        Fix 2 – Reglement: add MONTANT_TAXE column
+        Fix 3 – Reglement: enforce idcomptabilite NOT NULL
+                (every repayment MUST produce a journal entry)
+        Fix 4 – Credits: update STATUT default to French convention (BROUILLON)
+    -->
+
+    <!-- ═══════════════════════════════════════════════════════
+         Fix 1 – Amortp: tax columns
+         TAXE         = scheduled tax due this instalment (e.g. TVA on interest/fees)
+         TAXE_REGLEE  = portion of TAXE actually settled (updated by DetailReglement)
+         ═══════════════════════════════════════════════════════ -->
+    <changeSet id="P4-013-add-Amortp-taxe" author="microfina">
+
+        <addColumn tableName="Amortp">
+
+            <column name="TAXE" type="DECIMAL(19,4)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="TAXE_REGLEE" type="DECIMAL(19,4)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+        </addColumn>
+
+        <rollback>
+            <dropColumn tableName="Amortp" columnName="TAXE_REGLEE"/>
+            <dropColumn tableName="Amortp" columnName="TAXE"/>
+        </rollback>
+
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════
+         Fix 2 – Reglement: tax amount received
+         ═══════════════════════════════════════════════════════ -->
+    <changeSet id="P4-013-add-Reglement-taxe" author="microfina">
+
+        <addColumn tableName="Reglement">
+            <column name="MONTANT_TAXE" type="DECIMAL(19,4)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <rollback>
+            <dropColumn tableName="Reglement" columnName="MONTANT_TAXE"/>
+        </rollback>
+
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════
+         Fix 3 – Reglement: idcomptabilite must reference a valid
+         journal entry (every payment MUST post to the ledger).
+         Uses defaultNullValue="0" to handle any pre-existing NULLs
+         before the constraint is applied; 0 is a sentinel that
+         developers must replace with a real IDCOMPTABILITE.
+         ═══════════════════════════════════════════════════════ -->
+    <changeSet id="P4-013-notnull-Reglement-idcomptabilite" author="microfina">
+
+        <addNotNullConstraint
+            tableName        = "Reglement"
+            columnName       = "idcomptabilite"
+            columnDataType   = "BIGINT"
+            defaultNullValue = "0"/>
+
+        <rollback>
+            <!-- Re-allow nulls (reverse by dropping the NOT NULL constraint) -->
+            <sql>ALTER TABLE Reglement ALTER COLUMN idcomptabilite BIGINT NULL</sql>
+        </rollback>
+
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════
+         Fix 4 – Credits: update STATUT default to French value.
+         Old default: 'DRAFT'   → New default: 'BROUILLON'
+         Column width NVARCHAR(20) is sufficient:
+           BROUILLON=9, SOUMIS=6, VALIDE_AGENT=12,
+           VALIDE_COMITE=13, DEBLOQUE=8, REJETE=6, SOLDE=5
+         ═══════════════════════════════════════════════════════ -->
+    <changeSet id="P4-013-credits-statut-default-brouillon" author="microfina">
+
+        <!-- Drop the old English default -->
+        <dropDefaultValue
+            tableName  = "Credits"
+            columnName = "STATUT"
+            columnDataType = "NVARCHAR(20)"/>
+
+        <!-- Set the new French default -->
+        <addDefaultValue
+            tableName       = "Credits"
+            columnName      = "STATUT"
+            defaultValue    = "BROUILLON"
+            columnDataType  = "NVARCHAR(20)"/>
+
+        <rollback>
+            <dropDefaultValue tableName="Credits" columnName="STATUT"
+                              columnDataType="NVARCHAR(20)"/>
+            <addDefaultValue  tableName="Credits" columnName="STATUT"
+                              defaultValue="DRAFT"
+                              columnDataType="NVARCHAR(20)"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

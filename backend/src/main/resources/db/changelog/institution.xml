@@ -97,7 +97,7 @@
     <!-- ============================================ -->
     <changeSet id="5" author="migration">
         <createTable tableName="Adresse">
-            <column name="IDADRESS" type="varchar(48)">
+            <column name="IDADRESSE" type="varchar(48)">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="adresse" type="varchar(max)"/>
@@ -202,7 +202,7 @@
             <column name="ID_BCEAO" type="varchar(50)"/>
             <column name="pays" type="numeric(19,0)"/>
             <column name="parent" type="varchar(255)"/>
-            <column name="devise_principale" type="numeric(19,0)"/>
+            <column name="devise_principale" type="NVARCHAR(10)"/>
             <column name="Compte_radiation_credit" type="varchar(255)"/>
             <column name="categorie_inst" type="varchar(15)"/>
             <column name="CODE_INSTITUTION_MANUEL" type="varchar(50)"/>
@@ -377,8 +377,8 @@
             constraintName="FK_Institution_Adresse"
             baseTableName="Institution" 
             baseColumnNames="ADRESSE_IDADRESSE"
-            referencedTableName="Adresse" 
-            referencedColumnNames="IDADRESS"
+            referencedTableName="Adresse"
+            referencedColumnNames="IDADRESSE"
             onDelete="NO ACTION" 
             onUpdate="NO ACTION"/>
 
@@ -392,15 +392,7 @@
             onDelete="NO ACTION" 
             onUpdate="NO ACTION"/>
 
-        <!-- FK vers Devise -->
-        <addForeignKeyConstraint 
-            constraintName="FK_Institution_Devise"
-            baseTableName="Institution" 
-            baseColumnNames="devise_principale"
-            referencedTableName="Devise" 
-            referencedColumnNames="IDDEVISE"
-            onDelete="NO ACTION" 
-            onUpdate="NO ACTION"/>
+        <!-- Note: FK Institution→DeviseLocal is added in P1-006b after devise_local is created -->
 
         <!-- FK auto-référence (parent) -->
         <addForeignKeyConstraint 

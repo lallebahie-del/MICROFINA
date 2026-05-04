@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    changelog-phase-08.xml — Master sub-changelog du Module Budget (Phase 8)
+    Inclut dans l'ordre strict de dépendances :
+      P8-001  Budget          (table racine — dépend : AGENCE)
+      P8-002  LigneBudget     (dépend : Budget, Compte)
+      P8-003  MouvementBudget (dépend : LigneBudget, comptabilite)
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <include file="db/changelog/phase-08-budget/P8-001-CREATE-TABLE-Budget.xml"/>
+    <include file="db/changelog/phase-08-budget/P8-002-CREATE-TABLE-LigneBudget.xml"/>
+    <include file="db/changelog/phase-08-budget/P8-003-CREATE-TABLE-MouvementBudget.xml"/>
+
+</databaseChangeLog>

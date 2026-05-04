@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P1-012-CREATE-TABLE-FAMILLEPARTSOCIALE" author="microfina">
+        <comment>Create FAMILLEPARTSOCIALE table – social share family taxonomy for cooperative members</comment>
+
+        <createTable tableName="FAMILLEPARTSOCIALE">
+            <column name="IDFAMILLEPARTSOCIALE" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="PK_FAMILLEPARTSOCIALE"/>
+            </column>
+            <column name="nomfamille"           type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ACTIF"                type="INT" defaultValueNumeric="1"/>
+            <column name="VERSION"              type="INT" defaultValueNumeric="0"/>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="FAMILLEPARTSOCIALE"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

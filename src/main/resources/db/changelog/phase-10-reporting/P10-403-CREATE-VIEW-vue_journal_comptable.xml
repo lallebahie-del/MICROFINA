@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P10-403 – vue_journal_comptable
+        ══════════════════════════════════════════════════════════════════════════
+        Journal des opérations financières unifié — une ligne par écriture
+        comptable enrichie du contexte de l'opération (remboursement, agence).
+
+        Consolide en un seul flux ordonné par date :
+          - toutes les écritures de la table comptabilite (P1-017)
+          - enrichies du règlement client associé (Reglement, P4-011)
+          - enrichies de l'agence comptable (AGENCE, P1-002)
+
+        Colonnes clés :
+          type_operation   — catégorie déduite du flux :
+                             'REMBOURSEMENT' si écriture liée à un Reglement
+                             'OPERATION'     sinon (décaissement, frais, etc.)
+          sens             — CODE_SENS de comptabilite (D/C)
+          montant_net      — DEBIT si sens débiteur, CREDIT sinon
+
+        Usage : journal quotidien BCM, réconciliation, audit trail.
+        ══════════════════════════════════════════════════════════════════════════
+    -->
+
+    <changeSet id="P10-403-create-vue-journal-comptable" author="microfina">
+        <comment>
+            Journal comptable enrichi — toutes écritures + contexte remboursement.
+            Utilisé pour les états journaliers BCM et l'audit trail.
+        </comment>
+
+        <createView viewName="vue_journal_comptable" replaceIfExists="true">
+            SELECT
+                /* ── Écriture comptable ───────────────────────────────────── */
+                cpt.IDCOMPTABILITE,
+                cpt.DATEOPERATION,
+                cpt.NUMPIECE                                    AS num_piece,
+                cpt.LIBELLE,
+                cpt.planComptable                               AS num_compte,
+                cpt.Compte1                                     AS compte_contrepartie,
+                cpt.CompteAuxi                                  AS compte_auxiliaire,
+                cpt.CODE_SENS                                   AS sens,
+                cpt.DEBIT,
+                cpt.CREDIT,
+                cpt.REFERENCE,
+
+                /* ── Agence ──────────────────────────────────────────────── */
+                cpt.agence                                      AS code_agence,
+                ag.NOMAGENCE                                    AS nom_agence,
+                cpt.utilisateur                                 AS agent_saisie,
+
+                /* ── Type d'opération déduit ─────────────────────────────── */
+                CASE
+                    WHEN r.IDREGLEMENT IS NOT NULL THEN 'REMBOURSEMENT'
+                    ELSE 'OPERATION'
+                END                                             AS type_operation,
+
+                /* ── Montant net selon le sens ───────────────────────────── */
+                CASE
+                    WHEN cpt.CODE_SENS = 'D' THEN cpt.DEBIT
+                    ELSE cpt.CREDIT
+                END                                             AS montant_net,
+
+                /* ── Détail remboursement (NULL si non lié à un Reglement) ─ */
+                r.IDREGLEMENT,
+                r.DATE_REGLEMENT,
+                r.MONTANT_TOTAL                                 AS montant_reglement,
+                r.MONTANT_CAPITAL,
+                r.MONTANT_INTERET,
+                r.MONTANT_PENALITE,
+                r.MONTANT_ASSURANCE,
+                r.MONTANT_COMMISSION,
+                r.MONTANT_TAXE,
+                r.MODE_PAIEMENT,
+                r.STATUT                                        AS statut_reglement,
+
+                /* ── Crédit lié (via Reglement) ──────────────────────────── */
+                r.idcredit                                      AS idcredit_reglement,
+                c.NUMCREDIT                                     AS numcredit_reglement
+
+            FROM comptabilite cpt
+
+            LEFT JOIN AGENCE ag
+                   ON ag.CODE_AGENCE = cpt.agence
+
+            LEFT JOIN Reglement r
+                   ON r.idcomptabilite = cpt.IDCOMPTABILITE
+
+            LEFT JOIN Credits c
+                   ON c.IDCREDIT = r.idcredit
+        </createView>
+
+        <rollback>
+            <dropView viewName="vue_journal_comptable"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

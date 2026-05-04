@@ -1,0 +1,40 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1>Budgets</h1>
+    <button class="btn btn-primary" routerLink="/budgets/nouveau">+ Nouveau budget</button>
+  </div>
+
+  @if (loading()) { <div class="loading">Chargement...</div> }
+  @if (error()) { <div class="alert alert-danger">{{ error() }}</div> }
+  @if (success()) { <div class="alert alert-success">{{ success() }}</div> }
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>ID</th><th>Exercice</th><th>Statut</th><th>Recettes</th><th>Dépenses</th><th>Agence</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (b of budgets(); track b.id) {
+        <tr>
+          <td>{{ b.id }}</td>
+          <td>{{ b.exerciceFiscal }}</td>
+          <td><span [class]="statutClass(b.statut)">{{ b.statut }}</span></td>
+          <td>{{ b.montantTotalRecettes | number:'1.2-2' }} MRU</td>
+          <td>{{ b.montantTotalDepenses | number:'1.2-2' }} MRU</td>
+          <td>{{ b.codeAgence ?? '—' }}</td>
+          <td>
+            @if (b.statut === 'BROUILLON') {
+              <button class="btn btn-sm btn-success" (click)="valider(b.id)">Valider</button>
+            }
+            @if (b.statut === 'VALIDE') {
+              <button class="btn btn-sm btn-warning" (click)="cloturer(b.id)">Clôturer</button>
+            }
+          </td>
+        </tr>
+      } @empty {
+        <tr><td colspan="7" class="empty">Aucun budget</td></tr>
+      }
+    </tbody>
+  </table>
+</div>

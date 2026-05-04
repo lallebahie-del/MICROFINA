@@ -53,9 +53,38 @@
   </div>
 
   <div class="navbar-end">
-    <button class="nav-power-btn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-        <path d="M18.36 6.64a9 9 0 11-12.73 0M12 2v10"/>
+    <div class="tool-wrapper">
+      <button class="nav-tool-btn" type="button">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 8a4 4 0 100 8 4 4 0 000-8zm8 4l-2 .8.5 2.1-2 2-2.1-.5-.8 2h-3l-.8-2-2.1.5-2-2 .5-2.1-2-.8V9l2-.8-.5-2.1 2-2 2.1.5.8-2h3l.8 2 2.1-.5 2 2-.5 2.1 2 .8v3z"></path>
+        </svg>
+      </button>
+ 
+      <div class="tool-dropdown">
+        <button class="dropdown-item" type="button">
+          <svg class="dropdown-icon" viewBox="0 0 24 24">
+            <path [attr.d]="iconPaths['lock']"></path>
+          </svg>
+          <span class="dropdown-label">Changer Mot de passe</span>
+        </button>
+      </div>
+    </div>
+ 
+   
+ 
+    <button class="nav-tool-btn" type="button">
+      <svg viewBox="0 0 24 24">
+        <path d="M9 7h9M9 12h9M9 17h9M5 7h.01M5 12h.01M5 17h.01"></path>
+      </svg>
+    </button>
+ 
+    @if (authService.currentUser()) {
+      <span class="navbar-username">{{ authService.currentUser()!.username }}</span>
+    }
+ 
+    <button class="nav-power-btn" type="button" (click)="logout()" title="Déconnexion">
+      <svg viewBox="0 0 24 24">
+        <path d="M18.36 6.64a9 9 0 11-12.73 0M12 2v10"></path>
       </svg>
     </button>
   </div>

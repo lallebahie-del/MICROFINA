@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P1-016-CREATE-TABLE-ValeurFraisCategorie" author="microfina">
+        <comment>Create ValeurFraisCategorie table – fee values scoped to a specific member category</comment>
+
+        <!--
+            categorie: NVARCHAR(25) per spec (AN/25), not a numeric ID.
+            LIEGROUPE: BIT (N type), restored — was incorrectly removed in prior pass.
+            FK targets ValeurFrais (SINGLE_TABLE — no separate VALEURFRAISADHESION table).
+        -->
+        <createTable tableName="ValeurFraisCategorie">
+            <column name="IDVFRAISADHCATEGORIE" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="PK_ValeurFraisCategorie"/>
+            </column>
+            <!-- categorie: AN/25 (NVARCHAR), member-category code -->
+            <column name="categorie"        type="NVARCHAR(25)"/>
+            <!-- LIEGROUPE: whether this fee applies to group members -->
+            <column name="LIEGROUPE"        type="BIT" defaultValueBoolean="false"/>
+            <column name="VERSION"          type="INT"  defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="valeurFraisAdh"   type="BIGINT"/>
+        </createTable>
+
+        <addUniqueConstraint
+            tableName="ValeurFraisCategorie"
+            columnNames="categorie, valeurFraisAdh"
+            constraintName="UQ_ValeurFraisCategorie_cat_frais"/>
+
+        <!-- FK now points to ValeurFrais (SINGLE_TABLE strategy) -->
+        <addForeignKeyConstraint
+            baseTableName="ValeurFraisCategorie" baseColumnNames="valeurFraisAdh"
+            referencedTableName="ValeurFrais" referencedColumnNames="IDVALEURFRAIS"
+            constraintName="FK_ValeurFraisCategorie_ValeurFrais"/>
+
+        <rollback>
+            <dropAllForeignKeyConstraints baseTableName="ValeurFraisCategorie"/>
+            <dropTable tableName="ValeurFraisCategorie"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

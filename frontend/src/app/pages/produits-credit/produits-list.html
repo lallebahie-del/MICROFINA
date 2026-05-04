@@ -1,0 +1,74 @@
+<div class="page-container">
+
+  <div class="page-header">
+    <h2 class="page-title">Produits Crédit</h2>
+    <button class="btn btn-primary" (click)="nouveau()">+ Nouveau produit</button>
+  </div>
+
+  <div class="filter-bar">
+    <input class="filter-input" type="text"
+           placeholder="Rechercher (code, nom…)"
+           [(ngModel)]="search" (keyup.enter)="onSearch()"/>
+    <select class="filter-select" [(ngModel)]="actif" (change)="onSearch()">
+      <option [ngValue]="undefined">Tous</option>
+      <option [ngValue]="1">Actifs uniquement</option>
+      <option [ngValue]="0">Inactifs uniquement</option>
+    </select>
+    <button class="btn btn-secondary" (click)="onSearch()">Rechercher</button>
+    <button class="btn btn-outline"   (click)="onReset()">Réinitialiser</button>
+  </div>
+
+  <div class="alert alert-error" *ngIf="error()">{{ error() }}</div>
+  <div class="loading-indicator" *ngIf="loading()">Chargement…</div>
+
+  <div class="table-wrapper" *ngIf="!loading() && result()">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Nom du produit</th>
+          <th>Type crédit</th>
+          <th>Taux intérêt</th>
+          <th>Durée (mois)</th>
+          <th>Montant (min/max)</th>
+          <th>Statut</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of result()!.content">
+          <td class="mono">{{ p.numProduit }}</td>
+          <td>
+            <strong>{{ p.nomProduit }}</strong>
+            <div class="sub-text">{{ p.description }}</div>
+          </td>
+          <td>{{ p.typeCredit }}</td>
+          <td>{{ p.tauxInteret | number:'1.2-2' }} %</td>
+          <td>{{ p.dureeMin }} – {{ p.dureeMax }}</td>
+          <td>{{ p.montantMin | number:'1.0-0' }} – {{ p.montantMax | number:'1.0-0' }}</td>
+          <td>
+            <span class="badge" [class.badge-success]="p.actif === 1" [class.badge-danger]="p.actif !== 1">
+              {{ p.actif === 1 ? 'Actif' : 'Inactif' }}
+            </span>
+          </td>
+          <td class="actions-cell">
+            <button class="btn btn-sm btn-secondary" (click)="edit(p.numProduit)">Modifier</button>
+            <button class="btn btn-sm btn-danger"    (click)="supprimer(p.numProduit)">Supprimer</button>
+          </td>
+        </tr>
+        <tr *ngIf="result()!.content.length === 0">
+          <td colspan="8" class="empty-row">Aucun produit trouvé.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="pagination" *ngIf="result()!.totalPages > 1">
+      <button class="page-btn" [disabled]="page === 0" (click)="goPage(page - 1)">‹</button>
+      <button class="page-btn" *ngFor="let p of pages"
+              [class.active]="p === page" (click)="goPage(p)">{{ p + 1 }}</button>
+      <button class="page-btn" [disabled]="page >= result()!.totalPages - 1" (click)="goPage(page + 1)">›</button>
+      <span class="page-info">{{ result()!.totalElements }} résultat(s)</span>
+    </div>
+  </div>
+
+</div>

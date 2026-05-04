@@ -1,0 +1,47 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1>Référentiel Banques</h1>
+    <button class="btn btn-primary" routerLink="/banques/nouveau">+ Nouvelle banque</button>
+  </div>
+
+  @if (loading()) {
+    <div class="loading">Chargement...</div>
+  }
+  @if (error()) {
+    <div class="alert alert-danger">{{ error() }}</div>
+  }
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Code</th>
+        <th>Nom</th>
+        <th>SWIFT/BIC</th>
+        <th>Pays</th>
+        <th>Actif</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (b of banques(); track b.codeBanque) {
+        <tr>
+          <td><strong>{{ b.codeBanque }}</strong></td>
+          <td>{{ b.nom }}</td>
+          <td>{{ b.swiftBic ?? '—' }}</td>
+          <td>{{ b.pays ?? '—' }}</td>
+          <td>
+            <span [class]="b.actif ? 'badge badge-success' : 'badge badge-secondary'">
+              {{ b.actif ? 'Actif' : 'Inactif' }}
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-sm btn-outline" [routerLink]="['/banques', b.codeBanque, 'edit']">Modifier</button>
+            <button class="btn btn-sm btn-danger" (click)="supprimer(b.codeBanque)">Supprimer</button>
+          </td>
+        </tr>
+      } @empty {
+        <tr><td colspan="6" class="empty">Aucune banque enregistrée</td></tr>
+      }
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P4-012 – detail_reglement
+        Line-item allocation of a Reglement to specific Amortp instalments.
+        One Reglement may settle multiple instalments (partial or full);
+        each line records exactly how much of a given instalment was covered.
+        Unique constraint: one allocation line per (Reglement, Amortp).
+
+        FK dependencies:
+          Reglement (IDREGLEMENT) – P4-011
+          Amortp    (IDAMORTP)    – P4-005
+        DDL source of truth: Phase 4 spec – Section 10.
+    -->
+    <changeSet id="P4-012-create-detail_reglement" author="microfina">
+
+        <createTable tableName="detail_reglement">
+
+            <!-- PK -->
+            <column name="IDDETAILREGLEMENT" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"
+                             primaryKeyName="PK_detail_reglement"
+                             nullable="false"/>
+            </column>
+
+            <!-- ── Amounts allocated from the Reglement to this Amortp row ── -->
+            <column name="MONTANT_CAPITAL"   type="DECIMAL(19,4)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="MONTANT_INTERET"   type="DECIMAL(19,4)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="MONTANT_PENALITE"  type="DECIMAL(19,4)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="MONTANT_ASSURANCE" type="DECIMAL(19,4)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="MONTANT_COMMISSION" type="DECIMAL(19,4)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- ── Optimistic lock ───────────────────────────────────── -->
+            <column name="VERSION" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="detail_reglement"/>
+        </rollback>
+
+    </changeSet>
+
+    <!-- FKs + unique constraint -->
+    <changeSet id="P4-012-fk-uq-detail_reglement" author="microfina">
+
+        <addColumn tableName="detail_reglement">
+            <column name="idreglement" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <addColumn tableName="detail_reglement">
+            <column name="idamortp" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <!-- One allocation per (payment, instalment) -->
+        <addUniqueConstraint
+            tableName      = "detail_reglement"
+            columnNames    = "idreglement, idamortp"
+            constraintName = "UQ_detail_reglement_reglement_amortp"/>
+
+        <addForeignKeyConstraint
+            constraintName        = "FK_detail_reglement_Reglement"
+            baseTableName         = "detail_reglement"
+            baseColumnNames       = "idreglement"
+            referencedTableName   = "Reglement"
+            referencedColumnNames = "IDREGLEMENT"
+            onDelete              = "CASCADE"
+            onUpdate="NO ACTION"/>
+
+        <addForeignKeyConstraint
+            constraintName        = "FK_detail_reglement_Amortp"
+            baseTableName         = "detail_reglement"
+            baseColumnNames       = "idamortp"
+            referencedTableName   = "Amortp"
+            referencedColumnNames = "IDAMORTP"
+            onDelete                 = "NO ACTION"
+            onUpdate="NO ACTION"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="detail_reglement"
+                                      constraintName="FK_detail_reglement_Amortp"/>
+            <dropForeignKeyConstraint baseTableName="detail_reglement"
+                                      constraintName="FK_detail_reglement_Reglement"/>
+            <dropUniqueConstraint tableName="detail_reglement"
+                                  constraintName="UQ_detail_reglement_reglement_amortp"/>
+            <dropColumn tableName="detail_reglement" columnName="idamortp"/>
+            <dropColumn tableName="detail_reglement" columnName="idreglement"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

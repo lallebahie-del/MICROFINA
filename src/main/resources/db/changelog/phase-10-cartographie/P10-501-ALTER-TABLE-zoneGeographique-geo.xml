@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P10-501 – Ajout des colonnes cartographiques à zoneGeographique
+        ══════════════════════════════════════════════════════════════════════════
+        Enrichit la table zoneGeographique (Phase 1) avec les colonnes nécessaires
+        à la représentation GeoJSON des zones opérationnelles de la MFI :
+
+          latitude       — latitude du centroïde de la zone (WGS-84)
+          longitude      — longitude du centroïde de la zone (WGS-84)
+          geojson_polygon— géométrie GeoJSON (Polygon / MultiPolygon)
+                           stockée en NVARCHAR(MAX) pour compatibilité SQL Server
+          type_zone      — niveau administratif mauritanien :
+                           WILAYA | MOUGHATAA | COMMUNE | QUARTIER
+          zone_parente   — FK self-référentielle vers idZoneGeographique (hiérarchie)
+          actif          — zone active (visible sur la carte) ; défaut = 1
+
+        AGENCE.latitude/longitude sont déjà présents depuis P1-002 — pas de migration
+        nécessaire côté agences.
+
+        Hiérarchie attendue :
+          WILAYA → MOUGHATAA → COMMUNE → QUARTIER
+        ══════════════════════════════════════════════════════════════════════════
+    -->
+
+    <changeSet id="P10-501-alter-zoneGeographique-add-geo-columns" author="microfina">
+        <comment>
+            Ajout des colonnes cartographiques (lat, lon, GeoJSON, type, hiérarchie)
+            à la table zoneGeographique existante.
+        </comment>
+
+        <addColumn tableName="zoneGeographique">
+            <!-- Centroïde WGS-84 (±90 / ±180, précision ~1 cm) -->
+            <column name="latitude"        type="DECIMAL(10,7)"/>
+            <column name="longitude"       type="DECIMAL(10,7)"/>
+
+            <!-- Géométrie GeoJSON complète (Polygon / MultiPolygon / Point) -->
+            <column name="geojson_polygon" type="NVARCHAR(MAX)"/>
+
+            <!-- Niveau administratif mauritanien -->
+            <column name="type_zone"       type="NVARCHAR(50)"/>
+
+            <!-- Hiérarchie parent → enfant -->
+            <column name="zone_parente"    type="BIGINT"/>
+
+            <!-- Actif sur la carte -->
+            <column name="actif"           type="BIT" defaultValueBoolean="true"/>
+        </addColumn>
+
+        <rollback>
+            <dropColumn tableName="zoneGeographique" columnName="latitude"/>
+            <dropColumn tableName="zoneGeographique" columnName="longitude"/>
+            <dropColumn tableName="zoneGeographique" columnName="geojson_polygon"/>
+            <dropColumn tableName="zoneGeographique" columnName="type_zone"/>
+            <dropColumn tableName="zoneGeographique" columnName="zone_parente"/>
+            <dropColumn tableName="zoneGeographique" columnName="actif"/>
+        </rollback>
+    </changeSet>
+
+    <!--
+        FK self-référentielle pour la hiérarchie.
+        Note SQL Server : les actions cascadantes (CASCADE / SET NULL / SET DEFAULT)
+        sont interdites sur une FK self-référentielle car elles peuvent introduire
+        des cycles. On utilise donc NO ACTION (défaut). La suppression des zones
+        parentes est gérée applicativement (orphan handling côté service).
+    -->
+    <changeSet id="P10-501b-fk-zoneGeographique-parente" author="microfina">
+        <addForeignKeyConstraint
+            constraintName       = "FK_zoneGeographique_parente"
+            baseTableName        = "zoneGeographique"
+            baseColumnNames      = "zone_parente"
+            referencedTableName  = "zoneGeographique"
+            referencedColumnNames= "idZoneGeographique"/>
+
+        <rollback>
+            <dropForeignKeyConstraint
+                baseTableName  = "zoneGeographique"
+                constraintName = "FK_zoneGeographique_parente"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

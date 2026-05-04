@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P2-003 – membres  (standalone table, NOT a TIERS subtype)
+        Spec p.40-43.  PK = NUM_MEMBRE (AN/25).
+        Own DTYPE discriminator (physical / moral / group member subtypes).
+        FK constraints wired only to Phase-1 tables (AGENCE, ADRESSE, zoneGeographique,
+        FormeJuridique) and Phase-2 TIERS.
+        All other FKs (categorie, produitEpargne, typePiece, pays, …) are
+        stored as plain columns; constraints deferred to later phases.
+    -->
+    <changeSet id="P2-003-CREATE-TABLE-membres" author="microfina">
+        <comment>Create membres table – all member types (physical, moral, group); 80+ columns per spec p.40-43</comment>
+
+        <createTable tableName="membres">
+
+            <!-- ── PK ──────────────────────────────────────────── -->
+            <column name="NUM_MEMBRE"              type="NVARCHAR(25)">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="PK_membres"/>
+            </column>
+            <!-- Own discriminator (physical / moral / groupement) -->
+            <column name="DTYPE"                   type="NVARCHAR(31)"/>
+
+            <!-- ── Core identity ────────────────────────────────── -->
+            <column name="NOM"                     type="NVARCHAR(255)"/>
+            <column name="PRENOM"                  type="NVARCHAR(255)"/>
+            <column name="NOMJEUNEFILLE"            type="NVARCHAR(255)"/>
+            <column name="nomMere"                 type="NVARCHAR(255)"/>
+            <column name="nomPere"                 type="NVARCHAR(255)"/>
+            <column name="SEXE"                    type="NVARCHAR(1)"/>
+            <column name="DATENAISSANCE"           type="DATE"/>
+            <column name="LIEUNAISSANCE"           type="NVARCHAR(255)"/>
+            <column name="AGE"                     type="INT"/>
+            <column name="ANALPHABETE"             type="NVARCHAR(1)"/>
+            <column name="SituationMatrimoniale"   type="NVARCHAR(255)"/>
+            <column name="matriculemembre"         type="NVARCHAR(255)"/>
+            <column name="personneAcontacter"      type="NVARCHAR(255)"/>
+
+            <!-- ── Membership status ────────────────────────────── -->
+            <column name="ETAT"                    type="NVARCHAR(255)"/>
+            <column name="STATUT"                  type="NVARCHAR(255)"/>
+            <column name="DATECREATIONUSER"        type="DATE"/>
+            <column name="dateDemande"             type="DATE"/>
+            <column name="DATEVALIDATION"          type="DATE"/>
+            <column name="DATEDEPART"              type="DATE"/>
+            <column name="dateExpirPiece"          type="DATE"/>
+            <column name="DEPART"                  type="INT"/>
+            <column name="MOTIFREJET"              type="NVARCHAR(255)"/>
+            <column name="VISE"                    type="INT"/>
+
+            <!-- ── Counter & numbering ──────────────────────────── -->
+            <column name="compteur"                type="BIGINT"/>
+            <column name="numManuelle"             type="NVARCHAR(255)"/>
+            <column name="Numutil"                 type="BIGINT"/>
+
+            <!-- ── Financial ────────────────────────────────────── -->
+            <column name="NBREPAS"                 type="BIGINT"/>
+            <column name="depot"                   type="DECIMAL(19,4)"/>
+            <column name="DROITENTREE"             type="DECIMAL(19,4)"/>
+            <column name="FRAISOUVERT"             type="DECIMAL(19,4)"/>
+            <column name="mtSensibilisateur"       type="DECIMAL(19,4)"/>
+            <column name="nbre_signataire_exige"   type="INT"/>
+            <column name="sans_nni"                type="INT"/>
+
+            <!-- ── Contact information ──────────────────────────── -->
+            <column name="CONTACTPERSONNECONTACT"  type="NVARCHAR(255)"/>
+            <column name="INFOPERSONNECONTACT"     type="NVARCHAR(255)"/>
+            <column name="lieutEtablissementCarte" type="NVARCHAR(255)"/>
+            <column name="MEMBREPRIVILEGE"         type="NVARCHAR(1)"/>
+            <column name="Observation"             type="NVARCHAR(255)"/>
+            <column name="CARTE"                   type="NVARCHAR(255)"/>
+
+            <!-- ── Family & social ──────────────────────────────── -->
+            <column name="NBRE_ENF"                type="INT"/>
+            <column name="NBRE_PERS_CHARG"         type="INT"/>
+            <column name="LOGEMENT"                type="NVARCHAR(1)"/>
+            <column name="personcharge"            type="INT"/>
+            <column name="nbreenfant"              type="INT"/>
+            <column name="chargeable"              type="NVARCHAR(1)"/>
+
+            <!-- ── Document / piece ─────────────────────────────── -->
+            <column name="dateCreerPiece"          type="DATE"/>
+            <column name="PRELEVERAGIOS"           type="INT"/>
+            <column name="CALCULERINTERET"         type="INT"/>
+            <column name="RESIDENT"                type="INT"/>
+            <column name="pieceTransfert"          type="NVARCHAR(50)"/>
+
+            <!-- ── Geography & location ─────────────────────────── -->
+            <column name="longitude"               type="NVARCHAR(50)"/>
+            <column name="latitude"                type="NVARCHAR(50)"/>
+            <column name="zoneg"                   type="BIGINT"/>
+
+            <!-- ── Account defaults ─────────────────────────────── -->
+            <column name="devise_premier_compte"   type="NVARCHAR(10)"/>
+            <column name="code_retrait"            type="NVARCHAR(5)"/>
+
+            <!-- ── Legal member (moral person) columns ──────────── -->
+            <column name="GROUPE"                  type="NVARCHAR(255)"/>
+            <column name="raison_sociale"          type="NVARCHAR(255)"/>
+            <column name="DATEFONDATION"           type="DATE"/>
+            <column name="nbrefemme"               type="INT"/>
+            <column name="nbrehomme"               type="INT"/>
+            <column name="rccm"                    type="NVARCHAR(30)"/>
+            <column name="numInstallation"         type="NVARCHAR(30)"/>
+            <column name="cogerance"               type="INT"/>
+            <column name="NUM_AGREMENT"            type="NVARCHAR(30)"/>
+            <column name="DATE_AGREMENT"           type="DATE"/>
+            <column name="NUM_CONVENTION"          type="NVARCHAR(30)"/>
+            <column name="DATE_CONVENTION"         type="DATE"/>
+            <column name="raison_depart"           type="NVARCHAR(255)"/>
+            <column name="dirigeant"               type="INT"/>
+            <column name="code_membre_def"         type="NVARCHAR(25)"/>
+            <column name="code_membre"             type="NVARCHAR(25)"/>
+            <column name="CODE_EMPLOYE"            type="NVARCHAR(50)"/>
+            <column name="numero_national_id"      type="NVARCHAR(50)"/>
+            <column name="datereel"                type="DATE"/>
+
+            <!-- ── Optimistic lock ──────────────────────────────── -->
+            <column name="VERSION"                 type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- ── FK columns (Phase-1 targets) ─────────────────── -->
+            <column name="agence"                  type="NVARCHAR(25)"/>
+            <column name="agenceOrigine"           type="NVARCHAR(25)"/>
+            <column name="ADRESSE_IDADRESSE"       type="NVARCHAR(48)"/>
+            <column name="CODE_TIERS"              type="NVARCHAR(50)"/>
+
+            <!-- FK to FormeJuridique (Phase 1, numeric PK) -->
+            <column name="formeJuridique"          type="BIGINT"/>
+            <!-- FK to zoneGeographique (Phase 1, numeric PK) -->
+            <column name="zoneGeographique"        type="BIGINT"/>
+
+            <!-- ── FK columns (phase 2+ – plain columns, no constraint yet) ── -->
+            <column name="categorie"               type="NVARCHAR(25)"/>
+            <column name="commercial"              type="NVARCHAR(50)"/>
+            <column name="gestionnaire"            type="NVARCHAR(50)"/>
+            <column name="membrePere"              type="NVARCHAR(25)"/>
+            <column name="parrain"                 type="NVARCHAR(50)"/>
+            <column name="PARTSOCIALE"             type="NVARCHAR(50)"/>
+            <column name="pays"                    type="BIGINT"/>
+            <column name="personneContacter"       type="NVARCHAR(50)"/>
+            <column name="produitEpargne"          type="NVARCHAR(20)"/>
+            <column name="secteurActivite"         type="NVARCHAR(20)"/>
+            <column name="sensibilisateur"         type="NVARCHAR(50)"/>
+            <column name="sousTypeMembre"          type="BIGINT"/>
+            <column name="typeClient"              type="BIGINT"/>
+            <column name="typePiece"               type="BIGINT"/>
+            <column name="utilisateur"             type="NVARCHAR(50)"/>
+            <column name="zone"                    type="NVARCHAR(25)"/>
+            <column name="photo"                   type="BIGINT"/>
+            <column name="TypeActivite"            type="BIGINT"/>
+            <column name="typeGroupement"          type="BIGINT"/>
+            <column name="civilite"                type="BIGINT"/>
+            <column name="section"                 type="BIGINT"/>
+            <column name="signature"               type="BIGINT"/>
+            <column name="ACTIVITE"                type="BIGINT"/>
+            <column name="ID_STRUCT_ADMIN"         type="BIGINT"/>
+            <column name="ID_GS"                   type="BIGINT"/>
+            <column name="MOTIFDEPART"             type="BIGINT"/>
+            <column name="paysCreerPiece"          type="BIGINT"/>
+            <column name="guichet_mobile"          type="NVARCHAR(255)"/>
+            <column name="profession"              type="BIGINT"/>
+        </createTable>
+
+        <!-- FK to AGENCE (Phase 1) -->
+        <addForeignKeyConstraint
+            baseTableName="membres"         baseColumnNames="agence"
+            referencedTableName="AGENCE"    referencedColumnNames="CODE_AGENCE"
+            constraintName="FK_membres_AGENCE"/>
+
+        <addForeignKeyConstraint
+            baseTableName="membres"         baseColumnNames="agenceOrigine"
+            referencedTableName="AGENCE"    referencedColumnNames="CODE_AGENCE"
+            constraintName="FK_membres_AGENCE_origine"/>
+
+        <!-- FK to ADRESSE (Phase 1) -->
+        <addForeignKeyConstraint
+            baseTableName="membres"         baseColumnNames="ADRESSE_IDADRESSE"
+            referencedTableName="ADRESSE"   referencedColumnNames="IDADRESSE"
+            constraintName="FK_membres_ADRESSE"/>
+
+        <!-- FK to FormeJuridique (Phase 1) -->
+        <addForeignKeyConstraint
+            baseTableName="membres"             baseColumnNames="formeJuridique"
+            referencedTableName="FormeJuridique" referencedColumnNames="CODE"
+            constraintName="FK_membres_FormeJuridique"/>
+
+        <!-- FK to TIERS (Phase 2) -->
+        <addForeignKeyConstraint
+            baseTableName="membres"         baseColumnNames="CODE_TIERS"
+            referencedTableName="TIERS"     referencedColumnNames="CODE_TIERS"
+            constraintName="FK_membres_TIERS"/>
+
+        <rollback>
+            <dropAllForeignKeyConstraints baseTableName="membres"/>
+            <dropTable tableName="membres"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

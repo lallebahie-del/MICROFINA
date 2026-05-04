@@ -1,4 +1,6 @@
 import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { AuthService } from '../../core/auth.service';
 
 interface SubMenuItem {
   label: string;
@@ -15,144 +17,19 @@ interface NavItem {
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './navbar.html',
   styleUrl: './navbar.css'
 })
 export class NavbarComponent {
-  navItems: NavItem[] = [
-    {
-      label: 'Client',
-      icon: 'person',
-      children: [
-        { label: 'Enrolement', icon: '👤', children: [
-          { label: 'Physique', icon: '👤' },
-          { label: 'Entreprise', icon: '🏢' },
-          { label: 'Groupe', icon: '👥' }
-        ]},
-        { label: 'Visa', icon: '🔵', children: [
-          { label: 'Viser un client', icon: '✅' },
-          { label: 'Modifier Frais', icon: '✏️' },
-          { label: 'client modifié', icon: '📝' }
-        ]},
-        { label: 'Consulter client', icon: '📋' },
-        { label: 'Groupe solidaire', icon: '👥' },
-        { label: 'Nouveau prospect', icon: '📄' },
-        { label: 'Mise à jour d\'un client', icon: '🔄' },
-        { label: 'Gestion des Procurations', icon: '📑', children: [] },
-        { label: 'Resilier Contrat', icon: '❌' },
-        { label: 'Gestion Photo/Signature', icon: '📷' },
-        { label: 'Gestion Chequier', icon: '📒', children: [] },
-        { label: 'Gestion de transferts', icon: '🔀' },
-        { label: 'Rapport', icon: '📊', children: [] }
-      ]
-    },
-    {
-      label: 'Part sociale',
-      icon: 'people',
-      children: [
-        { label: 'Souscription', icon: '📝' },
-        { label: 'Remboursement', icon: '💰' },
-        { label: 'Rapport', icon: '📊', children: [] }
-      ]
-    },
-    {
-      label: 'Banque',
-      icon: 'bank',
-      children: [
-        { label: 'Opération', icon: '💳' },
-        { label: 'Virement Prélèvement', icon: '🔄' },
-        { label: 'Déblocage crédit', icon: '🔓' },
-        { label: 'Remboursement de crédit', icon: '💰' },
-        { label: 'Visa', icon: '✅', children: [] },
-        { label: 'Validation', icon: '✔️', children: [] },
-        { label: 'Création banque', icon: '🏦', children: [] },
-        { label: 'Gestion Chèque Client', icon: '📄', children: [] },
-        { label: 'Gestion Chèque Institution', icon: '🏛️', children: [] },
-        { label: 'Emprunts bancaires', icon: '📋' },
-        { label: 'Emprunts DAT', icon: '📋', children: [] },
-        { label: 'Rapport', icon: '📊' }
-      ]
-    },
-    {
-      label: 'Compte',
-      icon: 'account',
-      children: [
-        { label: 'Consultation', icon: '🔍' },
-        { label: 'Rapport', icon: '📊', children: [] }
-      ]
-    },
-    {
-      label: 'Caisse',
-      icon: 'cash',
-      children: [
-        { label: 'Opération', icon: '💳' },
-        { label: 'Billetage', icon: '💵', children: [] },
-        { label: 'Transfert entre caisse', icon: '🔄', children: [] },
-        { label: 'Valider opérations', icon: '✔️', children: [] },
-        { label: 'Règlement facture espèce', icon: '🧾' },
-        { label: 'Opérations mobile', icon: '📱', children: [] },
-        { label: 'Rapport', icon: '📊' }
-      ]
-    },
-    {
-      label: 'Crédit',
-      icon: 'credit',
-      children: [
-        { label: 'Demande de crédit', icon: '📝' },
-        { label: 'Étude de crédit', icon: '🔍' },
-        { label: 'Déblocage', icon: '🔓' },
-        { label: 'Remboursement', icon: '💰' },
-        { label: 'Rapport', icon: '📊', children: [] }
-      ]
-    },
-    {
-      label: 'Comptabilite',
-      icon: 'accounting',
-      children: [
-        { label: 'Plan comptable', icon: '📋' },
-        { label: 'Saisie écriture', icon: '✏️' },
-        { label: 'Grand livre', icon: '📖' },
-        { label: 'Balance', icon: '⚖️' },
-        { label: 'Rapport', icon: '📊', children: [] }
-      ]
-    },
-    {
-      label: 'Budget',
-      icon: 'budget',
-      children: [
-        { label: 'Budget prévisionnel', icon: '📋' },
-        { label: 'Suivi budgétaire', icon: '📈' },
-        { label: 'Rapport', icon: '📊', children: [] }
-      ]
-    },
-    {
-      label: 'Autres',
-      icon: 'more',
-      children: [
-        { label: 'Gestion courrier', icon: '✉️' },
-        { label: 'Gestion stock', icon: '📦' }
-      ]
-    },
-    {
-      label: 'Paramétrages',
-      icon: 'settings',
-      children: [
-        { label: 'Paramètres généraux', icon: '⚙️' },
-        { label: 'Paramètres produit', icon: '📋' },
-        { label: 'Paramètres agence', icon: '🏢' }
-      ]
-    },
-    {
-      label: 'Administration',
-      icon: 'admin',
-      children: [
-        { label: 'Gestion utilisateurs', icon: '👥' },
-        { label: 'Gestion rôles', icon: '🔐' },
-        { label: 'Journal d\'audit', icon: '📋' }
-      ]
-    }
-  ];
+  constructor(public authService: AuthService) {}
+ 
+   logout(): void {
+     this.authService.logout();
+   }
+   // Navigation principale gérée par la sidebar — la barre du haut ne contient
+   // plus que le branding, l'utilisateur courant et le bouton de déconnexion.
+   navItems: NavItem[] = [];
 
   iconPaths: Record<string, string> = {
     person: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',

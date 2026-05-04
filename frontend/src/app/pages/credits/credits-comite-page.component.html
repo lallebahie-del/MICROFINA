@@ -1,0 +1,37 @@
+<div class="page-container">
+  <div class="page-header">
+    <h1>Comité de crédit — Dossiers en attente</h1>
+    <button class="btn btn-secondary" (click)="charger()">↻ Rafraîchir</button>
+  </div>
+
+  <div *ngIf="error"   class="alert alert-danger">{{ error }}</div>
+  <div *ngIf="loading" class="loading">Chargement…</div>
+
+  <table *ngIf="!loading" class="table table-hover">
+    <thead>
+      <tr>
+        <th>N° crédit</th>
+        <th>Membre</th>
+        <th>Montant demandé</th>
+        <th>Étape</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let d of dossiers">
+        <td>{{ d.numCredit }}</td>
+        <td>—</td>
+        <td>—</td>
+        <td>{{ etapeLabel(d.etapeCourante) }}</td>
+        <td>
+          <button class="btn btn-sm btn-primary" (click)="ouvrir(d.idCredit)">
+            Ouvrir
+          </button>
+        </td>
+      </tr>
+      <tr *ngIf="dossiers.length === 0">
+        <td colspan="5" class="text-center">Aucun dossier en attente de décision comité.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

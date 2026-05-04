@@ -1,0 +1,41 @@
+<div class="page-container">
+  <h2 class="page-title">Garanties</h2>
+
+  <div class="filters">
+    <input type="number" [(ngModel)]="creditIdFilter" placeholder="ID Crédit" class="form-control" />
+    <button (click)="load()" class="btn btn-primary">Rechercher</button>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+  <div *ngIf="loading" class="loading">Chargement…</div>
+
+  <table *ngIf="!loading && garanties.length > 0" class="table">
+    <thead>
+      <tr>
+        <th>ID</th><th>Type</th><th>Valeur estimée (MRU)</th><th>Description</th><th>Statut</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let g of garanties">
+        <td>{{ g.id }}</td>
+        <td>{{ g.typeGarantie }}</td>
+        <td class="montant">{{ g.valeurEstimee | number:'1.2-2' }}</td>
+        <td>{{ g.description ?? '—' }}</td>
+        <td>
+          <span [class]="g.statut === 'ACTIVE' ? 'badge badge-success' : 'badge badge-secondary'">
+            {{ g.statut }}
+          </span>
+        </td>
+        <td>
+          <button *ngIf="g.statut === 'ACTIVE'" (click)="liberer(g.id)" class="btn btn-sm btn-warning">
+            Libérer
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p *ngIf="!loading && garanties.length === 0 && creditIdFilter" class="empty-state">
+    Aucune garantie pour ce crédit.
+  </p>
+</div>

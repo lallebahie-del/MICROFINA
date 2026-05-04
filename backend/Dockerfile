@@ -1,9 +1,40 @@
-FROM eclipse-temurin:21-jdk-alpine
+# ── Stage 1: Build ────────────────────────────────────────────────────────────
+# Build context is the MICROFINA root directory (set in docker-compose.yaml)
+FROM maven:3.9.9-eclipse-temurin-21 AS build
+
 WORKDIR /app
-COPY . .
-# S'assurer que le script mvnw est exécutable
+
+# Copy POM + Maven wrapper first (cache dependency layer)
+COPY backend/pom.xml .
+COPY backend/.mvn/ .mvn/
+COPY backend/mvnw .
 RUN chmod +x mvnw
-# Installation des dépendances
-RUN ./mvnw clean install -DskipTests
-# Commande pour lancer l'application avec les arguments de sécurité pour TLS
-ENTRYPOINT ["./mvnw", "spring-boot:run", "-Dspring-boot.run.jvmArguments='-Djdk.tls.client.protocols=TLSv1,TLSv1.1,TLSv1.2 -Djava.security.properties=java.security'"]
+
+# Download all dependencies — cached unless pom.xml changes
+RUN mvn dependency:go-offline -B \
+    -Dhttps.protocols=TLSv1.2 \
+    --no-transfer-progress \
+    || true
+
+# Copy backend source code
+COPY backend/src/ src/
+
+# Copy entity sources from project root (pom.xml references ../src/main/java)
+# Maven resolves ${project.basedir}/../src = /app/../src = /src
+COPY src/ /src/
+
+# Build the fat JAR
+RUN mvn clean package -DskipTests -B \
+    -Dhttps.protocols=TLSv1.2 \
+    --no-transfer-progress
+
+# ── Stage 2: Runtime ──────────────────────────────────────────────────────────
+FROM eclipse-temurin:21-jre
+
+WORKDIR /app
+
+COPY --from=build /app/target/*.jar app.jar
+
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "app.jar"]

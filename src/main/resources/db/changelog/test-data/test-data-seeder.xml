@@ -1,0 +1,1365 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ╔══════════════════════════════════════════════════════════════════════════╗
+  ║  MICROFINA++ – Master Test Data Seeder                                   ║
+  ║  Target DB:  SQL Server (NVARCHAR, IDENTITY columns)                     ║
+  ║  Purpose:    End-to-end QA environment – Phases 1-5                      ║
+  ║                                                                          ║
+  ║  Execution order (FK-safe):                                              ║
+  ║    §1  Organisational Foundation (institution, agences, agents)          ║
+  ║    §2  Reference Data (mode_calcul, modèle_compte, famille_produit)      ║
+  ║    §3  Products (islamique, dégressif, epargne)                          ║
+  ║    §4  Customer Base (TIERS → personne → membres, groupement)            ║
+  ║    §5  Transactional Snapshot (credits, amortp, reglements, visa)        ║
+  ║                                                                          ║
+  ║  ⚠  NEVER include this file in db.changelog-master.xml.                 ║
+  ║     Apply manually: liquibase update ==changelog-file=…/test-data-seeder.xml ║
+  ║                                                                          ║
+  ║  Business scenario:                                                      ║
+  ║    • Credit CR-2024-00001 (MBR005 – Aissatou Bah): DEBLOQUE             ║
+  ║      - 12-month DEGRESSIF schedule at 12 % p.a. on 500 000 MRU          ║
+  ║      - Écheances 1 & 2 → REGLE with matching Comptabilite + Reglement   ║
+  ║      - Écheance 3 → EN_RETARD (PAR180+ in vue_par_bcm)                  ║
+  ║      - Écheances 4-12 → EN_ATTENTE                                       ║
+  ║    • Credit CR-2024-00002 (MBR002 – Mohamed Ould Sidi): SOUMIS           ║
+  ║      - Pending approval workflow (no Amortp yet)                         ║
+  ╚══════════════════════════════════════════════════════════════════════════╝
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §1-A – INSTITUTION
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-001-institution" author="microfina-qa">
+        <comment>Seed institution: Microfina+ SIM (Mauritanie)</comment>
+
+        <sql>
+            INSERT INTO institution (
+                CODE_INSTITUTION, ACTIF, DENOMINATION, DIRECTEUR,
+                MODEUSAGE, NUMEROAGREMAT, raison_sociale,
+                devise_principale, modeCalculInteret,
+                NBRMAXCREDITSIMULTANE, PARTSOCIALE_OBLIGATOIRE,
+                JOURNALIER, SEND_SMS
+            ) VALUES (
+                'MICROFINA', 1, 'Microfina+ – Société Islamique de Microfinance',
+                'Moussa Ould Ahmed',
+                'PRODUCTION', 'BCM-AGR-2020-0042',
+                'MICROFINA SIM S.A.',
+                'MRU', 'DEGRESSIF',
+                2, 1,
+                1, 0
+            );
+        </sql>
+
+        <rollback>
+            <sql>DELETE FROM institution WHERE CODE_INSTITUTION = 'MICROFINA';</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §1-B – AGENCES
+         Nouakchott (siège), Nouadhibou (antenne)
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-002-agences" author="microfina-qa">
+        <comment>Seed 2 agencies: NKC (siège) and NDB (antenne)</comment>
+
+        <sql>
+            INSERT INTO AGENCE (
+                CODE_AGENCE, ACTIF, NOMAGENCE, NUMAGENCE,
+                ISSIEGE, institution, devise_local,
+                PREF, SUFF, Compteur,
+                DERNIERE_JRNEE_OUVERTE
+            ) VALUES
+            (
+                'NKC', 1,
+                'Agence Principale de Nouakchott',
+                'AGC-NKC-001',
+                'O', 'MICROFINA', 'MRU',
+                'NKC', '0001', 0,
+                '2024-01-14'
+            ),
+            (
+                'NDB', 1,
+                'Agence de Nouadhibou',
+                'AGC-NDB-001',
+                'N', 'MICROFINA', 'MRU',
+                'NDB', '0001', 0,
+                '2024-01-14'
+            );
+        </sql>
+
+        <rollback>
+            <sql>DELETE FROM AGENCE WHERE CODE_AGENCE IN ('NKC', 'NDB');</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §1-C – AGENTS CRÉDIT
+         1 Administrateur + 2 Agents de Crédit (dont 1 Comité)
+
+         Spring Security credentials:
+           usercode      → login username
+           password      → BCrypt(cost=12) hash
+           tfunction     → mapped to ROLE_ADMIN / ROLE_AGENT / ROLE_COMITE
+
+         Clear-text passwords (for local testing ONLY):
+           admin       / Admin@1234    → ROLE_ADMIN
+           aminata.sow / Agent@1234    → ROLE_AGENT
+           oumar.ba    / Comite@1234   → ROLE_COMITE
+
+         NOTE: AGENT_CREDIT PK = CODE_AGENT (NVARCHAR 25).
+               The FK Credits.agentcredit → IDAGENTCREDIT references a
+               non-existent column (known schema bug); Credits.agentcredit
+               is left NULL in §5 to avoid the broken FK.
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-003-agents-credit" author="microfina-qa">
+        <comment>Seed admin + 1 credit agent + 1 comité member with BCrypt passwords</comment>
+
+        <sql>
+            INSERT INTO AGENT_CREDIT (
+                CODE_AGENT, DESIGNATION, actif,
+                CODE_AGENCE, sexe_agent, tfunction,
+                account, usercode, password, tlanguage, inuse
+            ) VALUES
+            (
+                /* ── ADMINISTRATEUR SYSTÈME ─────────────────────────────
+                   Login : admin          Password : Admin@1234
+                   Role  : ROLE_ADMIN
+                   ───────────────────────────────────────────────────── */
+                'ADMIN01', 'Administrateur Système – Moussa Ould Ahmed',
+                'O', 'NKC', 'M', 'ADMIN',
+                'admin01', 'admin',
+                '$2b$12$qQcLK3GrGfDTsfJROQn5JuyEsj7re6AR3WKldnwvILxQf9eWXcCsi',
+                'FR', 0
+            ),
+            (
+                /* ── AGENT DE CRÉDIT – NOUAKCHOTT ───────────────────────
+                   Login : aminata.sow    Password : Agent@1234
+                   Role  : ROLE_AGENT
+                   ───────────────────────────────────────────────────── */
+                'AGT_NKC', 'Aminata Sow – Agent de Crédit Nouakchott',
+                'O', 'NKC', 'F', 'AGENT_CREDIT',
+                'agt_nkc', 'aminata.sow',
+                '$2b$12$tPYW/sQSatg2BNEplEJtYeTDGiUJrPhKkKvQODFbggc7Xz.18eOzG',
+                'FR', 0
+            ),
+            (
+                /* ── MEMBRE DU COMITÉ DE CRÉDIT – NOUADHIBOU ────────────
+                   Login : oumar.ba       Password : Comite@1234
+                   Role  : ROLE_COMITE
+                   tfunction changed to 'COMITE' (was AGENT_CREDIT) to
+                   demonstrate the ROLE_COMITE grant on /api/credits/valider
+                   ───────────────────────────────────────────────────── */
+                'AGT_NDB', 'Oumar Ba – Membre du Comité de Crédit Nouadhibou',
+                'O', 'NDB', 'M', 'COMITE',
+                'agt_ndb', 'oumar.ba',
+                '$2b$12$/RV6POtORVm1QmfQR31.ae4FQ6pWfv.3IdbZyOOtK9gKBDj8s/kWG',
+                'FR', 0
+            );
+        </sql>
+
+        <rollback>
+            <sql>DELETE FROM AGENT_CREDIT WHERE CODE_AGENT IN ('ADMIN01','AGT_NKC','AGT_NDB');</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §2-A – MODE DE CALCUL INTÉRÊT
+         CODEMODE is BIGINT IDENTITY → use SET IDENTITY_INSERT
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-004-mode-calcul-interet" author="microfina-qa">
+        <comment>Seed 3 interest modes: DEGRESSIF(1) SIMPLE(2) COMPOSE(3)</comment>
+
+        <sql>
+            SET IDENTITY_INSERT mode_de_calcul_interet ON;
+
+            INSERT INTO mode_de_calcul_interet (CODEMODE, DESCRIPTION, MODECALCUL, VERSION)
+            VALUES
+            (1, 'Amortissement Dégressif – Solde Restant Dû (méthode standard MFI)',    'DEGRESSIF', 0),
+            (2, 'Intérêt Simple – Taux Plat sur Capital Initial',                        'SIMPLE',    0),
+            (3, 'Intérêt Composé – Capitalisation Périodique',                           'COMPOSE',   0);
+
+            SET IDENTITY_INSERT mode_de_calcul_interet OFF;
+        </sql>
+
+        <rollback>
+            <sql>
+                SET IDENTITY_INSERT mode_de_calcul_interet ON;
+                DELETE FROM mode_de_calcul_interet WHERE CODEMODE IN (1,2,3);
+                SET IDENTITY_INSERT mode_de_calcul_interet OFF;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §2-B – MODÈLE COMPTE PRODUIT CRÉDIT
+         ID_MODEL_PRODUIT_CREDIT is BIGINT IDENTITY
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-005-model-compte" author="microfina-qa">
+        <comment>Seed 2 accounting models: standard and Islamic</comment>
+
+        <sql>
+            SET IDENTITY_INSERT Model_Compte_Produit_Credit ON;
+
+            INSERT INTO Model_Compte_Produit_Credit
+                (ID_MODEL_PRODUIT_CREDIT, LIBELLEMODELPRODUITCREDIT,
+                 ressource_affecte, model_islamic, VERSION)
+            VALUES
+            (1, 'Modèle Comptable Standard – Crédit Dégressif',  0, 0, 0),
+            (2, 'Modèle Comptable Islamique – Mourabaha / Ijara', 0, 1, 0);
+
+            SET IDENTITY_INSERT Model_Compte_Produit_Credit OFF;
+        </sql>
+
+        <rollback>
+            <sql>
+                SET IDENTITY_INSERT Model_Compte_Produit_Credit ON;
+                DELETE FROM Model_Compte_Produit_Credit
+                WHERE ID_MODEL_PRODUIT_CREDIT IN (1,2);
+                SET IDENTITY_INSERT Model_Compte_Produit_Credit OFF;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §2-C – FAMILLE PRODUIT CRÉDIT
+         CODEFAMILLEPRODUITCREDIT is NVARCHAR(255) – no IDENTITY
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-006-famille-produit" author="microfina-qa">
+        <comment>Seed 2 product families: standard and Islamic</comment>
+
+        <sql>
+            INSERT INTO FAMILLEPRODUITCREDIT
+                (CODEFAMILLEPRODUITCREDIT, nomfamilleProduitCredit, VERSION)
+            VALUES
+            ('FAM_STD', 'Crédits Standards et Solidaires', 0),
+            ('FAM_ISL', 'Produits Islamiques (Mourabaha / Ijara)', 0);
+        </sql>
+
+        <rollback>
+            <sql>DELETE FROM FAMILLEPRODUITCREDIT
+                 WHERE CODEFAMILLEPRODUITCREDIT IN ('FAM_STD','FAM_ISL');</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §3-A – PRODUIT ISLAMIQUE (produit_islamic)
+         code_produit is NVARCHAR(50) – no IDENTITY
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-007-produit-islamic" author="microfina-qa">
+        <comment>Seed Mourabaha product in produit_islamic table</comment>
+
+        <sql>
+            INSERT INTO produit_islamic (
+                code_produit, libelle, description, actif,
+                taux_partage_benefice,
+                cost_price_ratio,   == Mourabaha: proportion du coût d'acquisition
+                markup_ratio,       == Mourabaha: marge bénéficiaire déclarée
+                residual_value_ratio, == Ijara: valeur résiduelle finale
+                VERSION
+            ) VALUES (
+                'ISL_MOURABAHA',
+                'Mourabaha – Financement Commercial',
+                'Contrat de vente à terme avec marge bénéficiaire déclarée – conforme charia',
+                1,
+                30.0000,   == 30 % du bénéfice net partagé avec le membre
+                0.7000,    == 70 % du montant = prix de revient institution
+                0.3000,    == 30 % = marge déclarée (mark-up)
+                0.0000,    == pas de valeur résiduelle (Mourabaha ≠ Ijara)
+                0
+            );
+        </sql>
+
+        <rollback>
+            <sql>DELETE FROM produit_islamic WHERE code_produit = 'ISL_MOURABAHA';</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §3-B – PRODUIT CRÉDIT 1: Dégressif Standard (12 % / an)
+         NUMPRODUIT is NVARCHAR(20) – no IDENTITY
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-008-produitcredit-degressif" author="microfina-qa">
+        <comment>Seed Product 1: standard 12% degressive monthly credit</comment>
+
+        <sql>
+            INSERT INTO produitcredit (
+                NUMPRODUIT, NOMPRODUIT, DESCRIPTION, ACTIF,
+                MONTANTMIN, MONTANTMAX,
+                DUREEMIN,   DUREEMAX,
+                TAUXINTERET, PERIODICITEREMBOURSEMENT,
+                DELAIGRACE, INTERETPENDANTGRACE, TYPEGRACE,
+                TAUXPENALITE, BASECALCULPENALITE, JOURSTOLERANCEPENALITE,
+                TAUXCOMMISSION, MODEPRELEVEMENT_COMMISSION,
+                TAUXASSURANCE,
+                TAUXEPARGNEOBLIGATOIRE, TAUXGARANTIEEPARGNE,
+                DECAISSEMENT_NET,
+                COMPTE_CAPITAL,          COMPTE_INTERET,
+                COMPTE_INTERET_COURU,    COMPTE_COMMISSION,
+                COMPTE_ASSURANCE,        COMPTE_PENALITE,
+                COMPTE_DEBLOCAGE,        COMPTE_PROVISION,
+                COMPTE_CREANCE_DOUTEUSE,
+                AUTORISER_RENEG, AUTORISER_REMBOURSEMENT_ANTICIPE,
+                TAUX_REMB_ANTICIPE,
+                TYPE_CLIENT, TYPE_CREDIT,
+                GARANTIE_REQUISE,
+                SEUIL_RETARD_1, SEUIL_RETARD_2, SEUIL_RETARD_3,
+                codefamilleproduitcredit,
+                codemode,
+                id_model_produit_credit,
+                VERSION
+            ) VALUES (
+                'CRED_DEG_01',
+                'Crédit Mensuel Dégressif – 12 % l''an',
+                'Crédit individuel remboursable mensuellement, taux dégressif 12 % an,'
+                + ' avec 1 mois de grâce sur le capital (intérêts dus pendant la grâce)',
+                1,
+                10000.0000,   5000000.0000,
+                3,            36,
+                12.0000,      'M',          == 12 % annuel, périodicité mensuelle
+                1,            1,            'P',  == 1 mois grâce capital, intérêts courus
+                2.0000,       'CAPITAL_RESTANT', 3,
+                1.0000,       'DEBUT',      == commission 1 % prélevée au déblocage
+                0.5000,                     == assurance 0,5 %
+                5.0000,       10.0000,      == épargne obligatoire 5 %, garantie 10 %
+                1,                          == décaissement net (déduit commission)
+                '162100',     '702100',
+                '174100',     '706100',
+                '166100',     '756100',
+                '162100',     '491100',
+                '496100',
+                1,            1,
+                1.5000,                     == pénalité remboursement anticipé 1,5 %
+                'INDIVIDUEL', 'INDIVIDUEL',
+                0,                          == garantie non obligatoire
+                30,           90,           180,
+                'FAM_STD',
+                1,                          == CODEMODE 1 = DEGRESSIF
+                1,                          == ID_MODEL = 1 (standard)
+                0
+            );
+        </sql>
+
+        <rollback>
+            <sql>DELETE FROM produitcredit WHERE NUMPRODUIT = 'CRED_DEG_01';</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §3-C – PRODUIT CRÉDIT 2: Mourabaha (islamique)
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-009-produitcredit-islamique" author="microfina-qa">
+        <comment>Seed Product 2: Mourabaha Islamic credit product</comment>
+
+        <sql>
+            INSERT INTO produitcredit (
+                NUMPRODUIT, NOMPRODUIT, DESCRIPTION, ACTIF,
+                MONTANTMIN, MONTANTMAX,
+                DUREEMIN,   DUREEMAX,
+                TAUXINTERET, PERIODICITEREMBOURSEMENT,
+                DELAIGRACE, INTERETPENDANTGRACE, TYPEGRACE,
+                TAUXPENALITE, TAUXCOMMISSION, TAUXASSURANCE,
+                DECAISSEMENT_NET,
+                COMPTE_CAPITAL, COMPTE_INTERET,
+                COMPTE_INTERET_COURU, COMPTE_DEBLOCAGE,
+                AUTORISER_RENEG, AUTORISER_REMBOURSEMENT_ANTICIPE,
+                TYPE_CLIENT, TYPE_CREDIT,
+                GARANTIE_REQUISE,
+                codefamilleproduitcredit,
+                codemode,
+                id_model_produit_credit,
+                code_produit_islamic,
+                VERSION
+            ) VALUES (
+                'CRED_ISL_01',
+                'Mourabaha – Financement Commercial Islamique',
+                'Financement islamique Mourabaha: achat + revente à terme,'
+                + ' sans intérêt (marge bénéficiaire déclarée)',
+                1,
+                50000.0000,   10000000.0000,
+                3,            24,
+                0.0000,       'M',
+                0,            0,            'P',
+                0.0000,       0.0000,       0.0000,
+                0,                          == décaissement brut
+                '162200',     '702200',
+                '174200',     '162200',
+                0,            0,
+                'INDIVIDUEL', 'INDIVIDUEL',
+                1,                          == garantie requise pour Mourabaha
+                'FAM_ISL',
+                2,                          == CODEMODE 2 = SIMPLE (taux 0 %)
+                2,                          == ID_MODEL = 2 (islamique)
+                'ISL_MOURABAHA',
+                0
+            );
+        </sql>
+
+        <rollback>
+            <sql>DELETE FROM produitcredit WHERE NUMPRODUIT = 'CRED_ISL_01';</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §3-D – PRODUIT ÉPARGNE: Epargne Volontaire Standard
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-010-produit-epargne" author="microfina-qa">
+        <comment>Seed Product 3: standard voluntary savings product</comment>
+
+        <sql>
+            INSERT INTO PRODUITEPARGNE (
+                NUMPRODUIT, NOMPRODUIT, DESCRIPTION, ACTIF,
+                TYPEEPARGNE,
+                SOLDE_MIN,              SOLDE_MAX,
+                MONTANT_OUVERTURE_MIN,  MONTANT_OUVERTURE_MAX,
+                MONTANT_RETRAIT_MIN,    MONTANT_RETRAIT_MAX,
+                TAUXINTERET,
+                PERIODICITE_INTERET,    CAPITALISATION_INTERET,
+                DUREE_MIN,              DUREE_MAX,
+                TAUX_PENALITE_RETRAIT_ANTICIPE,
+                TAUX_AGIOS,             FRAIS_TENUE_COMPTE,
+                COMPTE_EPARGNE,         COMPTE_INTERET,
+                COMPTE_AGIOS,           COMPTE_FRAIS,
+                SMS_DEPOT,              SMS_RETRAIT,
+                BLOCAGE_AUTORISE,       EPARGNE_GROUPE,
+                VERSION
+            ) VALUES (
+                'EP_VOL_01',
+                'Épargne Volontaire Standard',
+                'Compte d''épargne libre, rémunéré à 3 % l''an, accès libre sous réserve solde min',
+                1,
+                'VOLONTAIRE',
+                500.0000,      100000000.0000,
+                500.0000,      10000000.0000,
+                500.0000,      10000000.0000,
+                3.0000,
+                'M',           0,
+                0,             0,
+                1.0000,
+                0.0000,        200.0000,
+                '251000',      '702300',
+                '756200',      '706200',
+                'N',           'N',
+                0,             0,
+                0
+            );
+        </sql>
+
+        <rollback>
+            <sql>DELETE FROM PRODUITEPARGNE WHERE NUMPRODUIT = 'EP_VOL_01';</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §4-A – TIERS + PERSONNE + MEMBRES (5 individual members)
+         ──────────────────────────────────────────────────────────────────
+         Hierarchy per individual:
+           TIERS (CODE_TIERS)                         – base root
+           personne (CODE_TIERS = TIERS FK + own data) – JOINED subtype
+           membres (NUM_MEMBRE, CODE_TIERS FK)         – standalone member entity
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-011-tiers-individus" author="microfina-qa">
+        <comment>Seed TIERS base rows for 5 individual members</comment>
+
+        <sql>
+            == ── 5 TIERS rows (base for JOINED personne subtype) ──────────
+            INSERT INTO TIERS (CODE_TIERS, DTYPE, DESIGNATION, VERSION) VALUES
+            ('TIERS-MBR001', 'personne', 'Fatima Mint Ahmed',      0),
+            ('TIERS-MBR002', 'personne', 'Mohamed Ould Sidi',      0),
+            ('TIERS-MBR003', 'personne', 'Mariam Diallo',          0),
+            ('TIERS-MBR004', 'personne', 'Ibrahima Koné',          0),
+            ('TIERS-MBR005', 'personne', 'Aissatou Bah',           0);
+        </sql>
+
+        <rollback>
+            <sql>DELETE FROM TIERS
+                 WHERE CODE_TIERS IN
+                 ('TIERS-MBR001','TIERS-MBR002','TIERS-MBR003',
+                  'TIERS-MBR004','TIERS-MBR005');</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="SEED-012-personne-individus" author="microfina-qa">
+        <comment>Seed personne rows (JOINED subtype of TIERS) for 5 individual members</comment>
+
+        <sql>
+            == ── personne (JOINED subtype, CODE_TIERS = PK + FK) ──────────
+            INSERT INTO personne (
+                CODE_TIERS, ACTIF,
+                nomPersonne, prenomPersonne,
+                sexe, dateNAIS, lieuNaissance,
+                matriculePersonne
+            ) VALUES
+            ('TIERS-MBR001', 1, 'Mint Ahmed',  'Fatima',   'F', '1985-03-12', 'Nouakchott',    'MAT-001'),
+            ('TIERS-MBR002', 1, 'Ould Sidi',   'Mohamed',  'M', '1978-07-24', 'Boutilimit',    'MAT-002'),
+            ('TIERS-MBR003', 1, 'Diallo',      'Mariam',   'F', '1990-11-05', 'Kiffa',         'MAT-003'),
+            ('TIERS-MBR004', 1, 'Koné',        'Ibrahima', 'M', '1982-01-30', 'Rosso',         'MAT-004'),
+            ('TIERS-MBR005', 1, 'Bah',         'Aissatou', 'F', '1995-06-18', 'Nouadhibou',    'MAT-005');
+        </sql>
+
+        <rollback>
+            <sql>DELETE FROM personne
+                 WHERE CODE_TIERS IN
+                 ('TIERS-MBR001','TIERS-MBR002','TIERS-MBR003',
+                  'TIERS-MBR004','TIERS-MBR005');</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="SEED-013-membres-individus" author="microfina-qa">
+        <comment>Seed membres rows for 5 individual members</comment>
+
+        <sql>
+            == ── membres (standalone PK=NUM_MEMBRE, FK CODE_TIERS→TIERS) ──
+            INSERT INTO membres (
+                NUM_MEMBRE, DTYPE,
+                NOM,          PRENOM,
+                SEXE,         DATENAISSANCE,
+                ETAT,         STATUT,
+                DATECREATIONUSER, DATEVALIDATION,
+                agence, CODE_TIERS,
+                produitEpargne,
+                VERSION
+            ) VALUES
+            == MBR001 – Fatima Mint Ahmed (Nouakchott, active, 2 enfants)
+            ('MBR001', 'personne',
+             'Mint Ahmed', 'Fatima',
+             'F', '1985-03-12',
+             'ACTIF', 'VALIDE',
+             '2023-06-01', '2023-06-10',
+             'NKC', 'TIERS-MBR001',
+             'EP_VOL_01',
+             0),
+
+            == MBR002 – Mohamed Ould Sidi (Nouakchott, active – SOUMIS credit)
+            ('MBR002', 'personne',
+             'Ould Sidi', 'Mohamed',
+             'M', '1978-07-24',
+             'ACTIF', 'VALIDE',
+             '2023-07-15', '2023-07-22',
+             'NKC', 'TIERS-MBR002',
+             'EP_VOL_01',
+             0),
+
+            == MBR003 – Mariam Diallo (Nouadhibou, active)
+            ('MBR003', 'personne',
+             'Diallo', 'Mariam',
+             'F', '1990-11-05',
+             'ACTIF', 'VALIDE',
+             '2023-08-01', '2023-08-08',
+             'NDB', 'TIERS-MBR003',
+             'EP_VOL_01',
+             0),
+
+            == MBR004 – Ibrahima Koné (Nouadhibou, active)
+            ('MBR004', 'personne',
+             'Koné', 'Ibrahima',
+             'M', '1982-01-30',
+             'ACTIF', 'VALIDE',
+             '2023-09-10', '2023-09-18',
+             'NDB', 'TIERS-MBR004',
+             'EP_VOL_01',
+             0),
+
+            == MBR005 – Aissatou Bah (Nouakchott, active – DEBLOQUE credit bearer)
+            ('MBR005', 'personne',
+             'Bah', 'Aissatou',
+             'F', '1995-06-18',
+             'ACTIF', 'VALIDE',
+             '2023-10-05', '2023-10-12',
+             'NKC', 'TIERS-MBR005',
+             'EP_VOL_01',
+             0);
+        </sql>
+
+        <rollback>
+            <sql>DELETE FROM membres
+                 WHERE NUM_MEMBRE IN ('MBR001','MBR002','MBR003','MBR004','MBR005');</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §4-B – GROUPEMENT + MEMBRES DU GROUPE
+         Structure:
+           membres row (DTYPE='GROUPEMENT') = the group itself (GRP001)
+           TIERS + MembreGroupe = each individual's membership in the group
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-014-groupement" author="microfina-qa">
+        <comment>Seed group: Groupement Femmes Actives de Nouakchott</comment>
+
+        <sql>
+            == ── Group entity in membres ───────────────────────────────────
+            INSERT INTO membres (
+                NUM_MEMBRE, DTYPE,
+                NOM, raison_sociale,
+                ETAT, STATUT,
+                DATECREATIONUSER, DATEVALIDATION,
+                agence,
+                nbrefemme, nbrehomme,
+                VERSION
+            ) VALUES (
+                'GRP001', 'GROUPEMENT',
+                'Groupement Femmes Actives de Nouakchott', 'GFAN',
+                'ACTIF', 'VALIDE',
+                '2023-11-01', '2023-11-10',
+                'NKC',
+                3, 0,
+                0
+            );
+        </sql>
+
+        <rollback>
+            <sql>DELETE FROM membres WHERE NUM_MEMBRE = 'GRP001';</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="SEED-015-tiers-membregroupe" author="microfina-qa">
+        <comment>Seed TIERS base rows for 3 MembreGroupe records</comment>
+
+        <sql>
+            == ── TIERS base for MembreGroupe JOINED subtype ────────────────
+            INSERT INTO TIERS (CODE_TIERS, DTYPE, DESIGNATION, VERSION) VALUES
+            ('MG-GRP001-MBR001', 'MembreGroupe', 'Adhésion MBR001 dans GRP001', 0),
+            ('MG-GRP001-MBR002', 'MembreGroupe', 'Adhésion MBR002 dans GRP001', 0),
+            ('MG-GRP001-MBR003', 'MembreGroupe', 'Adhésion MBR003 dans GRP001', 0);
+        </sql>
+
+        <rollback>
+            <sql>DELETE FROM TIERS
+                 WHERE CODE_TIERS IN
+                 ('MG-GRP001-MBR001','MG-GRP001-MBR002','MG-GRP001-MBR003');</sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="SEED-016-membregroupe-rows" author="microfina-qa">
+        <comment>Seed MembreGroupe table: link 3 individual members to GRP001</comment>
+
+        <sql>
+            == ── MembreGroupe (JOINED subtype of TIERS) ───────────────────
+            == CODE_TIERS = FK to TIERS (PK of this JOINED row)
+            == NUMMEMBRE  = FK to membres.NUM_MEMBRE (the individual)
+            == idGroupement = the group members.NUM_MEMBRE
+            INSERT INTO MembreGroupe (
+                CODE_TIERS,
+                ACTIFGROUPE, CHEF,
+                DROITSIGNATURE,
+                CODEMEMBREGROUPP,
+                NUMMEMBRE,
+                idGroupement,
+                fonction,
+                VERSION
+            ) VALUES
+            == MBR001 = Chef du groupe
+            ('MG-GRP001-MBR001', 'O', 'O', 'O', 'MG-001', 'MBR001', 'GRP001', 'CHEF',       0),
+            == MBR002 = Trésorière
+            ('MG-GRP001-MBR002', 'O', 'N', 'O', 'MG-002', 'MBR002', 'GRP001', 'TRESORIERE', 0),
+            == MBR003 = Membre simple
+            ('MG-GRP001-MBR003', 'O', 'N', 'N', 'MG-003', 'MBR003', 'GRP001', 'MEMBRE',      0);
+        </sql>
+
+        <rollback>
+            <sql>DELETE FROM MembreGroupe
+                 WHERE CODE_TIERS IN
+                 ('MG-GRP001-MBR001','MG-GRP001-MBR002','MG-GRP001-MBR003');</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §4-C – COMPTEUR MEMBRE
+         Manually set to 10 → next auto-generated member will be 11.
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-017-compteur-membre" author="microfina-qa">
+        <comment>Set CompteurMembre to 10 for NKC/MICROFINA so next member = MBR011</comment>
+
+        <sql>
+            SET IDENTITY_INSERT CompteurMembre ON;
+
+            INSERT INTO CompteurMembre
+                (ID_COMPTEUR_MEMBRE, COMPTEUR,
+                 fk_idInstitution, fk_idAgence,
+                 VERSION)
+            VALUES
+            (1, 10, 'MICROFINA', 'NKC', 0),
+            (2, 10, 'MICROFINA', 'NDB', 0);
+
+            SET IDENTITY_INSERT CompteurMembre OFF;
+        </sql>
+
+        <rollback>
+            <sql>
+                SET IDENTITY_INSERT CompteurMembre ON;
+                DELETE FROM CompteurMembre WHERE ID_COMPTEUR_MEMBRE IN (1,2);
+                SET IDENTITY_INSERT CompteurMembre OFF;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §5-A – COMPTABILITE: DÉBLOCAGE
+         One journal entry for the disbursement of Credit 1
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-018-comptabilite-deblocage" author="microfina-qa">
+        <comment>Seed Comptabilite entry #1 for credit disbursement (2024-01-15)</comment>
+
+        <sql>
+            SET IDENTITY_INSERT comptabilite ON;
+
+            == ID 1 – Déblocage crédit CR-2024-00001 (500 000 MRU)
+            ==   Débit:  162100 (Créances sur membres)  500 000
+            ==   Crédit: 162100 (sortie fonds)          500 000
+            INSERT INTO comptabilite (
+                IDCOMPTABILITE,
+                DATEOPERATION,  DATESERVEUR,
+                LIBELLE,
+                DEBIT,          CREDIT,
+                planComptable,
+                NUMCREDIT,
+                CODE_SENS,      ETAT,
+                CODE_AGENCE,    utilisateur,
+                VERSION
+            ) VALUES (
+                1,
+                '2024-01-15',  '2024-01-15',
+                'DEBLOCAGE – Crédit CR-2024-00001 – Aissatou Bah – 500 000 MRU',
+                500000.0000,   500000.0000,
+                '162100',
+                'CR-2024-00001',
+                'D',           'VALIDE',
+                'NKC',         'ADMIN01',
+                0
+            );
+
+            SET IDENTITY_INSERT comptabilite OFF;
+        </sql>
+
+        <rollback>
+            <sql>
+                SET IDENTITY_INSERT comptabilite ON;
+                DELETE FROM comptabilite WHERE IDCOMPTABILITE = 1;
+                SET IDENTITY_INSERT comptabilite OFF;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §5-B – CREDIT 1: DEBLOQUE (MBR005 – Aissatou Bah)
+         500 000 MRU, 12 mois, DEGRESSIF 12 % p.a.
+         SOLDE_CAPITAL = 420 756.7695 after 2 settled instalments.
+         NOTE: agentcredit left NULL (Credits.agentcredit → AGENT_CREDIT.IDAGENTCREDIT
+               references a non-existent column – pre-existing schema bug).
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-019-credit-debloque" author="microfina-qa">
+        <comment>Seed Credit 1: DEBLOQUE status for MBR005 (disbursed 2024-01-15)</comment>
+
+        <sql>
+            SET IDENTITY_INSERT Credits ON;
+
+            INSERT INTO Credits (
+                IDCREDIT,  DTYPE,
+                NUMCREDIT, STATUT,
+                MONTANT_DEMANDE, MONTANT_ACCORDE, MONTANT_DEBLOQUER,
+                SOLDE_CAPITAL,   SOLDE_INTERET,   SOLDE_PENALITE,
+                TAUX_INTERET,    TAUX_PENALITE,   TAUX_COMMISSION, TAUX_ASSURANCE,
+                DUREE,           NOMBRE_ECHEANCE, DELAI_GRACE,
+                PERIODICITE,
+                DATE_DEMANDE,    DATE_ACCORD,
+                DATE_DEBLOCAGE,  DATE_PREMIERE_ECHEANCE, DATE_ECHEANCE,
+                OBJET_CREDIT,    CODE_OBJET_CREDIT,
+                RANG_CREDIT,
+                COMPTE_COMPTABLE,
+                DETAILOK,        utilisateur,
+                VERSION,
+                nummembre, numproduit, agence, codemode,
+                agentcredit      == NULL: schema bug (IDAGENTCREDIT column missing)
+            ) VALUES (
+                1,         'Credits',
+                'CR-2024-00001', 'DEBLOQUE',
+                500000.0000, 500000.0000, 500000.0000,
+                420756.7695, 0.0000,      0.0000,
+                12.0000,     2.0000,      1.0000,       0.5000,
+                12,          12,          1,
+                'M',
+                '2024-01-05', '2024-01-10',
+                '2024-01-15', '2024-02-15',           '2025-01-15',
+                'Financement fonds de roulement commerce alimentaire',
+                'COMMERCE_ALIM',
+                1,
+                '162100',
+                1,            'ADMIN01',
+                0,
+                'MBR005', 'CRED_DEG_01', 'NKC', 1,
+                NULL
+            );
+
+            SET IDENTITY_INSERT Credits OFF;
+        </sql>
+
+        <rollback>
+            <sql>
+                SET IDENTITY_INSERT Credits ON;
+                DELETE FROM Credits WHERE IDCREDIT = 1;
+                SET IDENTITY_INSERT Credits OFF;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §5-C – HISTORIQUE VISA: Credit 1 (4 approval steps)
+         BROUILLON → SOUMIS → VALIDE_AGENT → VALIDE_COMITE → DEBLOQUE
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-020-historique-visa-credit1" author="microfina-qa">
+        <comment>Seed 4 visa steps for Credit 1 approval workflow</comment>
+
+        <sql>
+            SET IDENTITY_INSERT historique_visa_credit ON;
+
+            INSERT INTO historique_visa_credit (
+                IDHISTORIQUE, ETAPE,
+                STATUT_AVANT,    STATUT_APRES,
+                DATE_VISA,       DECISION,
+                COMMENTAIRE,     UTILISATEUR,
+                idcredit,        VERSION
+            ) VALUES
+            == Step 1: Agent soumet le dossier
+            (1, 'SOUMISSION',
+             'BROUILLON',      'SOUMIS',
+             '2024-01-05',     'VALIDE',
+             'Dossier complet – pièces vérifiées', 'AGT_NKC',
+             1, 0),
+
+            == Step 2: Validation Agent de Crédit
+            (2, 'VALIDATION_AGENT',
+             'SOUMIS',         'VALIDE_AGENT',
+             '2024-01-08',     'VALIDE',
+             'Analyse financière favorable – capacité de remboursement vérifiée', 'AGT_NKC',
+             1, 0),
+
+            == Step 3: Validation Comité de Crédit
+            (3, 'VALIDATION_COMITE',
+             'VALIDE_AGENT',   'VALIDE_COMITE',
+             '2024-01-10',     'VALIDE',
+             'Comité de crédit du 10/01/2024 – Accord unanime – Réf. PV-2024-001', 'ADMIN01',
+             1, 0),
+
+            == Step 4: Déblocage des fonds
+            (4, 'DEBLOCAGE',
+             'VALIDE_COMITE',  'DEBLOQUE',
+             '2024-01-15',     'VALIDE',
+             'Décaissement effectué – espèces – Caisse NKC', 'ADMIN01',
+             1, 0);
+
+            SET IDENTITY_INSERT historique_visa_credit OFF;
+        </sql>
+
+        <rollback>
+            <sql>
+                SET IDENTITY_INSERT historique_visa_credit ON;
+                DELETE FROM historique_visa_credit WHERE IDHISTORIQUE IN (1,2,3,4);
+                SET IDENTITY_INSERT historique_visa_credit OFF;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §5-D – AMORTP: 12 rows for Credit 1
+         ──────────────────────────────────────────────────────────────────
+         Formula: DEGRESSIF (declining balance), r = 1 % / month
+           Annuity A = 500 000 × 0.01 / (1 − 1.01⁻¹²) = 44 424.4928 MRU
+         All TAXE / TAXE_REGLEE = 0 (Phase 5 hook not yet wired)
+         ──────────────────────────────────────────────────────────────────
+         Status summary:
+           Écheance 1 (2024-02-15): REGLE  – paid 2024-02-14
+           Écheance 2 (2024-03-15): REGLE  – paid 2024-03-14
+           Écheance 3 (2024-04-15): EN_RETARD – ~740 days overdue (→ PAR180+)
+           Écheances 4–12         : EN_ATTENTE
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-021-amortp-credit1" author="microfina-qa">
+        <comment>Seed 12 Amortp instalments for Credit 1 (2 REGLE, 1 EN_RETARD, 9 EN_ATTENTE)</comment>
+
+        <sql>
+            SET IDENTITY_INSERT Amortp ON;
+
+            == Columns: IDAMORTP, NUMECHEANCE, DATE_ECHEANCE, DATE_REGLEMENT,
+            ==          CAPITAL,      INTERET,      PENALITE,
+            ==          ASSURANCE,    COMMISSION,   TAXE,
+            ==          TOTAL_ECHEANCE, SOLDE_CAPITAL,
+            ==          CAPITAL_REMBOURSE,  INTERET_REMBOURSE,
+            ==          PENALITE_REGLEE,    ASSURANCE_REGLEE,
+            ==          COMMISSION_REGLEE,  TAXE_REGLEE,
+            ==          STATUT_ECHEANCE, VERSION, idcredit
+
+            INSERT INTO Amortp (
+                IDAMORTP, NUMECHEANCE, DATE_ECHEANCE, DATE_REGLEMENT,
+                CAPITAL,      INTERET,      PENALITE,
+                ASSURANCE,    COMMISSION,   TAXE,
+                TOTAL_ECHEANCE, SOLDE_CAPITAL,
+                CAPITAL_REMBOURSE,  INTERET_REMBOURSE,
+                PENALITE_REGLEE,    ASSURANCE_REGLEE,
+                COMMISSION_REGLEE,  TAXE_REGLEE,
+                STATUT_ECHEANCE,    VERSION,
+                idcredit
+            ) VALUES
+
+            == ── Écheance 1 – REGLE ────────────────────────────────────────
+            == Solde initial: 500 000. Intérêts: 500 000 × 1 % = 5 000.
+            (1,  1,  '2024-02-15', '2024-02-14',
+             39424.4928, 5000.0000,  0.0000,
+             0.0000,     0.0000,     0.0000,
+             44424.4928, 460575.5072,
+             39424.4928, 5000.0000,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             'REGLE',    0,
+             1),
+
+            == ── Écheance 2 – REGLE ────────────────────────────────────────
+            == Solde: 460 575.5072. Intérêts: 460 575.5072 × 1 % = 4 605.7551
+            (2,  2,  '2024-03-15', '2024-03-14',
+             39818.7377, 4605.7551,  0.0000,
+             0.0000,     0.0000,     0.0000,
+             44424.4928, 420756.7695,
+             39818.7377, 4605.7551,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             'REGLE',    0,
+             1),
+
+            == ── Écheance 3 – EN_RETARD (~740 jours – PAR180+) ────────────
+            == Solde: 420 756.7695. Intérêts: 4 207.5677
+            (3,  3,  '2024-04-15', NULL,
+             40216.9251, 4207.5677,  0.0000,
+             0.0000,     0.0000,     0.0000,
+             44424.4928, 380539.8444,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             'EN_RETARD', 0,
+             1),
+
+            == ── Écheances 4-12 – EN_ATTENTE ──────────────────────────────
+            == 4: Solde 380 539.8444 → intérêts 3 805.3984
+            (4,  4,  '2024-05-15', NULL,
+             40619.0944, 3805.3984,  0.0000,
+             0.0000,     0.0000,     0.0000,
+             44424.4928, 339920.7500,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             'EN_ATTENTE', 0,
+             1),
+
+            == 5: Solde 339 920.7500 → intérêts 3 399.2075
+            (5,  5,  '2024-06-15', NULL,
+             41025.2853, 3399.2075,  0.0000,
+             0.0000,     0.0000,     0.0000,
+             44424.4928, 298895.4647,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             'EN_ATTENTE', 0,
+             1),
+
+            == 6: Solde 298 895.4647 → intérêts 2 988.9546
+            (6,  6,  '2024-07-15', NULL,
+             41435.5382, 2988.9546,  0.0000,
+             0.0000,     0.0000,     0.0000,
+             44424.4928, 257459.9265,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             'EN_ATTENTE', 0,
+             1),
+
+            == 7: Solde 257 459.9265 → intérêts 2 574.5993
+            (7,  7,  '2024-08-15', NULL,
+             41849.8936, 2574.5993,  0.0000,
+             0.0000,     0.0000,     0.0000,
+             44424.4929, 215610.0329,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             'EN_ATTENTE', 0,
+             1),
+
+            == 8: Solde 215 610.0329 → intérêts 2 156.1003
+            (8,  8,  '2024-09-15', NULL,
+             42268.3925, 2156.1003,  0.0000,
+             0.0000,     0.0000,     0.0000,
+             44424.4928, 173341.6404,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             'EN_ATTENTE', 0,
+             1),
+
+            == 9: Solde 173 341.6404 → intérêts 1 733.4164
+            (9,  9,  '2024-10-15', NULL,
+             42691.0764, 1733.4164,  0.0000,
+             0.0000,     0.0000,     0.0000,
+             44424.4928, 130650.5640,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             'EN_ATTENTE', 0,
+             1),
+
+            == 10: Solde 130 650.5640 → intérêts 1 306.5056
+            (10, 10, '2024-11-15', NULL,
+             43117.9872, 1306.5056,  0.0000,
+             0.0000,     0.0000,     0.0000,
+             44424.4928,  87532.5768,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             'EN_ATTENTE', 0,
+             1),
+
+            == 11: Solde 87 532.5768 → intérêts 875.3258
+            (11, 11, '2024-12-15', NULL,
+             43549.1670,  875.3258,  0.0000,
+             0.0000,     0.0000,     0.0000,
+             44424.4928,  43983.4098,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             'EN_ATTENTE', 0,
+             1),
+
+            == 12: Solde résiduel 43 983.4098 → intérêts 439.8341
+            ==     Dernier versement ajusté (44 423.2439) pour solde = 0
+            (12, 12, '2025-01-15', NULL,
+             43983.4098,  439.8341,  0.0000,
+             0.0000,     0.0000,     0.0000,
+             44423.2439,      0.0000,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             0.0000,     0.0000,
+             'EN_ATTENTE', 0,
+             1);
+
+            SET IDENTITY_INSERT Amortp OFF;
+        </sql>
+
+        <rollback>
+            <sql>
+                SET IDENTITY_INSERT Amortp ON;
+                DELETE FROM Amortp WHERE IDAMORTP BETWEEN 1 AND 12;
+                SET IDENTITY_INSERT Amortp OFF;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §5-E – COMPTABILITE: 2 remboursements (Écheances 1 & 2)
+         Required before Reglement (idcomptabilite NOT NULL after P4-013)
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-022-comptabilite-reglements" author="microfina-qa">
+        <comment>Seed Comptabilite entries #2 and #3 for the 2 settled instalments</comment>
+
+        <sql>
+            SET IDENTITY_INSERT comptabilite ON;
+
+            == ── ID 2: Remboursement Écheance 1 (2024-02-14) ──────────────
+            == Débit:  Caisse NKC (101100)        44 424.49
+            == Crédit: Créances membres (162100)  44 424.49
+            INSERT INTO comptabilite (
+                IDCOMPTABILITE,
+                DATEOPERATION, DATESERVEUR,
+                LIBELLE,
+                DEBIT,         CREDIT,
+                planComptable,
+                NUMCREDIT,
+                CODE_SENS,     ETAT,
+                CODE_AGENCE,   utilisateur,
+                VERSION
+            ) VALUES (
+                2,
+                '2024-02-14', '2024-02-14',
+                'REMBOURSEMENT – CR-2024-00001 – Éch.1 – Aissatou Bah – Capital 39 424.49 + Int. 5 000.00',
+                44424.4928,   44424.4928,
+                '162100',
+                'CR-2024-00001',
+                'C',          'VALIDE',
+                'NKC',        'AGT_NKC',
+                0
+            ),
+
+            == ── ID 3: Remboursement Écheance 2 (2024-03-14) ──────────────
+            (
+                3,
+                '2024-03-14', '2024-03-14',
+                'REMBOURSEMENT – CR-2024-00001 – Éch.2 – Aissatou Bah – Capital 39 818.74 + Int. 4 605.76',
+                44424.4928,   44424.4928,
+                '162100',
+                'CR-2024-00001',
+                'C',          'VALIDE',
+                'NKC',        'AGT_NKC',
+                0
+            );
+
+            SET IDENTITY_INSERT comptabilite OFF;
+        </sql>
+
+        <rollback>
+            <sql>
+                SET IDENTITY_INSERT comptabilite ON;
+                DELETE FROM comptabilite WHERE IDCOMPTABILITE IN (2,3);
+                SET IDENTITY_INSERT comptabilite OFF;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §5-F – REGLEMENT: 2 payments for Credit 1
+         idcomptabilite NOT NULL (P4-013 constraint respected)
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-023-reglements" author="microfina-qa">
+        <comment>Seed 2 Reglement records (one per settled instalment)</comment>
+
+        <sql>
+            SET IDENTITY_INSERT Reglement ON;
+
+            INSERT INTO Reglement (
+                IDREGLEMENT,
+                NUMPIECE,      DATE_REGLEMENT,
+                MONTANT_TOTAL,
+                MONTANT_CAPITAL, MONTANT_INTERET,
+                MONTANT_PENALITE, MONTANT_ASSURANCE,
+                MONTANT_COMMISSION, MONTANT_TAXE,
+                MODE_PAIEMENT, STATUT,
+                idcomptabilite, utilisateur, VERSION,
+                idcredit, agence
+            ) VALUES
+
+            == ── Reglement 1: Écheance 1 ───────────────────────────────────
+            (1,
+             'RGL-2024-0001', '2024-02-14',
+             44424.4928,
+             39424.4928,     5000.0000,
+             0.0000,         0.0000,
+             0.0000,         0.0000,
+             'ESPECES',      'VALIDE',
+             2,              'AGT_NKC', 0,
+             1,              'NKC'),
+
+            == ── Reglement 2: Écheance 2 ───────────────────────────────────
+            (2,
+             'RGL-2024-0002', '2024-03-14',
+             44424.4928,
+             39818.7377,     4605.7551,
+             0.0000,         0.0000,
+             0.0000,         0.0000,
+             'ESPECES',      'VALIDE',
+             3,              'AGT_NKC', 0,
+             1,              'NKC');
+
+            SET IDENTITY_INSERT Reglement OFF;
+        </sql>
+
+        <rollback>
+            <sql>
+                SET IDENTITY_INSERT Reglement ON;
+                DELETE FROM Reglement WHERE IDREGLEMENT IN (1,2);
+                SET IDENTITY_INSERT Reglement OFF;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §5-G – DETAIL_REGLEMENT: allocation lines
+         Each Reglement allocates to exactly one Amortp row.
+         detail_reglement has no MONTANT_TAXE column (none was added).
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-024-detail-reglement" author="microfina-qa">
+        <comment>Seed 2 detail_reglement rows linking Reglements to Amortp rows</comment>
+
+        <sql>
+            SET IDENTITY_INSERT detail_reglement ON;
+
+            INSERT INTO detail_reglement (
+                IDDETAILREGLEMENT,
+                MONTANT_CAPITAL,   MONTANT_INTERET,
+                MONTANT_PENALITE,  MONTANT_ASSURANCE,
+                MONTANT_COMMISSION,
+                VERSION,
+                idreglement, idamortp
+            ) VALUES
+
+            == Reglement 1 → Amortp 1 (Écheance 1)
+            (1,
+             39424.4928,  5000.0000,
+             0.0000,      0.0000,
+             0.0000,
+             0,
+             1, 1),
+
+            == Reglement 2 → Amortp 2 (Écheance 2)
+            (2,
+             39818.7377,  4605.7551,
+             0.0000,      0.0000,
+             0.0000,
+             0,
+             2, 2);
+
+            SET IDENTITY_INSERT detail_reglement OFF;
+        </sql>
+
+        <rollback>
+            <sql>
+                SET IDENTITY_INSERT detail_reglement ON;
+                DELETE FROM detail_reglement WHERE IDDETAILREGLEMENT IN (1,2);
+                SET IDENTITY_INSERT detail_reglement OFF;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §5-H – CREDIT 2: SOUMIS (MBR002 – Mohamed Ould Sidi)
+         250 000 MRU pending approval – no Amortp yet.
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-025-credit-soumis" author="microfina-qa">
+        <comment>Seed Credit 2: SOUMIS status for MBR002 (pending approval workflow)</comment>
+
+        <sql>
+            SET IDENTITY_INSERT Credits ON;
+
+            INSERT INTO Credits (
+                IDCREDIT,  DTYPE,
+                NUMCREDIT, STATUT,
+                MONTANT_DEMANDE,
+                TAUX_INTERET, TAUX_PENALITE, TAUX_COMMISSION, TAUX_ASSURANCE,
+                DUREE,  NOMBRE_ECHEANCE, DELAI_GRACE,
+                PERIODICITE,
+                DATE_DEMANDE,
+                OBJET_CREDIT,       CODE_OBJET_CREDIT,
+                RANG_CREDIT,
+                utilisateur,        VERSION,
+                nummembre, numproduit, agence, codemode,
+                agentcredit
+            ) VALUES (
+                2,         'Credits',
+                'CR-2024-00002', 'SOUMIS',
+                250000.0000,
+                12.0000, 2.0000, 1.0000, 0.5000,
+                12,  12, 0,
+                'M',
+                '2024-02-01',
+                'Financement activité de pêche artisanale', 'PECHE_ARTIS',
+                1,
+                'AGT_NKC', 0,
+                'MBR002', 'CRED_DEG_01', 'NKC', 1,
+                NULL
+            );
+
+            SET IDENTITY_INSERT Credits OFF;
+        </sql>
+
+        <rollback>
+            <sql>
+                SET IDENTITY_INSERT Credits ON;
+                DELETE FROM Credits WHERE IDCREDIT = 2;
+                SET IDENTITY_INSERT Credits OFF;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §5-I – HISTORIQUE VISA: Credit 2 (1 step: BROUILLON → SOUMIS)
+         ══════════════════════════════════════════════════════════════════ -->
+    <changeSet id="SEED-026-historique-visa-credit2" author="microfina-qa">
+        <comment>Seed 1 visa step for Credit 2 (submitted, pending committee review)</comment>
+
+        <sql>
+            SET IDENTITY_INSERT historique_visa_credit ON;
+
+            INSERT INTO historique_visa_credit (
+                IDHISTORIQUE, ETAPE,
+                STATUT_AVANT,    STATUT_APRES,
+                DATE_VISA,       DECISION,
+                COMMENTAIRE,     UTILISATEUR,
+                idcredit,        VERSION
+            ) VALUES (
+                5, 'SOUMISSION',
+                'BROUILLON',     'SOUMIS',
+                '2024-02-01',    'VALIDE',
+                'Dossier pêche artisanale – pièces en cours de vérification', 'AGT_NKC',
+                2, 0
+            );
+
+            SET IDENTITY_INSERT historique_visa_credit OFF;
+        </sql>
+
+        <rollback>
+            <sql>
+                SET IDENTITY_INSERT historique_visa_credit ON;
+                DELETE FROM historique_visa_credit WHERE IDHISTORIQUE = 5;
+                SET IDENTITY_INSERT historique_visa_credit OFF;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ══════════════════════════════════════════════════════════════════
+         §6 – DATA INTEGRITY VERIFICATION QUERIES
+         Run after seeding to confirm referential integrity.
+         (Liquibase comment block – not executed)
+         ══════════════════════════════════════════════════════════════════
+
+    VERIFICATION SCRIPT (run manually after seeder):
+    ─────────────────────────────────────────────────
+
+    == 1. BCM PAR view – Credit 1 should appear as PAR180_PLUS
+    SELECT NUMCREDIT, categorie_par, max_jours_retard,
+           capital_retard, total_arrieres
+    FROM   vue_par_bcm
+    WHERE  NUMCREDIT = 'CR-2024-00001';
+    == Expected: categorie_par = 'PAR180_PLUS', max_jours_retard > 180
+
+    == 2. Grand Livre view – 3 entries for CR-2024-00001
+    SELECT IDCOMPTABILITE, DATEOPERATION, LIBELLE,
+           DEBIT, CREDIT, IDREGLEMENT, MONTANT_TOTAL
+    FROM   vue_grand_livre
+    WHERE  num_credit = 'CR-2024-00001'
+    ORDER  BY DATEOPERATION;
+    == Expected: 3 rows (disbursement + 2 repayments)
+
+    == 3. Amortp balance check – sum of CAPITAL = 500 000 MRU
+    SELECT SUM(CAPITAL) AS total_capital,
+           SUM(INTERET)  AS total_interet,
+           COUNT(*)       AS nb_echeances
+    FROM   Amortp
+    WHERE  idcredit = 1;
+    == Expected: total_capital = 500000.0000, nb_echeances = 12
+
+    == 4. Reglement integrity – each has a Comptabilite entry
+    SELECT r.IDREGLEMENT, r.DATE_REGLEMENT,
+           r.MONTANT_TOTAL, c.IDCOMPTABILITE
+    FROM   Reglement r
+    JOIN   comptabilite c ON c.IDCOMPTABILITE = r.idcomptabilite
+    WHERE  r.idcredit = 1;
+    == Expected: 2 rows, no NULLs on IDCOMPTABILITE
+
+    == 5. ClotureService pre-check simulation
+    SELECT COUNT(*) AS reglements_sans_comptabilite
+    FROM   Reglement
+    WHERE  DATE_REGLEMENT = '2024-02-14'
+      AND  STATUT = 'VALIDE'
+      AND  (idcomptabilite IS NULL OR idcomptabilite = 0);
+    == Expected: 0
+
+    == 6. Members group structure
+    SELECT m.NUM_MEMBRE, m.NOM, m.PRENOM, mg.idGroupement, mg.fonction
+    FROM   MembreGroupe mg
+    JOIN   membres m ON m.NUM_MEMBRE = mg.NUMMEMBRE
+    WHERE  mg.idGroupement = 'GRP001';
+    == Expected: 3 rows (MBR001 CHEF, MBR002 TRESORIERE, MBR003 MEMBRE)
+
+    == 7. CompteurMembre check
+    SELECT ID_COMPTEUR_MEMBRE, COMPTEUR, fk_idAgence
+    FROM   CompteurMembre;
+    == Expected: COMPTEUR = 10 for both NKC and NDB
+    ══════════════════════════════════════════════════════════════════ -->
+
+</databaseChangeLog>

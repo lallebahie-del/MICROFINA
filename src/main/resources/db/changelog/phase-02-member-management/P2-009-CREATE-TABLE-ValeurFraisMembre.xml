@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P2-009 – ValeurFraisMembre
+        Not explicitly listed as a named table in the spec; inferred from the
+        Adhésion diagram (p.74) and description:
+          "Stocke les montants pour chaque frais lors de l'inscription du membre
+           qui constitueront les frais lors de la validation du membre."
+        Structure mirrors ValeurFraisCategorie: ties a membre to a ValeurFrais record
+        and captures the computed/frozen fee amount at enrolment time.
+        FKs wired: nummembre → membres, valeurfrais → ValeurFrais (Phase 1).
+    -->
+    <changeSet id="P2-009-CREATE-TABLE-ValeurFraisMembre" author="microfina">
+        <comment>Create ValeurFraisMembre table – fee snapshot per member at adhesion time (diagram p.74)</comment>
+
+        <createTable tableName="ValeurFraisMembre">
+            <column name="IDVALEURFRAISMEMBRE"  type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="PK_ValeurFraisMembre"/>
+            </column>
+
+            <!-- Computed fee amount frozen at enrolment -->
+            <column name="MONTANT"              type="DECIMAL(19,4)"/>
+
+            <!-- Accounting account override (AN/15 – matches ValeurFrais.compte) -->
+            <column name="compte"               type="NVARCHAR(15)"/>
+
+            <!-- Optimistic lock -->
+            <column name="VERSION"              type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- FK to membres (AN/25) -->
+            <column name="nummembre"            type="NVARCHAR(25)"/>
+            <!-- FK to ValeurFrais (Phase 1, numeric PK) -->
+            <column name="valeurfrais"          type="BIGINT"/>
+        </createTable>
+
+        <!-- Unique: one fee-value row per (member, fee definition) -->
+        <addUniqueConstraint
+            tableName="ValeurFraisMembre"
+            columnNames="nummembre, valeurfrais"
+            constraintName="UQ_ValeurFraisMembre_membre_frais"/>
+
+        <!-- FK to membres -->
+        <addForeignKeyConstraint
+            baseTableName="ValeurFraisMembre"   baseColumnNames="nummembre"
+            referencedTableName="membres"       referencedColumnNames="NUM_MEMBRE"
+            constraintName="FK_ValeurFraisMembre_membres"/>
+
+        <!-- FK to ValeurFrais (Phase 1) -->
+        <addForeignKeyConstraint
+            baseTableName="ValeurFraisMembre"   baseColumnNames="valeurfrais"
+            referencedTableName="ValeurFrais"   referencedColumnNames="IDVALEURFRAIS"
+            constraintName="FK_ValeurFraisMembre_ValeurFrais"/>
+
+        <rollback>
+            <dropAllForeignKeyConstraints baseTableName="ValeurFraisMembre"/>
+            <dropTable tableName="ValeurFraisMembre"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

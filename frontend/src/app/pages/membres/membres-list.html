@@ -1,0 +1,105 @@
+<div class="page-container">
+
+  <!-- ── Header ── -->
+  <div class="page-header">
+    <h2 class="page-title">Membres</h2>
+    <button class="btn btn-primary" (click)="nouveau()">
+      + Nouveau membre
+    </button>
+  </div>
+
+  <!-- ── Search bar ── -->
+  <div class="filter-bar">
+    <input class="filter-input"
+           type="text"
+           placeholder="Rechercher (nom, prénom, numéro…)"
+           [(ngModel)]="search"
+           (keyup.enter)="onSearch()"/>
+
+    <select class="filter-select" [(ngModel)]="statut" (change)="onSearch()">
+      <option value="">Tous les statuts</option>
+      <option value="ACTIF">ACTIF</option>
+      <option value="DEMANDE">DEMANDE</option>
+      <option value="INACTIF">INACTIF</option>
+      <option value="REJETE">REJETE</option>
+    </select>
+
+    <select class="filter-select" [(ngModel)]="etat" (change)="onSearch()">
+      <option value="">Tous les états</option>
+      <option value="ACTIF">ACTIF</option>
+      <option value="INACTIF">INACTIF</option>
+    </select>
+
+    <button class="btn btn-secondary" (click)="onSearch()">Rechercher</button>
+    <button class="btn btn-outline"   (click)="onReset()">Réinitialiser</button>
+  </div>
+
+  <!-- ── Error ── -->
+  <div class="alert alert-error" *ngIf="error()">{{ error() }}</div>
+
+  <!-- ── Loading ── -->
+  <div class="loading-indicator" *ngIf="loading()">Chargement…</div>
+
+  <!-- ── Table ── -->
+  <div class="table-wrapper" *ngIf="!loading() && result()">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>N° Membre</th>
+          <th>Nom / Prénom</th>
+          <th>Type</th>
+          <th>Sexe</th>
+          <th>Date naissance</th>
+          <th>Statut</th>
+          <th>État</th>
+          <th>Agence</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let m of result()!.content">
+          <td class="mono">{{ m.numMembre }}</td>
+          <td>
+            <strong>{{ m.nom }} {{ m.prenom }}</strong>
+            <div class="sub-text" *ngIf="m.raisonSociale">{{ m.raisonSociale }}</div>
+          </td>
+          <td><span class="badge badge-info">{{ m.dtype ?? 'PP' }}</span></td>
+          <td>{{ m.sexe }}</td>
+          <td>{{ m.dateNaissance | date:'dd/MM/yyyy' }}</td>
+          <td>
+            <span class="badge"
+                  [class.badge-success]="m.statut === 'ACTIF'"
+                  [class.badge-warning]="m.statut === 'DEMANDE'"
+                  [class.badge-danger]="m.statut === 'INACTIF' || m.statut === 'REJETE'">
+              {{ m.statut }}
+            </span>
+          </td>
+          <td>{{ m.etat }}</td>
+          <td>{{ m.agenceLibelle ?? m.agenceCode }}</td>
+          <td class="actions-cell">
+            <button class="btn btn-sm btn-secondary" (click)="edit(m.numMembre)">Modifier</button>
+            <button class="btn btn-sm btn-outline"   (click)="desactiver(m.numMembre)"
+                    *ngIf="m.etat !== 'INACTIF'">Désactiver</button>
+          </td>
+        </tr>
+        <tr *ngIf="result()!.content.length === 0">
+          <td colspan="9" class="empty-row">Aucun membre trouvé.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- ── Pagination ── -->
+    <div class="pagination" *ngIf="result()!.totalPages > 1">
+      <button class="page-btn" [disabled]="page === 0" (click)="goPage(page - 1)">‹</button>
+      <button class="page-btn"
+              *ngFor="let p of pages"
+              [class.active]="p === page"
+              (click)="goPage(p)">{{ p + 1 }}</button>
+      <button class="page-btn" [disabled]="page >= result()!.totalPages - 1" (click)="goPage(page + 1)">›</button>
+      <span class="page-info">
+        {{ result()!.totalElements }} résultat(s)
+      </span>
+    </div>
+  </div>
+
+</div>

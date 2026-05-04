@@ -1,0 +1,411 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P3-003 – produitcredit
+        Master credit product definition: 50+ columns covering identity, interest rates,
+        grace/penalty rules, disbursement parameters, repayment schedule config,
+        accounting chart references, and Islamic-finance linkage.
+
+        FKs to Phase-1:   FAMILLEPRODUITCREDIT (CODEFAMILLEPRODUITCREDIT)
+                          mode_de_calcul_interet (CODEMODE)
+        FKs to Phase-3:   Model_Compte_Produit_Credit (ID_MODEL_PRODUIT_CREDIT)
+                          produit_islamic (code_produit)
+        Deferred FKs (P3-010):
+                          PRODUITEPARGNE × 3
+                          (numproduitPourEpargneOblig, numproduitPourGaranti,
+                           numproduitPourPdrtLieCrdit)
+
+        DDL source of truth: Phase 3 spec – Section 1.
+    -->
+
+    <!-- ═══════════════════════════════════════════════════════
+         1. Create table
+         ═══════════════════════════════════════════════════════ -->
+    <changeSet id="P3-003-create-produitcredit" author="microfina">
+
+        <createTable tableName="produitcredit">
+
+            <!-- ── PK ─────────────────────────────────────────────── -->
+            <column name="NUMPRODUIT" type="NVARCHAR(20)">
+                <constraints primaryKey="true"
+                             primaryKeyName="PK_produitcredit"
+                             nullable="false"/>
+            </column>
+
+            <!-- ── Identity / description ─────────────────────────── -->
+            <column name="NOMPRODUIT" type="NVARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="DESCRIPTION" type="NVARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="ACTIF" type="INT" defaultValueNumeric="1">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Amount limits ──────────────────────────────────── -->
+            <column name="MONTANTMIN" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="MONTANTMAX" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Duration (months) ──────────────────────────────── -->
+            <column name="DUREEMIN" type="INT">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="DUREEMAX" type="INT">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Interest rates ─────────────────────────────────── -->
+            <column name="TAUXINTERET" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="TAUXINTERETMIN" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="TAUXINTERETMAX" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Repayment periodicity (code: M=Monthly, W=Weekly…) -->
+            <column name="PERIODICITEREMBOURSEMENT" type="NVARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Number of repayment periods -->
+            <column name="NOMBREECHEANCE" type="INT">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Grace period ───────────────────────────────────── -->
+            <!-- Duration in periods/months -->
+            <column name="DELAIGRACE" type="INT">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- 1 = interest accrues during grace period -->
+            <column name="INTERETPENDANTGRACE" type="INT" defaultValueNumeric="0">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Grace type: P=Principal only, T=Principal+Interest -->
+            <column name="TYPEGRACE" type="NVARCHAR(10)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Penalty / late fees ────────────────────────────── -->
+            <column name="TAUXPENALITE" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Penalty calculation base: CAPITAL, ECHEANCE, RETARD -->
+            <column name="BASECALCULPENALITE" type="NVARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Number of days tolerance before penalty is applied -->
+            <column name="JOURSTOLERANCEPENALITE" type="INT">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Commissions ────────────────────────────────────── -->
+            <column name="TAUXCOMMISSION" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Commission collection mode: DEBUT=at disbursement, ECHEANCE=per instalment -->
+            <column name="MODEPRELEVEMENT_COMMISSION" type="NVARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="MONTANTCOMMISSIONMIN" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="MONTANTCOMMISSIONMAX" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Insurance / mutuelle ───────────────────────────── -->
+            <column name="TAUXASSURANCE" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="MONTANTASSURANCEMIN" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Mandatory savings (épargne obligatoire) ────────── -->
+            <column name="TAUXEPARGNEOBLIGATOIRE" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- % of capital that must be in savings before disbursement -->
+            <column name="TAUXGARANTIEEPARGNE" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Disbursement ───────────────────────────────────── -->
+            <!-- Net = gross minus fees deducted at disbursement -->
+            <column name="DECAISSEMENT_NET" type="INT" defaultValueNumeric="0">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Accounting chart-of-accounts references ─────────── -->
+            <column name="COMPTE_CAPITAL" type="NVARCHAR(30)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="COMPTE_INTERET" type="NVARCHAR(30)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="COMPTE_INTERET_COURU" type="NVARCHAR(30)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="COMPTE_COMMISSION" type="NVARCHAR(30)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="COMPTE_ASSURANCE" type="NVARCHAR(30)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="COMPTE_PENALITE" type="NVARCHAR(30)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="COMPTE_EPARGNE_OBLIG" type="NVARCHAR(30)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="COMPTE_DEBLOCAGE" type="NVARCHAR(30)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Reclassification accounts (provisioning) ───────── -->
+            <column name="COMPTE_PROVISION" type="NVARCHAR(30)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="COMPTE_CREANCE_DOUTEUSE" type="NVARCHAR(30)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Renegotiation / refinancing flags ─────────────── -->
+            <column name="AUTORISER_RENEG" type="INT" defaultValueNumeric="0">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="AUTORISER_REMBOURSEMENT_ANTICIPE" type="INT" defaultValueNumeric="0">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Penalty rate for early repayment -->
+            <column name="TAUX_REMB_ANTICIPE" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Membership type restrictions ──────────────────── -->
+            <!-- P=Personne Physique, M=Moral, G=Groupe -->
+            <column name="TYPE_CLIENT" type="NVARCHAR(10)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Loan type classification ───────────────────────── -->
+            <!-- INDIVIDUEL, GROUPE, SOLIDAIRE -->
+            <column name="TYPE_CREDIT" type="NVARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Cycle (for group solidarity lending) ───────────── -->
+            <column name="NUMEROCYCLE" type="INT">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Collateral / guarantee flags ──────────────────── -->
+            <column name="GARANTIE_REQUISE" type="INT" defaultValueNumeric="0">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Max number of active loans for this product ───── -->
+            <column name="NOMBRE_CREDIT_MAX" type="INT">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Interest capitalisation ────────────────────────── -->
+            <!-- 1 = compound interest capitalised -->
+            <column name="CAPITALISATION_INTERET" type="INT" defaultValueNumeric="0">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Ageing thresholds (days) for portfolio quality ─── -->
+            <column name="SEUIL_RETARD_1" type="INT">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="SEUIL_RETARD_2" type="INT">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="SEUIL_RETARD_3" type="INT">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Deferred FK columns → PRODUITEPARGNE (P3-010) ─── -->
+            <!-- Mandatory savings product linked to this credit -->
+            <column name="numproduitPourEpargneOblig" type="NVARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Savings product used as guarantee/collateral -->
+            <column name="numproduitPourGaranti" type="NVARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Linked savings product (additional product tie-in) -->
+            <column name="numproduitPourPdrtLieCrdit" type="NVARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Optimistic lock ────────────────────────────────── -->
+            <column name="VERSION" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="produitcredit"/>
+        </rollback>
+
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════
+         2. FK → FAMILLEPRODUITCREDIT (Phase 1)
+         ═══════════════════════════════════════════════════════ -->
+    <changeSet id="P3-003-fk-produitcredit-famille" author="microfina">
+
+        <addColumn tableName="produitcredit">
+            <column name="codefamilleproduitcredit" type="NVARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addForeignKeyConstraint
+            constraintName           = "FK_produitcredit_FAMILLEPRODUITCREDIT"
+            baseTableName            = "produitcredit"
+            baseColumnNames          = "codefamilleproduitcredit"
+            referencedTableName      = "FAMILLEPRODUITCREDIT"
+            referencedColumnNames    = "CODEFAMILLEPRODUITCREDIT"
+            onDelete                 = "SET NULL"
+            onUpdate                 = "CASCADE"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="produitcredit"
+                                      constraintName="FK_produitcredit_FAMILLEPRODUITCREDIT"/>
+            <dropColumn tableName="produitcredit" columnName="codefamilleproduitcredit"/>
+        </rollback>
+
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════
+         3. FK → mode_de_calcul_interet (Phase 1)
+         ═══════════════════════════════════════════════════════ -->
+    <changeSet id="P3-003-fk-produitcredit-modeinteret" author="microfina">
+
+        <addColumn tableName="produitcredit">
+            <column name="codemode" type="BIGINT">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addForeignKeyConstraint
+            constraintName           = "FK_produitcredit_mode_de_calcul_interet"
+            baseTableName            = "produitcredit"
+            baseColumnNames          = "codemode"
+            referencedTableName      = "mode_de_calcul_interet"
+            referencedColumnNames    = "CODEMODE"
+            onDelete                 = "SET NULL"
+            onUpdate                 = "CASCADE"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="produitcredit"
+                                      constraintName="FK_produitcredit_mode_de_calcul_interet"/>
+            <dropColumn tableName="produitcredit" columnName="codemode"/>
+        </rollback>
+
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════
+         4. FK → Model_Compte_Produit_Credit (Phase 3)
+         ═══════════════════════════════════════════════════════ -->
+    <changeSet id="P3-003-fk-produitcredit-modelcompte" author="microfina">
+
+        <addColumn tableName="produitcredit">
+            <column name="id_model_produit_credit" type="BIGINT">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addForeignKeyConstraint
+            constraintName           = "FK_produitcredit_Model_Compte_Produit_Credit"
+            baseTableName            = "produitcredit"
+            baseColumnNames          = "id_model_produit_credit"
+            referencedTableName      = "Model_Compte_Produit_Credit"
+            referencedColumnNames    = "ID_MODEL_PRODUIT_CREDIT"
+            onDelete                 = "SET NULL"
+            onUpdate                 = "CASCADE"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="produitcredit"
+                                      constraintName="FK_produitcredit_Model_Compte_Produit_Credit"/>
+            <dropColumn tableName="produitcredit" columnName="id_model_produit_credit"/>
+        </rollback>
+
+    </changeSet>
+
+    <!-- ═══════════════════════════════════════════════════════
+         5. FK → produit_islamic (Phase 3)
+         ═══════════════════════════════════════════════════════ -->
+    <changeSet id="P3-003-fk-produitcredit-islamic" author="microfina">
+
+        <addColumn tableName="produitcredit">
+            <column name="code_produit_islamic" type="NVARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+
+        <addForeignKeyConstraint
+            constraintName           = "FK_produitcredit_produit_islamic"
+            baseTableName            = "produitcredit"
+            baseColumnNames          = "code_produit_islamic"
+            referencedTableName      = "produit_islamic"
+            referencedColumnNames    = "code_produit"
+            onDelete                 = "SET NULL"
+            onUpdate                 = "CASCADE"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="produitcredit"
+                                      constraintName="FK_produitcredit_produit_islamic"/>
+            <dropColumn tableName="produitcredit" columnName="code_produit_islamic"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

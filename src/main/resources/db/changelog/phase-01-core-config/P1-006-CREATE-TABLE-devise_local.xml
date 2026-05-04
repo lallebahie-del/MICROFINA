@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P1-006-CREATE-TABLE-devise_local" author="microfina">
+        <comment>Create devise_local table – local currencies used by institutions and agencies</comment>
+
+        <createTable tableName="devise_local">
+            <column name="CODE_DEVISE"  type="NVARCHAR(10)">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="PK_devise_local"/>
+            </column>
+            <column name="LIBELLE"      type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="SYMBOLE"      type="NVARCHAR(10)"/>
+            <column name="ACTIF"        type="BIT"          defaultValueBoolean="true"/>
+            <column name="TAUX_CHANGE"  type="DECIMAL(19,4)" defaultValueNumeric="1.0000"/>
+            <column name="VERSION"      type="INT"           defaultValueNumeric="0"/>
+            <column name="DATE_CREATION" type="DATETIME2"   defaultValueComputed="GETDATE()"/>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="devise_local"/>
+        </rollback>
+    </changeSet>
+
+
+</databaseChangeLog>

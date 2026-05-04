@@ -1,0 +1,40 @@
+<div class="page-container">
+  <h2 class="page-title">Centre d'exports</h2>
+
+  <div class="filters mb-4">
+    <label class="form-label">Filtrer par agence (optionnel) :</label>
+    <input type="text" [(ngModel)]="agenceFilter" placeholder="Code agence" class="form-control w-auto" />
+  </div>
+
+  <div *ngIf="loading" class="alert alert-info">Export en cours…</div>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Rapport</th><th>Formats disponibles</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of items">
+        <td>{{ item.label }}</td>
+        <td>
+          <button
+            *ngFor="let fmt of item.formats"
+            (click)="download(item.etat, fmt)"
+            class="btn btn-sm btn-outline-primary me-1"
+            [disabled]="loading">
+            {{ fmt | uppercase }}
+          </button>
+        </td>
+      </tr>
+      <tr>
+        <td>Export Sage Compta Ligne L</td>
+        <td>
+          <button (click)="downloadSage()" class="btn btn-sm btn-outline-secondary" [disabled]="loading">
+            CSV
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    P6-001 — Création de la table Banque
+    Dépendances : aucune (table racine du module Banque)
+    Référencée par : CompteBanque (FK_CompteBanque_Banque)
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P6-001-create-Banque" author="microfina">
+        <createTable tableName="Banque">
+            <column name="code_banque" type="NVARCHAR(20)">
+                <constraints primaryKey="true" primaryKeyName="PK_Banque" nullable="false"/>
+            </column>
+            <column name="nom" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="swift_bic" type="NVARCHAR(11)"/>
+            <column name="adresse" type="NVARCHAR(500)"/>
+            <column name="pays" type="NVARCHAR(100)"/>
+            <column name="actif" type="BIT" defaultValueNumeric="1"/>
+            <column name="version" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <rollback><dropTable tableName="Banque"/></rollback>
+    </changeSet>
+
+</databaseChangeLog>

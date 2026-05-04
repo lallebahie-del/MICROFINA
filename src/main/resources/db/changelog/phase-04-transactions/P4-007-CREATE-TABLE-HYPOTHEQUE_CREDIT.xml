@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P4-007 – HYPOTHEQUE_CREDIT
+        Real estate / immovable property collateral pledged against a credit.
+        FK dependencies: Credits (IDCREDIT) – P4-001
+        DDL source of truth: Phase 4 spec – Section 11.
+    -->
+    <changeSet id="P4-007-create-HYPOTHEQUE_CREDIT" author="microfina">
+
+        <createTable tableName="HYPOTHEQUE_CREDIT">
+
+            <column name="IDHYPOTHEQUE" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"
+                             primaryKeyName="PK_HYPOTHEQUE_CREDIT"
+                             nullable="false"/>
+            </column>
+
+            <!-- Description of the mortgaged property -->
+            <column name="DESCRIPTION"     type="NVARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Appraised market value -->
+            <column name="VALEUR_ESTIMEE"  type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Forced-sale (liquidation) value -->
+            <column name="VALEUR_FORCEE"   type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- TERRAIN | BATIMENT | VILLA | APPARTEMENT | COMMERCE -->
+            <column name="TYPE_BIEN"       type="NVARCHAR(100)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Cadastral / land-registry location -->
+            <column name="LOCALISATION"    type="NVARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Land-title (titre foncier) reference number -->
+            <column name="TITRE_FONCIER"   type="NVARCHAR(100)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Date of the mortgage deed -->
+            <column name="DATE_HYPOTHEQUE" type="DATE">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="VERSION" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="HYPOTHEQUE_CREDIT"/>
+        </rollback>
+
+    </changeSet>
+
+    <changeSet id="P4-007-fk-HYPOTHEQUE_CREDIT-Credits" author="microfina">
+
+        <addColumn tableName="HYPOTHEQUE_CREDIT">
+            <column name="idcredit" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <addForeignKeyConstraint
+            constraintName        = "FK_HYPOTHEQUE_CREDIT_Credits"
+            baseTableName         = "HYPOTHEQUE_CREDIT"
+            baseColumnNames       = "idcredit"
+            referencedTableName   = "Credits"
+            referencedColumnNames = "IDCREDIT"
+            onDelete              = "CASCADE"
+            onUpdate="NO ACTION"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="HYPOTHEQUE_CREDIT"
+                                      constraintName="FK_HYPOTHEQUE_CREDIT_Credits"/>
+            <dropColumn tableName="HYPOTHEQUE_CREDIT" columnName="idcredit"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

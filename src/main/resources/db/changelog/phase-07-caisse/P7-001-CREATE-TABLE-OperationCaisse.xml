@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    P7-001 — Création de la table OperationCaisse (entité parent — stratégie JOINED)
+    Dépendances :
+      - COMPTEEPS    (Phase 2) → FK_OperationCaisse_CompteEps    (NULLABLE)
+      - AGENCE       (Phase 1) → FK_OperationCaisse_Agence
+      - comptabilite (Phase 1) → FK_OperationCaisse_Comptabilite
+    Référencée par : DepotEpargne, RetraitEpargne, FraisAdhesion (sous-types JOINED)
+    Statuts valides : EN_ATTENTE / VALIDE / ANNULE
+    Modes de paiement : ESPECES / CHEQUE / VIREMENT / MOBILE_MONEY
+    La colonne dtype est le discriminateur JPA pour l'héritage JOINED.
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P7-001-create-OperationCaisse" author="microfina">
+        <createTable tableName="OperationCaisse">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="PK_OperationCaisse" nullable="false"/>
+            </column>
+            <column name="dtype" type="NVARCHAR(31)" defaultValue="OperationCaisse">
+                <constraints nullable="false"/>
+            </column>
+            <column name="num_piece" type="NVARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_operation" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="montant" type="DECIMAL(19,4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="mode_paiement" type="NVARCHAR(20)" defaultValue="ESPECES">
+                <constraints nullable="false"/>
+            </column>
+            <column name="motif" type="NVARCHAR(500)"/>
+            <column name="utilisateur" type="NVARCHAR(100)"/>
+            <column name="statut" type="NVARCHAR(20)" defaultValue="EN_ATTENTE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="num_compte" type="NVARCHAR(255)"/>
+            <column name="code_agence" type="NVARCHAR(25)"/>
+            <column name="idcomptabilite" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+            constraintName="FK_OperationCaisse_CompteEps"
+            baseTableName="OperationCaisse"
+            baseColumnNames="num_compte"
+            referencedTableName="COMPTEEPS"
+            referencedColumnNames="NUMCOMPTE"/>
+
+        <addForeignKeyConstraint
+            constraintName="FK_OperationCaisse_Agence"
+            baseTableName="OperationCaisse"
+            baseColumnNames="code_agence"
+            referencedTableName="AGENCE"
+            referencedColumnNames="CODE_AGENCE"/>
+
+        <addForeignKeyConstraint
+            constraintName="FK_OperationCaisse_Comptabilite"
+            baseTableName="OperationCaisse"
+            baseColumnNames="idcomptabilite"
+            referencedTableName="comptabilite"
+            referencedColumnNames="IDCOMPTABILITE"/>
+
+        <rollback>
+            <dropAllForeignKeyConstraints baseTableName="OperationCaisse"/>
+            <dropTable tableName="OperationCaisse"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

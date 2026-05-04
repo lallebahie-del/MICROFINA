@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P10-406 – vue_tableau_financement
+        ══════════════════════════════════════════════════════════════════════════
+        Tableau de financement (flux de trésorerie) — une ligne par jour
+        et par agence, consolidant tous les flux entrants et sortants.
+
+        FLUX ENTRANTS (encaissements) :
+          1. Remboursements clients      — Reglement.MONTANT_TOTAL (STATUT = VALIDE)
+          2. Dépôts caisse membres       — OperationCaisse (dtype = 'DepotEpargne',
+                                           statut = VALIDE)
+          3. Dépôts banque               — OperationBanque (dtype = 'DepotBanque',
+                                           statut = VALIDE)
+
+        FLUX SORTANTS (décaissements) :
+          4. Déblocages de crédits       — Credits.MONTANT_DEBLOQUER agrégé
+                                           par DATE_DEBLOCAGE (statut = DEBLOQUE)
+          5. Retraits caisse membres     — OperationCaisse (dtype = 'RetraitEpargne',
+                                           statut = VALIDE)
+          6. Retraits banque             — OperationBanque (dtype = 'RetraitBanque',
+                                           statut = VALIDE)
+
+        SOLDE NET = total_entrees - total_sorties
+
+        Tables source :
+          Reglement      (P4-011) — flux remboursements
+          OperationCaisse(P7-001) — flux caisse (dépôts/retraits épargne)
+          OperationBanque(P6-005) — flux bancaires (dépôts/retraits)
+          Credits        (P4-001) — déblocages crédit
+          AGENCE         (P1-002) — libellé agence
+        ══════════════════════════════════════════════════════════════════════════
+    -->
+
+    <changeSet id="P10-406-create-vue-tableau-financement" author="microfina">
+        <comment>
+            Tableau de financement quotidien par agence.
+            Consolide tous les flux caisse, banque et remboursements.
+        </comment>
+
+        <createView viewName="vue_tableau_financement" replaceIfExists="true">
+            SELECT
+                flux.date_operation,
+                flux.code_agence,
+                ag.NOMAGENCE                                    AS nom_agence,
+
+                /* ── Flux entrants ───────────────────────────────────────── */
+                COALESCE(flux.remboursements_recus,  0)        AS remboursements_recus,
+                COALESCE(flux.depots_caisse,         0)        AS depots_caisse,
+                COALESCE(flux.depots_banque,         0)        AS depots_banque,
+                COALESCE(flux.remboursements_recus,  0)
+                    + COALESCE(flux.depots_caisse,   0)
+                    + COALESCE(flux.depots_banque,   0)        AS total_entrees,
+
+                /* ── Flux sortants ───────────────────────────────────────── */
+                COALESCE(flux.deblocages_credits,    0)        AS deblocages_credits,
+                COALESCE(flux.retraits_caisse,       0)        AS retraits_caisse,
+                COALESCE(flux.retraits_banque,       0)        AS retraits_banque,
+                COALESCE(flux.deblocages_credits,    0)
+                    + COALESCE(flux.retraits_caisse, 0)
+                    + COALESCE(flux.retraits_banque, 0)        AS total_sorties,
+
+                /* ── Solde net du jour ───────────────────────────────────── */
+                COALESCE(flux.remboursements_recus,  0)
+                    + COALESCE(flux.depots_caisse,   0)
+                    + COALESCE(flux.depots_banque,   0)
+                    - COALESCE(flux.deblocages_credits, 0)
+                    - COALESCE(flux.retraits_caisse, 0)
+                    - COALESCE(flux.retraits_banque, 0)        AS solde_net_jour
+
+            FROM (
+
+                /* ── Remboursements reçus ────────────────────────────────── */
+                SELECT
+                    r.DATE_REGLEMENT                            AS date_operation,
+                    r.agence                                    AS code_agence,
+                    SUM(r.MONTANT_TOTAL)                        AS remboursements_recus,
+                    CAST(NULL AS DECIMAL(19,4))                 AS depots_caisse,
+                    CAST(NULL AS DECIMAL(19,4))                 AS depots_banque,
+                    CAST(NULL AS DECIMAL(19,4))                 AS deblocages_credits,
+                    CAST(NULL AS DECIMAL(19,4))                 AS retraits_caisse,
+                    CAST(NULL AS DECIMAL(19,4))                 AS retraits_banque
+                FROM Reglement r
+                WHERE r.STATUT = 'VALIDE'
+                GROUP BY r.DATE_REGLEMENT, r.agence
+
+                UNION ALL
+
+                /* ── Dépôts caisse (DepotEpargne) ────────────────────────── */
+                SELECT
+                    oc.date_operation,
+                    oc.code_agence,
+                    CAST(NULL AS DECIMAL(19,4)),
+                    SUM(oc.montant),
+                    CAST(NULL AS DECIMAL(19,4)),
+                    CAST(NULL AS DECIMAL(19,4)),
+                    CAST(NULL AS DECIMAL(19,4)),
+                    CAST(NULL AS DECIMAL(19,4))
+                FROM OperationCaisse oc
+                WHERE oc.dtype   = 'DepotEpargne'
+                  AND oc.statut  = 'VALIDE'
+                GROUP BY oc.date_operation, oc.code_agence
+
+                UNION ALL
+
+                /* ── Retraits caisse (RetraitEpargne) ────────────────────── */
+                SELECT
+                    oc.date_operation,
+                    oc.code_agence,
+                    CAST(NULL AS DECIMAL(19,4)),
+                    CAST(NULL AS DECIMAL(19,4)),
+                    CAST(NULL AS DECIMAL(19,4)),
+                    CAST(NULL AS DECIMAL(19,4)),
+                    SUM(oc.montant),
+                    CAST(NULL AS DECIMAL(19,4))
+                FROM OperationCaisse oc
+                WHERE oc.dtype  = 'RetraitEpargne'
+                  AND oc.statut = 'VALIDE'
+                GROUP BY oc.date_operation, oc.code_agence
+
+                UNION ALL
+
+                /* ── Dépôts banque (DepotBanque) ─────────────────────────── */
+                SELECT
+                    ob.date_operation,
+                    ob.code_agence,
+                    CAST(NULL AS DECIMAL(19,4)),
+                    CAST(NULL AS DECIMAL(19,4)),
+                    SUM(ob.montant),
+                    CAST(NULL AS DECIMAL(19,4)),
+                    CAST(NULL AS DECIMAL(19,4)),
+                    CAST(NULL AS DECIMAL(19,4))
+                FROM OperationBanque ob
+                WHERE ob.dtype  = 'DepotBanque'
+                  AND ob.statut = 'VALIDE'
+                GROUP BY ob.date_operation, ob.code_agence
+
+                UNION ALL
+
+                /* ── Retraits banque (RetraitBanque) ─────────────────────── */
+                SELECT
+                    ob.date_operation,
+                    ob.code_agence,
+                    CAST(NULL AS DECIMAL(19,4)),
+                    CAST(NULL AS DECIMAL(19,4)),
+                    CAST(NULL AS DECIMAL(19,4)),
+                    CAST(NULL AS DECIMAL(19,4)),
+                    CAST(NULL AS DECIMAL(19,4)),
+                    SUM(ob.montant)
+                FROM OperationBanque ob
+                WHERE ob.dtype  = 'RetraitBanque'
+                  AND ob.statut = 'VALIDE'
+                GROUP BY ob.date_operation, ob.code_agence
+
+                UNION ALL
+
+                /* ── Déblocages crédits ───────────────────────────────────── */
+                SELECT
+                    c.DATE_DEBLOCAGE,
+                    c.agence,
+                    CAST(NULL AS DECIMAL(19,4)),
+                    CAST(NULL AS DECIMAL(19,4)),
+                    CAST(NULL AS DECIMAL(19,4)),
+                    SUM(c.MONTANT_DEBLOQUER),
+                    CAST(NULL AS DECIMAL(19,4)),
+                    CAST(NULL AS DECIMAL(19,4))
+                FROM Credits c
+                WHERE c.STATUT        = 'DEBLOQUE'
+                  AND c.DATE_DEBLOCAGE IS NOT NULL
+                GROUP BY c.DATE_DEBLOCAGE, c.agence
+
+            ) flux
+
+            LEFT JOIN AGENCE ag
+                   ON ag.CODE_AGENCE = flux.code_agence
+        </createView>
+
+        <rollback>
+            <dropView viewName="vue_tableau_financement"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

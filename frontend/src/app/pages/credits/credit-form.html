@@ -1,0 +1,145 @@
+<div class="page-container">
+
+  <div class="page-header">
+    <h2 class="page-title">{{ isNew ? 'Nouveau crédit' : 'Modifier le crédit #' + creditId }}</h2>
+    <button class="btn btn-outline" (click)="annuler()">← Retour</button>
+  </div>
+
+  <div class="alert alert-error"   *ngIf="error()">{{ error() }}</div>
+  <div class="alert alert-success" *ngIf="success()">{{ success() }}</div>
+  <div class="loading-indicator"   *ngIf="loading()">Chargement…</div>
+
+  <form class="form-card" (ngSubmit)="submit()" *ngIf="!loading()">
+
+    <!-- ── Membre & Produit ── -->
+    <fieldset class="form-section">
+      <legend>Membre &amp; Produit</legend>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Membre *</label>
+          <select [(ngModel)]="form.membreNum" name="membreNum" required>
+            <option value="">— Sélectionner —</option>
+            <option *ngFor="let m of membres()" [value]="m.numMembre">
+              {{ m.numMembre }} – {{ m.nom }} {{ m.prenom }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Produit crédit *</label>
+          <select [(ngModel)]="form.produitCode" name="produitCode" required (change)="onProduitChange()">
+            <option value="">— Sélectionner —</option>
+            <option *ngFor="let p of produits()" [value]="p.numProduit">
+              {{ p.numProduit }} – {{ p.nomProduit }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>N° crédit <small>(auto-généré si vide)</small></label>
+          <input type="text" [(ngModel)]="form.numCredit" name="numCredit"
+                 placeholder="ex: CR-2024-00001"/>
+        </div>
+        <div class="form-group">
+          <label>Objet du crédit</label>
+          <input type="text" [(ngModel)]="form.objetCredit" name="objetCredit"/>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- ── Montants ── -->
+    <fieldset class="form-section">
+      <legend>Montants (MRU)</legend>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Montant demandé *</label>
+          <input type="number" [(ngModel)]="form.montantDemande" name="montantDemande"
+                 min="0" step="1000" required/>
+        </div>
+        <div class="form-group">
+          <label>Montant accordé</label>
+          <input type="number" [(ngModel)]="form.montantAccorde" name="montantAccorde"
+                 min="0" step="1000"/>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- ── Taux ── -->
+    <fieldset class="form-section">
+      <legend>Taux (%)</legend>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Taux intérêt</label>
+          <input type="number" [(ngModel)]="form.tauxInteret" name="tauxInteret" step="0.01"/>
+        </div>
+        <div class="form-group">
+          <label>Taux pénalité</label>
+          <input type="number" [(ngModel)]="form.tauxPenalite" name="tauxPenalite" step="0.01"/>
+        </div>
+        <div class="form-group">
+          <label>Taux commission</label>
+          <input type="number" [(ngModel)]="form.tauxCommission" name="tauxCommission" step="0.01"/>
+        </div>
+        <div class="form-group">
+          <label>Taux assurance</label>
+          <input type="number" [(ngModel)]="form.tauxAssurance" name="tauxAssurance" step="0.01"/>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- ── Échéancier ── -->
+    <fieldset class="form-section">
+      <legend>Remboursement</legend>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Périodicité</label>
+          <select [(ngModel)]="form.periodicite" name="periodicite">
+            <option value="J">Journalier</option>
+            <option value="H">Hebdomadaire</option>
+            <option value="M">Mensuel</option>
+            <option value="T">Trimestriel</option>
+            <option value="S">Semestriel</option>
+            <option value="A">Annuel</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Durée (périodes)</label>
+          <input type="number" [(ngModel)]="form.duree" name="duree" min="1"/>
+        </div>
+        <div class="form-group">
+          <label>Nb échéances</label>
+          <input type="number" [(ngModel)]="form.nombreEcheance" name="nombreEcheance" min="1"/>
+        </div>
+        <div class="form-group">
+          <label>Délai de grâce</label>
+          <input type="number" [(ngModel)]="form.delaiGrace" name="delaiGrace" min="0"/>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- ── Dates ── -->
+    <fieldset class="form-section">
+      <legend>Dates</legend>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date de demande</label>
+          <input type="date" [(ngModel)]="form.dateDemande" name="dateDemande"/>
+        </div>
+        <div class="form-group">
+          <label>Date d'accord</label>
+          <input type="date" [(ngModel)]="form.dateAccord" name="dateAccord"/>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary" [disabled]="saving()">
+        {{ saving() ? 'Enregistrement…' : (isNew ? 'Créer le crédit' : 'Enregistrer') }}
+      </button>
+      <button type="button" class="btn btn-outline" (click)="annuler()">Annuler</button>
+    </div>
+
+  </form>
+</div>

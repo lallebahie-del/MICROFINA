@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P3-010 – Deferred FKs: produitcredit → PRODUITEPARGNE (× 3)
+
+        These three FK constraints reference PRODUITEPARGNE (created in P3-007).
+        They could not be added in P3-003 because PRODUITEPARGNE did not yet exist.
+        The three columns were already created in P3-003 as plain NVARCHAR columns;
+        this changeset only adds the referential constraints.
+
+        Columns:
+          numproduitPourEpargneOblig   – mandatory savings product tied to this credit
+          numproduitPourGaranti        – savings product used as guarantee
+          numproduitPourPdrtLieCrdit  – additional linked savings product
+    -->
+
+    <!-- FK 1: mandatory savings product -->
+    <changeSet id="P3-010-fk-produitcredit-EpargneOblig" author="microfina">
+
+        <addForeignKeyConstraint
+            constraintName           = "FK_produitcredit_PRODUITEPARGNE_EpargneOblig"
+            baseTableName            = "produitcredit"
+            baseColumnNames          = "numproduitPourEpargneOblig"
+            referencedTableName      = "PRODUITEPARGNE"
+            referencedColumnNames    = "NUMPRODUIT"
+            onDelete                 = "NO ACTION"
+            onUpdate                 = "NO ACTION"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="produitcredit"
+                                      constraintName="FK_produitcredit_PRODUITEPARGNE_EpargneOblig"/>
+        </rollback>
+
+    </changeSet>
+
+    <!-- FK 2: guarantee savings product -->
+    <changeSet id="P3-010-fk-produitcredit-Garanti" author="microfina">
+
+        <addForeignKeyConstraint
+            constraintName           = "FK_produitcredit_PRODUITEPARGNE_Garanti"
+            baseTableName            = "produitcredit"
+            baseColumnNames          = "numproduitPourGaranti"
+            referencedTableName      = "PRODUITEPARGNE"
+            referencedColumnNames    = "NUMPRODUIT"
+            onDelete                 = "NO ACTION"
+            onUpdate                 = "NO ACTION"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="produitcredit"
+                                      constraintName="FK_produitcredit_PRODUITEPARGNE_Garanti"/>
+        </rollback>
+
+    </changeSet>
+
+    <!-- FK 3: linked savings product -->
+    <changeSet id="P3-010-fk-produitcredit-PdrtLieCrdit" author="microfina">
+
+        <addForeignKeyConstraint
+            constraintName           = "FK_produitcredit_PRODUITEPARGNE_PdrtLieCrdit"
+            baseTableName            = "produitcredit"
+            baseColumnNames          = "numproduitPourPdrtLieCrdit"
+            referencedTableName      = "PRODUITEPARGNE"
+            referencedColumnNames    = "NUMPRODUIT"
+            onDelete                 = "NO ACTION"
+            onUpdate                 = "NO ACTION"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="produitcredit"
+                                      constraintName="FK_produitcredit_PRODUITEPARGNE_PdrtLieCrdit"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

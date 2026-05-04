@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P1-005-CREATE-TABLE-zoneGeographique" author="microfina">
+        <comment>Create zoneGeographique table – geographic zones for branches and members</comment>
+
+        <createTable tableName="zoneGeographique">
+            <column name="idZoneGeographique" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="PK_zoneGeographique"/>
+            </column>
+            <column name="libelleZoneGeographique" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="VERSION"             type="INT"          defaultValueNumeric="0"/>
+            <column name="ville"               type="BIGINT"/>
+            <column name="code"                type="NVARCHAR(16)"/>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="zoneGeographique"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

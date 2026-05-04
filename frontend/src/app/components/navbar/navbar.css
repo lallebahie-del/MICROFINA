@@ -182,3 +182,46 @@
 .nav-power-btn:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+ 
+.nav-tool-btn svg,
+.nav-power-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tool-dropdown {
+  display: none;
+  position: absolute;
+  top: 42px;
+  right: 0;
+  width: 175px;
+  padding: 4px 0;
+  background: #edf2f5;
+  border: 1px solid #c3d1da;
+  box-shadow: 0 5px 12px rgba(57, 88, 110, 0.25);
+}
+
+.tool-wrapper:hover > .tool-dropdown {
+  display: block;
+}
+/* ── Logged-in username display ───────────────────────────────────────── */
+.navbar-username {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary-blue-dark, #225381);
+  padding: 0 8px;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+  border-left: 1px solid #c2cbd2;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}

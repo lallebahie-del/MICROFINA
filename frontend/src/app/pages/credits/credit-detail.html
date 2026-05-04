@@ -1,0 +1,151 @@
+<div class="page-container">
+
+  <div class="page-header">
+    <h2 class="page-title">Détail du crédit</h2>
+    <button class="btn btn-outline" (click)="retour()">← Retour</button>
+  </div>
+
+  <div class="alert alert-error"   *ngIf="error()">{{ error() }}</div>
+  <div class="alert alert-success" *ngIf="success()">{{ success() }}</div>
+  <div class="loading-indicator"   *ngIf="loading()">Chargement…</div>
+
+  <div *ngIf="!loading() && credit()">
+
+    <!-- ── Header card ── -->
+    <div class="detail-header-card">
+      <div class="detail-title-row">
+        <div>
+          <span class="mono detail-num">{{ credit()!.numCredit }}</span>
+          <span [class]="badgeClass(credit()!.statut ?? '')">{{ credit()!.statut }}</span>
+        </div>
+        <div class="detail-actions">
+          <button class="btn btn-sm btn-secondary"
+                  *ngIf="credit()!.statut === 'BROUILLON'"
+                  (click)="edit()">Modifier</button>
+          <button class="btn btn-sm btn-primary"
+                  *ngIf="credit()!.statut === 'BROUILLON'"
+                  (click)="transitionner('SOUMIS')">Soumettre</button>
+          <button class="btn btn-sm btn-primary"
+                  *ngIf="credit()!.statut === 'SOUMIS'"
+                  (click)="transitionner('VALIDE_AGENT')">Valider (agent)</button>
+          <button class="btn btn-sm btn-primary"
+                  *ngIf="credit()!.statut === 'VALIDE_AGENT'"
+                  (click)="transitionner('VALIDE_COMITE')">Valider (comité)</button>
+          <button class="btn btn-sm btn-success"
+                  *ngIf="credit()!.statut === 'VALIDE_COMITE'"
+                  (click)="transitionner('DEBLOQUE')">Débloquer</button>
+          <button class="btn btn-sm btn-success"
+                  *ngIf="credit()!.statut === 'DEBLOQUE'"
+                  (click)="transitionner('SOLDE')">Solder</button>
+          <button class="btn btn-sm btn-danger"
+                  *ngIf="['BROUILLON','SOUMIS','VALIDE_AGENT','VALIDE_COMITE'].includes(credit()!.statut ?? '')"
+                  (click)="transitionner('REJETE')">Rejeter</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Grille de détails ── -->
+    <div class="detail-grid">
+
+      <!-- Membre -->
+      <div class="detail-card">
+        <div class="detail-card-title">Membre emprunteur</div>
+        <div class="detail-row">
+          <span class="detail-label">N° membre</span>
+          <span class="mono">{{ credit()!.membreNum }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Nom</span>
+          <span>{{ credit()!.membreNom }} {{ credit()!.membrePrenom }}</span>
+        </div>
+      </div>
+
+      <!-- Produit -->
+      <div class="detail-card">
+        <div class="detail-card-title">Produit crédit</div>
+        <div class="detail-row">
+          <span class="detail-label">Code</span>
+          <span class="mono">{{ credit()!.produitCode }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Nom</span>
+          <span>{{ credit()!.produitNom }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Périodicité</span>
+          <span>{{ credit()!.periodicite }}</span>
+        </div>
+      </div>
+
+      <!-- Montants -->
+      <div class="detail-card">
+        <div class="detail-card-title">Montants (MRU)</div>
+        <div class="detail-row">
+          <span class="detail-label">Demandé</span>
+          <span class="amount">{{ credit()!.montantDemande | number:'1.0-0' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Accordé</span>
+          <span class="amount">{{ credit()!.montantAccorde | number:'1.0-0' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Débloqué</span>
+          <span class="amount">{{ credit()!.montantDebloquer | number:'1.0-0' }}</span>
+        </div>
+      </div>
+
+      <!-- Soldes -->
+      <div class="detail-card">
+        <div class="detail-card-title">Soldes en cours (MRU)</div>
+        <div class="detail-row">
+          <span class="detail-label">Capital restant</span>
+          <span class="amount">{{ credit()!.soldeCapital | number:'1.0-0' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Intérêts</span>
+          <span class="amount">{{ credit()!.soldeInteret | number:'1.0-0' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Pénalités</span>
+          <span class="amount">{{ credit()!.soldePenalite | number:'1.0-0' }}</span>
+        </div>
+      </div>
+
+      <!-- Taux -->
+      <div class="detail-card">
+        <div class="detail-card-title">Taux (%)</div>
+        <div class="detail-row"><span class="detail-label">Intérêt</span><span>{{ credit()!.tauxInteret }}%</span></div>
+        <div class="detail-row"><span class="detail-label">Pénalité</span><span>{{ credit()!.tauxPenalite }}%</span></div>
+        <div class="detail-row"><span class="detail-label">Commission</span><span>{{ credit()!.tauxCommission }}%</span></div>
+        <div class="detail-row"><span class="detail-label">Assurance</span><span>{{ credit()!.tauxAssurance }}%</span></div>
+      </div>
+
+      <!-- Dates -->
+      <div class="detail-card">
+        <div class="detail-card-title">Dates clés</div>
+        <div class="detail-row"><span class="detail-label">Demande</span><span>{{ credit()!.dateDemande | date:'dd/MM/yyyy' }}</span></div>
+        <div class="detail-row"><span class="detail-label">Accord</span><span>{{ credit()!.dateAccord | date:'dd/MM/yyyy' }}</span></div>
+        <div class="detail-row"><span class="detail-label">Déblocage</span><span>{{ credit()!.dateDeblocage | date:'dd/MM/yyyy' }}</span></div>
+        <div class="detail-row"><span class="detail-label">Échéance finale</span><span>{{ credit()!.dateEcheance | date:'dd/MM/yyyy' }}</span></div>
+        <div class="detail-row" *ngIf="credit()!.dateCloture"><span class="detail-label">Clôture</span><span>{{ credit()!.dateCloture | date:'dd/MM/yyyy' }}</span></div>
+      </div>
+
+      <!-- Échéancier -->
+      <div class="detail-card">
+        <div class="detail-card-title">Paramètres de remboursement</div>
+        <div class="detail-row"><span class="detail-label">Durée</span><span>{{ credit()!.duree }} périodes</span></div>
+        <div class="detail-row"><span class="detail-label">Nb échéances</span><span>{{ credit()!.nombreEcheance }}</span></div>
+        <div class="detail-row"><span class="detail-label">Délai de grâce</span><span>{{ credit()!.delaiGrace }}</span></div>
+        <div class="detail-row"><span class="detail-label">Agence</span><span>{{ credit()!.agenceNom ?? credit()!.agenceCode }}</span></div>
+      </div>
+
+      <!-- Objet -->
+      <div class="detail-card" *ngIf="credit()!.objetCredit">
+        <div class="detail-card-title">Objet du crédit</div>
+        <p class="detail-text">{{ credit()!.objetCredit }}</p>
+      </div>
+
+    </div>
+  </div>
+
+</div>

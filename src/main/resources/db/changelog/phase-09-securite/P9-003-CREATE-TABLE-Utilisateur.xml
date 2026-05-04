@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P9-003-create-Utilisateur" author="microfina">
+        <comment>Create Utilisateur table – stores application users with BCrypt password hash and agency link</comment>
+
+        <createTable tableName="Utilisateur">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="PK_Utilisateur"/>
+            </column>
+            <column name="login" type="NVARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="mot_de_passe_hash" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nom_complet" type="NVARCHAR(255)"/>
+            <column name="email" type="NVARCHAR(255)"/>
+            <column name="telephone" type="NVARCHAR(30)"/>
+            <column name="actif" type="BIT" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_expiration_compte" type="DATE"/>
+            <column name="derniere_connexion" type="DATETIME2"/>
+            <column name="nombre_echecs" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="version" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code_agence" type="NVARCHAR(25)"/>
+        </createTable>
+
+        <addUniqueConstraint
+            tableName="Utilisateur"
+            columnNames="login"
+            constraintName="UQ_Utilisateur_login"/>
+
+        <addForeignKeyConstraint
+            baseTableName="Utilisateur"
+            baseColumnNames="code_agence"
+            referencedTableName="AGENCE"
+            referencedColumnNames="CODE_AGENCE"
+            constraintName="FK_Utilisateur_Agence"
+            onDelete="SET NULL"
+            onUpdate="CASCADE"/>
+
+        <rollback>
+            <dropAllForeignKeyConstraints baseTableName="Utilisateur"/>
+            <dropTable tableName="Utilisateur"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

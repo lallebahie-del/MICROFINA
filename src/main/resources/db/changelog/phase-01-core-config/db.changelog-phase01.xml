@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ============================================================
+  MICROFINA++ – Phase 1: Core Configuration & Shared Referentials
+  Master changelog – includes all Phase 1 change files in order.
+  ============================================================
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!-- ── Organizational Tables ───────────────────────────── -->
+    <include file="db/changelog/phase-01-core-config/P1-001-CREATE-TABLE-ADRESSE.xml"/>
+    <include file="db/changelog/phase-01-core-config/P1-005-CREATE-TABLE-zoneGeographique.xml"/>
+    <include file="db/changelog/phase-01-core-config/P1-006-CREATE-TABLE-devise_local.xml"/>
+    <include file="db/changelog/phase-01-core-config/P1-007-CREATE-TABLE-FormeJuridique.xml"/>
+    <include file="db/changelog/phase-01-core-config/P1-004-CREATE-TABLE-institution.xml"/>
+    <include file="db/changelog/phase-01-core-config/P1-002-CREATE-TABLE-AGENCE.xml"/>
+    <include file="db/changelog/phase-01-core-config/P1-003-CREATE-TABLE-AGENT_CREDIT.xml"/>
+
+    <!-- ── System Parameters ───────────────────────────────── -->
+    <include file="db/changelog/phase-01-core-config/P1-009-CREATE-TABLE-CompteurMembre.xml"/>
+    <include file="db/changelog/phase-01-core-config/P1-008-CREATE-TABLE-Parametre.xml"/>
+
+    <!-- ── Product Taxonomies ──────────────────────────────── -->
+    <include file="db/changelog/phase-01-core-config/P1-013-CREATE-TABLE-mode_de_calcul_interet.xml"/>
+    <include file="db/changelog/phase-01-core-config/P1-011-CREATE-TABLE-FAMILLEPRODUITCREDIT.xml"/>
+    <include file="db/changelog/phase-01-core-config/P1-012-CREATE-TABLE-FAMILLEPARTSOCIALE.xml"/>
+    <include file="db/changelog/phase-01-core-config/P1-010-CREATE-TABLE-CATEGORIE_PRODUIT_CREDIT.xml"/>
+
+    <!-- ── Fee Setup ───────────────────────────────────────── -->
+    <include file="db/changelog/phase-01-core-config/P1-014-CREATE-TABLE-ValeurFrais.xml"/>
+    <include file="db/changelog/phase-01-core-config/P1-015-CREATE-TABLE-VALEURFRAISADHESION.xml"/>
+    <include file="db/changelog/phase-01-core-config/P1-016-CREATE-TABLE-ValeurFraisCategorie.xml"/>
+
+    <!-- ── Accounting Skeleton ─────────────────────────────── -->
+    <include file="db/changelog/phase-01-core-config/P1-017-CREATE-TABLE-comptabilite.xml"/>
+
+    <!-- ── Initial Seed Data ───────────────────────────────── -->
+    <include file="db/changelog/phase-01-core-config/data/200_seed_phase_01.xml"/>
+    <include file="db/changelog/phase-01-core-config/data/300_seed_admin.xml"/>
+
+</databaseChangeLog>

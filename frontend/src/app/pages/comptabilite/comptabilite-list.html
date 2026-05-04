@@ -1,0 +1,38 @@
+<div class="page-container">
+  <h2 class="page-title">Écritures comptables</h2>
+
+  <div class="filters">
+    <input type="text" [(ngModel)]="agenceFilter" placeholder="Filtrer par agence" class="form-control" />
+    <button (click)="load()" class="btn btn-primary">Rechercher</button>
+  </div>
+
+  <div *ngIf="loading" class="loading">Chargement…</div>
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+  <table *ngIf="!loading && ecritures.length > 0" class="table">
+    <thead>
+      <tr>
+        <th>ID</th><th>Date</th><th>Compte</th><th>Libellé</th>
+        <th>Débit</th><th>Crédit</th><th>Lettrage</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let e of ecritures">
+        <td>{{ e.idComptabilite }}</td>
+        <td>{{ e.dateEcriture ?? '—' }}</td>
+        <td>{{ e.numCompte ?? '—' }}</td>
+        <td>{{ e.libelle ?? '—' }}</td>
+        <td class="montant">{{ (e.debit ?? 0) | number:'1.2-2' }}</td>
+        <td class="montant">{{ (e.credit ?? 0) | number:'1.2-2' }}</td>
+        <td>{{ e.codeLettrage ?? '—' }}</td>
+        <td>
+          <button *ngIf="!e.codeLettrage && e.idComptabilite" (click)="lettrer(e.idComptabilite!)" class="btn btn-sm btn-secondary">
+            Lettrer
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p *ngIf="!loading && ecritures.length === 0" class="empty-state">Aucune écriture trouvée.</p>
+</div>
