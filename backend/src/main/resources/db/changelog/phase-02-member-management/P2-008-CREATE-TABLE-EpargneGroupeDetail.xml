@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P2-008 – EpargneGroupeDetail
+        Spec p.32.  PK = idEpargneGD (BIGINT autoIncrement).
+        Links a group savings movement (EpargneGroupe row in EPARGNE) to
+        the individual MembreGroupe member record.
+        Unique constraint: one detail row per (EpargneGroupe, membreGroupe).
+        FKs wired: EpargneGroupe → EPARGNE, membreGroupe → MembreGroupe.
+    -->
+    <changeSet id="P2-008-CREATE-TABLE-EpargneGroupeDetail" author="microfina">
+        <comment>Create EpargneGroupeDetail table – per-member breakdown of group savings movements per spec p.32</comment>
+
+        <createTable tableName="EpargneGroupeDetail">
+            <!-- PK: auto-increment -->
+            <column name="idEpargneGD"       type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="PK_EpargneGroupeDetail"/>
+            </column>
+
+            <!-- Group member code (AN/255 per spec) -->
+            <column name="CODEMEMBREGROUPPE"  type="NVARCHAR(255)"/>
+
+            <!-- Credit / debit split for this member -->
+            <column name="CREDIT"             type="DECIMAL(19,4)"/>
+            <column name="DEBIT"              type="DECIMAL(19,4)"/>
+
+            <!-- Piece / date reference -->
+            <column name="numpiece"           type="NVARCHAR(50)"/>
+            <column name="dateoperation"      type="DATE"/>
+
+            <!-- Optimistic lock -->
+            <column name="VERSION"            type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- FK to EPARGNE (EpargneGroupe discriminator row) -->
+            <column name="EpargneGroupe"      type="BIGINT"/>
+            <!-- FK to MembreGroupe (AN/48 per spec — stored as CODE_TIERS string) -->
+            <column name="membreGroupe"       type="NVARCHAR(50)"/>
+        </createTable>
+
+        <!-- Unique: one detail row per group savings × group member -->
+        <addUniqueConstraint
+            tableName="EpargneGroupeDetail"
+            columnNames="EpargneGroupe, membreGroupe"
+            constraintName="UQ_EpargneGroupeDetail_epargne_membre"/>
+
+        <!-- FK to EPARGNE -->
+        <addForeignKeyConstraint
+            baseTableName="EpargneGroupeDetail"  baseColumnNames="EpargneGroupe"
+            referencedTableName="EPARGNE"        referencedColumnNames="IDEPARGNE"
+            constraintName="FK_EpargneGroupeDetail_EPARGNE"/>
+
+        <!-- FK to MembreGroupe (CODE_TIERS is NVARCHAR(50) PK) -->
+        <addForeignKeyConstraint
+            baseTableName="EpargneGroupeDetail"  baseColumnNames="membreGroupe"
+            referencedTableName="MembreGroupe"   referencedColumnNames="CODE_TIERS"
+            constraintName="FK_EpargneGroupeDetail_MembreGroupe"/>
+
+        <rollback>
+            <dropAllForeignKeyConstraints baseTableName="EpargneGroupeDetail"/>
+            <dropTable tableName="EpargneGroupeDetail"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

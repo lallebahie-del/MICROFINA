@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CreditsRepository extends JpaRepository<Credits, Long> {
@@ -41,4 +42,13 @@ public interface CreditsRepository extends JpaRepository<Credits, Long> {
     );
 
     List<Credits> findByEtapeCourante(String etapeCourante);
+
+    @Query("""
+        SELECT DISTINCT c FROM Credits c
+        LEFT JOIN FETCH c.produitCredit pc
+        LEFT JOIN FETCH pc.produitIslamic
+        LEFT JOIN FETCH c.modeDeCalculInteret
+        WHERE c.idCredit = :id
+        """)
+    Optional<Credits> findWithAmortissementContextById(@Param("id") Long id);
 }

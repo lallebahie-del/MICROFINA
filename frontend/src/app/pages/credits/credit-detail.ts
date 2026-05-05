@@ -2,6 +2,11 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule }              from '@angular/common';
 import { ActivatedRoute, Router }    from '@angular/router';
 import { CreditsService, Credit, CreditStatut } from '../../services/credits.service';
+import {
+  CreditPaymentsService,
+  CreditPaymentsResponse,
+  CreditPaymentsPreviewResponse,
+} from '../../services/credit-payments.service';
 
 @Component({
   selector: 'app-credit-detail',
@@ -16,10 +21,19 @@ export class CreditDetailComponent implements OnInit {
   error   = signal<string | null>(null);
   success = signal<string | null>(null);
 
+  activeTab = signal<'resume' | 'payments' | 'preview'>('resume');
+  payments = signal<CreditPaymentsResponse | null>(null);
+  paymentsLoading = signal(false);
+  paymentsError = signal<string | null>(null);
+  preview = signal<CreditPaymentsPreviewResponse | null>(null);
+  previewLoading = signal(false);
+  previewError = signal<string | null>(null);
+
   constructor(
     private route:   ActivatedRoute,
     private router:  Router,
-    private service: CreditsService
+    private service: CreditsService,
+    private paymentsSvc: CreditPaymentsService,
   ) {}
 
   ngOnInit(): void {
@@ -29,6 +43,53 @@ export class CreditDetailComponent implements OnInit {
     this.service.getOne(id).subscribe({
       next:  c => { this.credit.set(c); this.loading.set(false); },
       error: e => { this.error.set('Erreur : ' + e.message); this.loading.set(false); }
+    });
+  }
+
+  setTab(tab: 'resume' | 'payments' | 'preview'): void {
+    this.activeTab.set(tab);
+    if (tab === 'payments') {
+      this.loadPayments();
+    }
+    if (tab === 'preview') {
+      this.loadPreview();
+    }
+  }
+
+  loadPayments(): void {
+    const c = this.credit();
+    if (!c?.idCredit) return;
+    if (this.paymentsLoading()) return;
+
+    this.paymentsError.set(null);
+    this.paymentsLoading.set(true);
+    this.paymentsSvc.getSuivi(c.idCredit).subscribe({
+      next: r => { this.payments.set(r); this.paymentsLoading.set(false); },
+      error: e => {
+        this.paymentsError.set(e.error?.message ?? e.message ?? 'Erreur lors du chargement des échéances.');
+        this.paymentsLoading.set(false);
+      }
+    });
+  }
+
+  loadPreview(): void {
+    const c = this.credit();
+    if (!c?.idCredit) return;
+    if (this.previewLoading()) return;
+
+    this.previewError.set(null);
+    this.previewLoading.set(true);
+    this.paymentsSvc.getAmortissementPreview(c.idCredit).subscribe({
+      next: r => {
+        this.preview.set(r);
+        this.previewLoading.set(false);
+      },
+      error: e => {
+        this.previewError.set(
+          e.error?.message ?? e.message ?? 'Impossible de calculer le prévisionnel.',
+        );
+        this.previewLoading.set(false);
+      },
     });
   }
 

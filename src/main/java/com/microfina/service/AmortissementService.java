@@ -10,6 +10,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * AmortissementService – génère et gère le tableau d'amortissement
@@ -84,6 +85,11 @@ public class AmortissementService {
     public List<Amortp> genererTableau(Credits credit) {
         validerAvantGeneration(credit);
 
+        // Financement islamique: la colonne INTERET représente la marge bénéficiaire.
+        if (isIslamic(credit)) {
+            return genererIslamic(credit);
+        }
+
         String modeCalcul = credit.getModeDeCalculInteret().getModeCalcul();
 
         return switch (modeCalcul) {
@@ -94,6 +100,89 @@ public class AmortissementService {
                 "Mode de calcul d'intérêt inconnu ou supprimé: « " + modeCalcul
                 + " ». Utiliser DEGRESSIF, SIMPLE ou COMPOSE.");
         };
+    }
+
+    /**
+     * Échéancier prévisionnel (non persisté) : même moteur que {@link #genererTableau(Credits)}
+     * mais sans exiger le statut DEBLOQUE. Le principal retenu est, par ordre de priorité :
+     * montant débloqué &gt; 0, montant accordé &gt; 0, montant demandé.
+     */
+    public List<Amortp> genererTableauPreview(Credits source) {
+        Credits shadow = buildShadowForPreview(source);
+        return genererTableau(shadow);
+    }
+
+    /**
+     * Montant principal utilisé pour une prévisualisation (même règle de priorité que
+     * {@link #genererTableauPreview(Credits)}).
+     */
+    public BigDecimal resolveMontantPreviewPrincipal(Credits source) {
+        BigDecimal p = resolvePreviewPrincipal(source);
+        if (p == null || p.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException(
+                "Montant prévisionnel indéterminé : renseigner un montant débloqué, accordé ou demandé positif.");
+        }
+        return p;
+    }
+
+    private Credits buildShadowForPreview(Credits source) {
+        if (source == null) {
+            throw new IllegalArgumentException("Le crédit ne peut pas être null.");
+        }
+        BigDecimal principal = resolveMontantPreviewPrincipal(source);
+        if (source.getNombreEcheance() == null || source.getNombreEcheance() <= 0) {
+            throw new IllegalArgumentException(
+                "Le nombre d'échéances doit être supérieur à zéro.");
+        }
+        if (!isIslamic(source) && source.getModeDeCalculInteret() == null) {
+            throw new IllegalArgumentException(
+                "Le mode de calcul d'intérêt est obligatoire pour la prévisualisation.");
+        }
+        if (!isIslamic(source) && source.getTauxInteret() == null) {
+            throw new IllegalArgumentException("Le taux d'intérêt est obligatoire pour la prévisualisation.");
+        }
+
+        Credits s = new Credits();
+        s.setIdCredit(source.getIdCredit());
+        s.setStatut(CreditStatut.DEBLOQUE);
+        s.setMontantDebloquer(principal);
+        s.setNombreEcheance(source.getNombreEcheance());
+        s.setPeriodicite(source.getPeriodicite());
+        s.setProduitCredit(source.getProduitCredit());
+        s.setModeDeCalculInteret(source.getModeDeCalculInteret());
+        s.setTauxInteret(source.getTauxInteret());
+        s.setTauxPenalite(source.getTauxPenalite());
+        s.setTauxCommission(source.getTauxCommission());
+        s.setTauxAssurance(source.getTauxAssurance());
+        s.setMembre(source.getMembre());
+        s.setAgence(source.getAgence());
+        s.setDatePremièreEcheance(previewPremiereDateEcheance(source));
+        return s;
+    }
+
+    private LocalDate previewPremiereDateEcheance(Credits source) {
+        if (source.getDatePremièreEcheance() != null) {
+            return source.getDatePremièreEcheance();
+        }
+        if (source.getDateDeblocage() != null) {
+            return avancerDate(source.getDateDeblocage(), source.getPeriodicite());
+        }
+        LocalDate base = source.getDateAccord() != null
+                ? source.getDateAccord()
+                : (source.getDateDemande() != null ? source.getDateDemande() : LocalDate.now());
+        return avancerDate(base, source.getPeriodicite());
+    }
+
+    private BigDecimal resolvePreviewPrincipal(Credits source) {
+        if (source.getMontantDebloquer() != null
+                && source.getMontantDebloquer().compareTo(BigDecimal.ZERO) > 0) {
+            return source.getMontantDebloquer();
+        }
+        if (source.getMontantAccorde() != null
+                && source.getMontantAccorde().compareTo(BigDecimal.ZERO) > 0) {
+            return source.getMontantAccorde();
+        }
+        return source.getMontantDemande();
     }
 
     // ── DEGRESSIF – solde restant dû (le plus courant) ────────────
@@ -398,9 +487,106 @@ public class AmortissementService {
             throw new IllegalArgumentException(
                 "Le nombre d'échéances doit être supérieur à zéro.");
         }
-        if (credit.getTauxInteret() == null) {
+        // En islamique, le taux d'intérêt n'est pas requis (marge calculée via ProduitIslamic).
+        if (!isIslamic(credit) && credit.getTauxInteret() == null) {
             throw new IllegalArgumentException("Le taux d'intérêt est obligatoire.");
         }
+    }
+
+    private boolean isIslamic(Credits credit) {
+        return credit != null
+                && credit.getProduitCredit() != null
+                && credit.getProduitCredit().getProduitIslamic() != null;
+    }
+
+    /**
+     * Génération simplifiée d'un échéancier islamique:
+     * - INTERET = marge bénéficiaire (répartie à plat)
+     * - CAPITAL = remboursement du principal (avec cas Ijara: valeur résiduelle en dernière échéance)
+     */
+    private List<Amortp> genererIslamic(Credits credit) {
+        List<Amortp> rows = new ArrayList<>();
+
+        ProduitIslamic isl = credit.getProduitCredit().getProduitIslamic();
+        String code = isl.getCodeProduit() != null ? isl.getCodeProduit().trim().toUpperCase(Locale.ROOT) : "";
+
+        BigDecimal principal = credit.getMontantDebloquer();
+        int n = credit.getNombreEcheance();
+
+        BigDecimal margeTotale = islamicMargeTotale(code, isl, principal);
+        BigDecimal margePeriode = margeTotale
+                .divide(BigDecimal.valueOf(n), MC)
+                .setScale(SCALE, ROUNDING);
+
+        BigDecimal residual = BigDecimal.ZERO;
+        if ("IJARA".equals(code) && isl.getResidualValueRatio() != null) {
+            residual = principal.multiply(isl.getResidualValueRatio(), MC).setScale(SCALE, ROUNDING);
+            if (residual.compareTo(principal) > 0) residual = BigDecimal.ZERO;
+        }
+
+        BigDecimal outstandingCapital = principal.setScale(SCALE, ROUNDING);
+        LocalDate dueDate = premiereDateEcheance(credit);
+
+        if ("IJARA".equals(code) && n > 1 && residual.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal amortised = principal.subtract(residual).max(BigDecimal.ZERO);
+            BigDecimal capitalPeriode = amortised
+                    .divide(BigDecimal.valueOf(n - 1L), MC)
+                    .setScale(SCALE, ROUNDING);
+
+            for (int k = 1; k <= n; k++) {
+                BigDecimal capital;
+                if (k < n) {
+                    capital = (k == n - 1)
+                            ? outstandingCapital.subtract(residual).setScale(SCALE, ROUNDING)
+                            : capitalPeriode;
+                } else {
+                    capital = residual.setScale(SCALE, ROUNDING);
+                }
+                outstandingCapital = outstandingCapital.subtract(capital).setScale(SCALE, ROUNDING);
+                rows.add(buildRow(credit, k, dueDate, capital, margePeriode, outstandingCapital));
+                dueDate = avancerDate(dueDate, credit.getPeriodicite());
+            }
+            return rows;
+        }
+
+        BigDecimal capitalPeriode = principal
+                .divide(BigDecimal.valueOf(n), MC)
+                .setScale(SCALE, ROUNDING);
+
+        for (int k = 1; k <= n; k++) {
+            BigDecimal capital = (k == n) ? outstandingCapital : capitalPeriode;
+            outstandingCapital = outstandingCapital.subtract(capital).setScale(SCALE, ROUNDING);
+            rows.add(buildRow(credit, k, dueDate, capital, margePeriode, outstandingCapital));
+            dueDate = avancerDate(dueDate, credit.getPeriodicite());
+        }
+
+        return rows;
+    }
+
+    /**
+     * Marge totale (finance islamique) : Mourabaha = (P × costPriceRatio) × markupRatio
+     * (si {@code costPriceRatio} est absent, la base reste P). Autres produits : P × markup
+     * ou, à défaut, {@code tauxPartageBenefice}.
+     */
+    private BigDecimal islamicMargeTotale(String code, ProduitIslamic isl, BigDecimal principal) {
+        String u = code == null ? "" : code.trim().toUpperCase(Locale.ROOT);
+        boolean mourabaha = u.contains("MOURABAHA") || u.contains("MURABAHA") || u.contains("MURABIHA");
+
+        BigDecimal costBase = principal;
+        if (mourabaha && isl.getCostPriceRatio() != null) {
+            costBase = principal.multiply(isl.getCostPriceRatio(), MC);
+        }
+
+        BigDecimal markup = isl.getMarkupRatio();
+        if (markup == null) {
+            markup = isl.getTauxPartageBenefice();
+        }
+        if (markup == null) {
+            markup = BigDecimal.ZERO;
+        }
+
+        BigDecimal baseForMarge = mourabaha ? costBase : principal;
+        return baseForMarge.multiply(markup, MC).setScale(SCALE, ROUNDING);
     }
 
     // ── Première date d'échéance ──────────────────────────────────

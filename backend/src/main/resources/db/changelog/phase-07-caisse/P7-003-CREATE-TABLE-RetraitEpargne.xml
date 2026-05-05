@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    P7-003 — Création de la table RetraitEpargne (sous-type JOINED de OperationCaisse)
+    Dépendances :
+      - OperationCaisse (P7-001) → FK_RetraitEpargne_OperationCaisse (PK partagée)
+    La colonne id est à la fois PK et FK vers OperationCaisse (héritage JOINED).
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P7-003-create-RetraitEpargne" author="microfina">
+        <createTable tableName="RetraitEpargne">
+            <column name="id" type="BIGINT">
+                <constraints primaryKey="true" primaryKeyName="PK_RetraitEpargne" nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+            constraintName="FK_RetraitEpargne_OperationCaisse"
+            baseTableName="RetraitEpargne"
+            baseColumnNames="id"
+            referencedTableName="OperationCaisse"
+            referencedColumnNames="id"/>
+
+        <rollback>
+            <dropAllForeignKeyConstraints baseTableName="RetraitEpargne"/>
+            <dropTable tableName="RetraitEpargne"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

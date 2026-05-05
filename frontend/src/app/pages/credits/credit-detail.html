@@ -44,8 +44,24 @@
       </div>
     </div>
 
+    <!-- ── Tabs ── -->
+    <div class="tabs-bar">
+      <button class="tab-btn"
+              [class.active]="activeTab() === 'resume'"
+              (click)="setTab('resume')">Résumé</button>
+      <button class="tab-btn"
+              [class.active]="activeTab() === 'payments'"
+              (click)="setTab('payments')">Suivi des paiements</button>
+      <button class="tab-btn"
+              [class.active]="activeTab() === 'preview'"
+              (click)="setTab('preview')"
+              title="Échéancier calculé à partir du montant demandé / accordé (sans persistance)">
+        Prévisionnel
+      </button>
+    </div>
+
     <!-- ── Grille de détails ── -->
-    <div class="detail-grid">
+    <div class="detail-grid" *ngIf="activeTab() === 'resume'">
 
       <!-- Membre -->
       <div class="detail-card">
@@ -143,6 +159,132 @@
       <div class="detail-card" *ngIf="credit()!.objetCredit">
         <div class="detail-card-title">Objet du crédit</div>
         <p class="detail-text">{{ credit()!.objetCredit }}</p>
+      </div>
+
+    </div>
+
+    <!-- ── Suivi des paiements ── -->
+    <div *ngIf="activeTab() === 'payments'">
+
+      <div class="alert alert-error" *ngIf="paymentsError()">{{ paymentsError() }}</div>
+      <div class="loading-indicator" *ngIf="paymentsLoading()">Chargement des échéances…</div>
+
+      <div class="detail-grid" *ngIf="!paymentsLoading() && payments() as p">
+        <div class="detail-card">
+          <div class="detail-card-title">Résumé</div>
+          <div class="detail-row"><span class="detail-label">Total dû</span><span class="amount">{{ p.summary.totalDu | number:'1.0-0' }}</span></div>
+          <div class="detail-row"><span class="detail-label">Total payé</span><span class="amount">{{ p.summary.totalPaye | number:'1.0-0' }}</span></div>
+          <div class="detail-row"><span class="detail-label">Restant</span><span class="amount">{{ p.summary.totalRestant | number:'1.0-0' }}</span></div>
+          <div class="detail-row"><span class="detail-label">Échéances</span><span>{{ p.summary.nbEcheances }}</span></div>
+          <div class="detail-row"><span class="detail-label">En retard</span><span>{{ p.summary.nbEnRetard }}</span></div>
+        </div>
+
+        <div class="detail-card">
+          <div class="detail-card-title">Balance âgée (restant dû)</div>
+          <div class="detail-row"><span class="detail-label">Courant</span><span class="amount">{{ p.summary.balanceAgee.current | number:'1.0-0' }}</span></div>
+          <div class="detail-row"><span class="detail-label">1–30 jours</span><span class="amount">{{ p.summary.balanceAgee.d1_30 | number:'1.0-0' }}</span></div>
+          <div class="detail-row"><span class="detail-label">31–60 jours</span><span class="amount">{{ p.summary.balanceAgee.d31_60 | number:'1.0-0' }}</span></div>
+          <div class="detail-row"><span class="detail-label">61–90 jours</span><span class="amount">{{ p.summary.balanceAgee.d61_90 | number:'1.0-0' }}</span></div>
+          <div class="detail-row"><span class="detail-label">&gt; 90 jours</span><span class="amount">{{ p.summary.balanceAgee.d90_plus | number:'1.0-0' }}</span></div>
+        </div>
+      </div>
+
+      <div class="detail-card" *ngIf="!paymentsLoading() && payments() as p">
+        <div class="detail-card-title">Échéances</div>
+
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Date</th>
+                <th>Statut</th>
+                <th>Dû</th>
+                <th>Payé</th>
+                <th>Restant</th>
+                <th>Retard (j)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let e of p.echeances">
+                <td class="mono">{{ e.numEcheance }}</td>
+                <td>{{ e.dateEcheance | date:'dd/MM/yyyy' }}</td>
+                <td>
+                  <span class="badge"
+                        [class.badge-success]="e.statutEcheance === 'REGLE'"
+                        [class.badge-warning]="e.statutEcheance === 'PARTIELLEMENT_REGLE'"
+                        [class.badge-danger]="e.statutEcheance === 'EN_RETARD'">
+                    {{ e.statutEcheance }}
+                  </span>
+                </td>
+                <td class="amount">{{ e.totalDu | number:'1.0-0' }}</td>
+                <td class="amount">{{ e.totalPaye | number:'1.0-0' }}</td>
+                <td class="amount">{{ e.totalRestant | number:'1.0-0' }}</td>
+                <td class="mono amount">{{ e.joursRetard }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Prévisionnel échéancier (GET /amortissement/preview) ── -->
+    <div *ngIf="activeTab() === 'preview'">
+
+      <div class="alert alert-error" *ngIf="previewError()">{{ previewError() }}</div>
+      <div class="loading-indicator" *ngIf="previewLoading()">Calcul du prévisionnel…</div>
+
+      <div class="detail-grid" *ngIf="!previewLoading() && preview() as pv">
+        <div class="detail-card">
+          <div class="detail-card-title">Paramètres du calcul</div>
+          <div class="detail-row">
+            <span class="detail-label">Principal retenu</span>
+            <span class="amount">{{ pv.montantPrincipalUtilise | number:'1.0-0' }} MRU</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Produit</span>
+            <span>{{ pv.islamique ? 'Islamique (marge)' : 'Conventionnel' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Date calcul</span>
+            <span>{{ pv.dateCalcul | date:'dd/MM/yyyy' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-card" *ngIf="!previewLoading() && preview() as pv">
+        <div class="detail-card-title">Tableau prévisionnel</div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Date</th>
+                <th>Capital</th>
+                <th>{{ pv.islamique ? 'Marge' : 'Intérêt' }}</th>
+                <th>Assur.</th>
+                <th>Comm.</th>
+                <th>Taxe</th>
+                <th>Échéance</th>
+                <th>Solde cap.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let e of pv.echeances">
+                <td class="mono">{{ e.numEcheance }}</td>
+                <td>{{ e.dateEcheance | date:'dd/MM/yyyy' }}</td>
+                <td class="amount">{{ e.capital | number:'1.0-0' }}</td>
+                <td class="amount">{{ e.margeOuInteret | number:'1.0-0' }}</td>
+                <td class="amount">{{ e.assurance | number:'1.0-0' }}</td>
+                <td class="amount">{{ e.commission | number:'1.0-0' }}</td>
+                <td class="amount">{{ e.taxe | number:'1.0-0' }}</td>
+                <td class="amount">{{ e.totalEcheance | number:'1.0-0' }}</td>
+                <td class="amount">{{ e.soldeCapitalApres | number:'1.0-0' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
     </div>

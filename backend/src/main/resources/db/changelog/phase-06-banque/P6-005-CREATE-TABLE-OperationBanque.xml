@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    P6-005 — Création de la table OperationBanque (entité parent — stratégie JOINED)
+    Dépendances :
+      - CompteBanque   (P6-002) → FK_OperationBanque_CompteBanque
+      - AGENCE         (Phase 1) → FK_OperationBanque_Agence
+      - comptabilite   (Phase 4) → FK_OperationBanque_Comptabilite
+    Référencée par : Virement, RemiseCheque, RetraitBanque, DepotBanque (sous-types JOINED)
+    Statuts valides : EN_ATTENTE / VALIDE / ANNULE
+    La colonne dtype est le discriminateur JPA pour l'héritage JOINED.
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P6-005-create-OperationBanque" author="microfina">
+        <createTable tableName="OperationBanque">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="PK_OperationBanque" nullable="false"/>
+            </column>
+            <column name="dtype" type="NVARCHAR(31)" defaultValue="OperationBanque">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_operation" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="montant" type="DECIMAL(19,4)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="statut" type="NVARCHAR(20)" defaultValue="EN_ATTENTE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="utilisateur" type="NVARCHAR(100)"/>
+            <column name="version" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="compte_banque_id" type="BIGINT"/>
+            <column name="code_agence" type="NVARCHAR(25)"/>
+            <column name="idcomptabilite" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+            constraintName="FK_OperationBanque_CompteBanque"
+            baseTableName="OperationBanque"
+            baseColumnNames="compte_banque_id"
+            referencedTableName="CompteBanque"
+            referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint
+            constraintName="FK_OperationBanque_Agence"
+            baseTableName="OperationBanque"
+            baseColumnNames="code_agence"
+            referencedTableName="AGENCE"
+            referencedColumnNames="CODE_AGENCE"/>
+
+        <addForeignKeyConstraint
+            constraintName="FK_OperationBanque_Comptabilite"
+            baseTableName="OperationBanque"
+            baseColumnNames="idcomptabilite"
+            referencedTableName="comptabilite"
+            referencedColumnNames="IDCOMPTABILITE"/>
+
+        <rollback>
+            <dropAllForeignKeyConstraints baseTableName="OperationBanque"/>
+            <dropTable tableName="OperationBanque"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P3-007 – PRODUITEPARGNE
+        Savings product definition: interest calculation, caps, accounting
+        accounts, sub-type configuration, and SMS notification flags.
+
+        No external FK dependencies in this changeset.
+        After this table exists, P3-010 adds back-reference FKs from produitcredit.
+        DDL source of truth: Phase 3 spec – Section 2.
+    -->
+    <changeSet id="P3-007-create-PRODUITEPARGNE" author="microfina">
+
+        <createTable tableName="PRODUITEPARGNE">
+
+            <!-- PK – short code e.g. "EPS001" -->
+            <column name="NUMPRODUIT" type="NVARCHAR(50)">
+                <constraints primaryKey="true"
+                             primaryKeyName="PK_PRODUITEPARGNE"
+                             nullable="false"/>
+            </column>
+
+            <!-- ── Identity ───────────────────────────────────────── -->
+            <column name="NOMPRODUIT" type="NVARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="DESCRIPTION" type="NVARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="ACTIF" type="INT" defaultValueNumeric="1">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Savings type ───────────────────────────────────── -->
+            <!-- VUE=à vue, TERME=à terme, BLOC=bloqué, PPS=Part Sociale -->
+            <column name="TYPEEPARGNE" type="NVARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Amount constraints ─────────────────────────────── -->
+            <column name="SOLDE_MIN" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="SOLDE_MAX" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="MONTANT_OUVERTURE_MIN" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="MONTANT_OUVERTURE_MAX" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="MONTANT_RETRAIT_MIN" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="MONTANT_RETRAIT_MAX" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Interest ───────────────────────────────────────── -->
+            <column name="TAUXINTERET" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="TAUXINTERET_MIN" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="TAUXINTERET_MAX" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- MENSUEL, TRIMESTRIEL, ANNUEL, ECHEANCE -->
+            <column name="PERIODICITE_INTERET" type="NVARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- 1 = interest capitalised into principal -->
+            <column name="CAPITALISATION_INTERET" type="INT" defaultValueNumeric="0">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Term-savings specific ─────────────────────────── -->
+            <column name="DUREE_MIN" type="INT">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="DUREE_MAX" type="INT">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Penalty rate for early withdrawal -->
+            <column name="TAUX_PENALITE_RETRAIT_ANTICIPE" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Fees ────────────────────────────────────────────── -->
+            <column name="TAUX_AGIOS" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="FRAIS_TENUE_COMPTE" type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Accounting accounts ────────────────────────────── -->
+            <column name="COMPTE_EPARGNE" type="NVARCHAR(30)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="COMPTE_INTERET" type="NVARCHAR(30)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="COMPTE_AGIOS" type="NVARCHAR(30)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="COMPTE_FRAIS" type="NVARCHAR(30)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── SMS notification defaults ─────────────────────── -->
+            <column name="SMS_DEPOT" type="NVARCHAR(10)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="SMS_RETRAIT" type="NVARCHAR(10)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Flags ──────────────────────────────────────────── -->
+            <!-- 1 = account can be blocked by system -->
+            <column name="BLOCAGE_AUTORISE" type="INT" defaultValueNumeric="0">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- 1 = product supports group members -->
+            <column name="EPARGNE_GROUPE" type="INT" defaultValueNumeric="0">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Optimistic lock ────────────────────────────────── -->
+            <column name="VERSION" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="PRODUITEPARGNE"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

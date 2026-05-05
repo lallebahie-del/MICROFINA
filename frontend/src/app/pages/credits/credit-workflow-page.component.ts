@@ -2,8 +2,13 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { Observable } from 'rxjs';
 import { CreditWorkflowService } from '../../services/credit-workflow.service';
 import { CreditsService, Credit } from '../../services/credits.service';
+import {
+  CreditPaymentsService,
+  CreditPaymentsPreviewResponse,
+} from '../../services/credit-payments.service';
 import {
   Etape,
   etapeLabel,
@@ -34,6 +39,11 @@ export class CreditWorkflowPageComponent implements OnInit {
   error: string | null = null;
   loading = false;
 
+  /** Échéancier prévisionnel (post-comité jusqu'au déblocage). */
+  echeancierPreview: CreditPaymentsPreviewResponse | null = null;
+  echeancierPreviewLoading = false;
+  echeancierPreviewError: string | null = null;
+
   // Modal state
   showModal = false;
   modalType: string = '';
@@ -50,6 +60,9 @@ export class CreditWorkflowPageComponent implements OnInit {
   periodicite = 'MENSUEL';
   nombreEcheance: number | null = null;
   delaiGrace: number | null = null;
+  canalDeblocage: 'BANQUE' | 'CAISSE' | 'WALLET' = 'BANQUE';
+  compteBanqueId: number | null = null;
+  numCompteCaisse = '';
 
   etapeLabel = etapeLabel;
 
@@ -58,6 +71,7 @@ export class CreditWorkflowPageComponent implements OnInit {
     private router: Router,
     private workflowSvc: CreditWorkflowService,
     private creditsSvc: CreditsService,
+    private paymentsSvc: CreditPaymentsService,
   ) {}
 
   ngOnInit(): void {
@@ -71,6 +85,7 @@ export class CreditWorkflowPageComponent implements OnInit {
       next: c => {
         this.credit = c;
         this.loading = false;
+        this.loadEcheancierPreviewIfRelevant();
       },
       error: () => { this.error = 'Crédit introuvable.'; this.loading = false; }
     });
@@ -103,6 +118,31 @@ export class CreditWorkflowPageComponent implements OnInit {
     return this.timeline.find(t => t.etape === etape || t.etape?.startsWith(etape));
   }
 
+  /** Après le comité : afficher un tableau prévisionnel jusqu'au déblocage effectif. */
+  private loadEcheancierPreviewIfRelevant(): void {
+    const e = this.etapeCourante;
+    if (!['COMITE', 'VISA_SF', 'DEBLOCAGE_PENDING'].includes(e)) {
+      this.echeancierPreview = null;
+      this.echeancierPreviewError = null;
+      this.echeancierPreviewLoading = false;
+      return;
+    }
+    this.echeancierPreviewLoading = true;
+    this.echeancierPreviewError = null;
+    this.paymentsSvc.getAmortissementPreview(this.creditId).subscribe({
+      next: p => {
+        this.echeancierPreview = p;
+        this.echeancierPreviewLoading = false;
+      },
+      error: err => {
+        this.echeancierPreview = null;
+        this.echeancierPreviewError =
+          err.error?.message ?? err.message ?? 'Prévisionnel indisponible.';
+        this.echeancierPreviewLoading = false;
+      },
+    });
+  }
+
   openModal(type: string): void {
     this.modalType = type;
     this.commentaire = '';
@@ -116,7 +156,7 @@ export class CreditWorkflowPageComponent implements OnInit {
   executeAction(): void {
     this.error = null;
     const req: WorkflowDecisionRequest = { commentaire: this.commentaire };
-    let obs;
+    let obs: Observable<any>;
     switch (this.modalType) {
       case 'soumettre':
         obs = this.workflowSvc.soumettre(this.creditId);
@@ -154,6 +194,9 @@ export class CreditWorkflowPageComponent implements OnInit {
           periodicite: this.periodicite,
           nombreEcheance: this.nombreEcheance!,
           delaiGrace: this.delaiGrace ?? undefined,
+          canal: this.canalDeblocage,
+          compteBanqueId: this.compteBanqueId ?? undefined,
+          numCompteCaisse: this.numCompteCaisse || undefined,
         };
         obs = this.workflowSvc.debloquer(this.creditId, deblocageReq);
         break;
@@ -165,7 +208,7 @@ export class CreditWorkflowPageComponent implements OnInit {
     }
     obs.subscribe({
       next: () => { this.closeModal(); this.charger(); },
-      error: err => {
+      error: (err: any) => {
         this.error = err.error?.message ?? 'Erreur lors de l\'action.';
         this.closeModal();
       }

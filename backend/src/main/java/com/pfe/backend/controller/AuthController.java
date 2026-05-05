@@ -65,10 +65,15 @@ public class AuthController {
             UserDetails userDetails = (UserDetails) auth.getPrincipal();
             String token = jwtService.generateToken(userDetails);
 
+            // Priorité : retourner un ROLE_* si présent, sinon fallback sur une authority PRIV_*
             String role = userDetails.getAuthorities().stream()
                     .map(GrantedAuthority::getAuthority)
+                    .filter(a -> a != null && a.startsWith("ROLE_"))
                     .findFirst()
-                    .orElse("ROLE_AGENT");
+                    .orElseGet(() -> userDetails.getAuthorities().stream()
+                            .map(GrantedAuthority::getAuthority)
+                            .findFirst()
+                            .orElse("ROLE_AGENT"));
 
             return ResponseEntity.ok(new LoginResponse(
                     token,
@@ -95,10 +100,15 @@ public class AuthController {
     @GetMapping("/me")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, String>> me(Authentication auth) {
+        // Même logique que /login : renvoyer un ROLE_* lisible si présent
         String role = auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
+                .filter(a -> a != null && a.startsWith("ROLE_"))
                 .findFirst()
-                .orElse("ROLE_AGENT");
+                .orElseGet(() -> auth.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .findFirst()
+                        .orElse("ROLE_AGENT"));
 
         return ResponseEntity.ok(Map.of(
                 "username", auth.getName(),

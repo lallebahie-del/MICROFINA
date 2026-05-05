@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  changelog-phase-10-cartographie.xml — Sous-changelog Phase 10.5 (Cartographie GeoJSON)
+  ─────────────────────────────────────────────────────────────────────────────────────────
+    P10-501  ALTER zoneGeographique — colonnes cartographiques (lat, lon, GeoJSON, type_zone,
+             zone_parente, actif) + FK self-référentielle pour hiérarchie administrative.
+
+  Dépendances :
+    phase-01-core-config (zoneGeographique doit exister)
+    AGENCE.latitude/longitude déjà présents depuis P1-002.
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <include file="db/changelog/phase-10-cartographie/P10-501-ALTER-TABLE-zoneGeographique-geo.xml"/>
+
+</databaseChangeLog>

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P10-405 – vue_compte_resultat
+        ══════════════════════════════════════════════════════════════════════════
+        Compte de résultat simplifié — une ligne par mois et par agence.
+
+        Structure :
+          PRODUITS (classe 7) :
+            - Intérêts perçus       (Reglement.MONTANT_INTERET)
+            - Commissions perçues   (Reglement.MONTANT_COMMISSION)
+            - Taxes collectées      (Reglement.MONTANT_TAXE)
+            - Pénalités encaissées  (Reglement.MONTANT_PENALITE)
+            - Assurances collectées (Reglement.MONTANT_ASSURANCE)
+            - Autres produits       (comptabilite.CREDIT sur comptes classe 7)
+
+          CHARGES (classe 6) :
+            - Charges comptables    (comptabilite.DEBIT sur comptes classe 6)
+
+          RÉSULTAT = total_produits - total_charges
+
+        Granularité : mois comptable (YEAR + MONTH de DATEOPERATION) × agence.
+        Cette granularité permet l'agrégation en résultat annuel côté applicatif.
+
+        Tables source :
+          Reglement    (P4-011) — produits financiers encaissés
+          comptabilite (P1-017) — charges (classe 6) et autres produits (classe 7)
+          AGENCE       (P1-002) — libellé agence
+        ══════════════════════════════════════════════════════════════════════════
+    -->
+
+    <changeSet id="P10-405-create-vue-compte-resultat" author="microfina">
+        <comment>
+            Compte de résultat mensuel par agence.
+            Utilisé pour les états financiers BCM et le suivi de rentabilité.
+        </comment>
+
+        <createView viewName="vue_compte_resultat" replaceIfExists="true">
+            SELECT
+                /* ── Période comptable ───────────────────────────────────── */
+                periode.annee,
+                periode.mois,
+                periode.code_agence,
+                ag.NOMAGENCE                                    AS nom_agence,
+
+                /* ── Produits financiers (Reglement) ─────────────────────── */
+                COALESCE(periode.interets_percus,       0)     AS interets_percus,
+                COALESCE(periode.commissions_percues,   0)     AS commissions_percues,
+                COALESCE(periode.taxes_percues,         0)     AS taxes_percues,
+                COALESCE(periode.penalites_percues,     0)     AS penalites_percues,
+                COALESCE(periode.assurances_percues,    0)     AS assurances_percues,
+                COALESCE(periode.autres_produits_cpt,   0)     AS autres_produits_comptables,
+
+                /* ── Total produits ──────────────────────────────────────── */
+                COALESCE(periode.interets_percus,     0)
+                + COALESCE(periode.commissions_percues, 0)
+                + COALESCE(periode.taxes_percues,     0)
+                + COALESCE(periode.penalites_percues, 0)
+                + COALESCE(periode.assurances_percues,0)
+                + COALESCE(periode.autres_produits_cpt,0)      AS total_produits,
+
+                /* ── Charges (classe 6 du plan comptable) ────────────────── */
+                COALESCE(periode.total_charges_cpt,     0)     AS total_charges,
+
+                /* ── Résultat net ────────────────────────────────────────── */
+                COALESCE(periode.interets_percus,     0)
+                + COALESCE(periode.commissions_percues, 0)
+                + COALESCE(periode.taxes_percues,     0)
+                + COALESCE(periode.penalites_percues, 0)
+                + COALESCE(periode.assurances_percues,0)
+                + COALESCE(periode.autres_produits_cpt,0)
+                - COALESCE(periode.total_charges_cpt, 0)       AS resultat_net,
+
+                /* ── Volume d'activité ───────────────────────────────────── */
+                COALESCE(periode.nb_reglements,         0)     AS nb_reglements,
+                COALESCE(periode.montant_total_rembourse,0)    AS montant_total_rembourse
+
+            FROM (
+                /* ── Agrégation par mois × agence ───────────────────────── */
+                SELECT
+                    YEAR(r.DATE_REGLEMENT)                      AS annee,
+                    MONTH(r.DATE_REGLEMENT)                     AS mois,
+                    r.agence                                    AS code_agence,
+
+                    /* Produits financiers depuis Reglement */
+                    SUM(r.MONTANT_INTERET)                      AS interets_percus,
+                    SUM(r.MONTANT_COMMISSION)                   AS commissions_percues,
+                    SUM(r.MONTANT_TAXE)                         AS taxes_percues,
+                    SUM(r.MONTANT_PENALITE)                     AS penalites_percues,
+                    SUM(r.MONTANT_ASSURANCE)                    AS assurances_percues,
+                    COUNT(r.IDREGLEMENT)                        AS nb_reglements,
+                    SUM(r.MONTANT_TOTAL)                        AS montant_total_rembourse,
+
+                    /* Autres produits comptables (classe 7) */
+                    COALESCE((
+                        SELECT SUM(cpt7.CREDIT)
+                        FROM comptabilite cpt7
+                        WHERE LEFT(cpt7.planComptable, 1) = '7'
+                          AND YEAR(cpt7.DATEOPERATION)  = YEAR(r.DATE_REGLEMENT)
+                          AND MONTH(cpt7.DATEOPERATION) = MONTH(r.DATE_REGLEMENT)
+                          AND cpt7.agence               = r.agence
+                    ), 0)                                       AS autres_produits_cpt,
+
+                    /* Charges comptables (classe 6) */
+                    COALESCE((
+                        SELECT SUM(cpt6.DEBIT)
+                        FROM comptabilite cpt6
+                        WHERE LEFT(cpt6.planComptable, 1) = '6'
+                          AND YEAR(cpt6.DATEOPERATION)  = YEAR(r.DATE_REGLEMENT)
+                          AND MONTH(cpt6.DATEOPERATION) = MONTH(r.DATE_REGLEMENT)
+                          AND cpt6.agence               = r.agence
+                    ), 0)                                       AS total_charges_cpt
+
+                FROM Reglement r
+                WHERE r.STATUT = 'VALIDE'
+                GROUP BY
+                    YEAR(r.DATE_REGLEMENT),
+                    MONTH(r.DATE_REGLEMENT),
+                    r.agence
+
+            ) periode
+
+            LEFT JOIN AGENCE ag
+                   ON ag.CODE_AGENCE = periode.code_agence
+        </createView>
+
+        <rollback>
+            <dropView viewName="vue_compte_resultat"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

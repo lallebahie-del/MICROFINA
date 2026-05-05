@@ -15,9 +15,14 @@ public class SimulationCreditDTO {
 
     public record SimulationRequest(
         @NotNull @DecimalMin("0.01") BigDecimal montantPrincipal,
-        @NotNull @DecimalMin("0") BigDecimal tauxAnnuel,
+        @DecimalMin("0") BigDecimal tauxAnnuel,
         @NotNull @Min(1) Integer nombreEcheances,
-        @NotBlank String periodicite
+        @NotBlank String periodicite,
+        /**
+         * Optionnel: si fourni et correspond à un ProduitCredit islamique, la simulation
+         * remplace l'intérêt par une marge (markup) du produit.
+         */
+        String numProduit
     ) {}
 
     public record EcheanceDto(

@@ -25,7 +25,6 @@ public interface MembresRepository extends JpaRepository<Membres, String> {
         )
         AND (:statut IS NULL OR :statut = '' OR m.statut = :statut)
         AND (:etat   IS NULL OR :etat   = '' OR m.etat   = :etat)
-        ORDER BY m.nom ASC, m.prenom ASC
         """)
     Page<Membres> search(
         @Param("search") String search,

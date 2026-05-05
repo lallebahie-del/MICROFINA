@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P10-001 – type_garantie
+        Table de référence des types de garantie pouvant être associés à un crédit.
+        Exemples : HYPOTHEQUE, GAGE, NANTISSEMENT, CAUTION_PERSONNELLE, etc.
+        PK : CODE (NVARCHAR 20) — code métier stable, sans auto-incrément.
+        Aucune dépendance externe — à créer avant Garantie (P10-001c).
+    -->
+    <changeSet id="P10-001-create-type_garantie" author="microfina">
+        <comment>Référentiel des types de garantie acceptés par l'institution (HYPOTHEQUE, GAGE, etc.)</comment>
+
+        <createTable tableName="type_garantie">
+
+            <!-- PK métier -->
+            <column name="CODE" type="NVARCHAR(20)">
+                <constraints primaryKey="true"
+                             primaryKeyName="PK_type_garantie"
+                             nullable="false"/>
+            </column>
+
+            <!-- Libellé court affiché dans les formulaires -->
+            <column name="LIBELLE" type="NVARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Description longue pour documentation interne -->
+            <column name="DESCRIPTION" type="NVARCHAR(500)"/>
+
+            <!-- Indicateur d'activité : 1=actif, 0=archivé (soft-delete) -->
+            <column name="ACTIF" type="BIT" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Verrou optimiste -->
+            <column name="VERSION" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="type_garantie"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P2-004 – MembreGroupe  (JOINED subtype of TIERS)
+        Spec p.39-40.  PK = CODE_TIERS (FK to TIERS).
+        Represents a member's participation in a solidarity group.
+        FKs wired: TIERS (JOINED), membres (NUMMEMBRE).
+        Phase-2+ FKs (idGroupement, idSolidarite, typeActivite, CODE_BRANCHE_ACTIVITE,
+        CODE_TYPE_DE_PIECE) stored as plain columns.
+    -->
+    <changeSet id="P2-004-CREATE-TABLE-MembreGroupe" author="microfina">
+        <comment>Create MembreGroupe table – JOINED subtype of TIERS; group membership rows per spec p.39-40</comment>
+
+        <createTable tableName="MembreGroupe">
+            <!-- PK = FK to TIERS (JOINED inheritance) -->
+            <column name="CODE_TIERS"          type="NVARCHAR(50)">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="PK_MembreGroupe"/>
+            </column>
+
+            <!-- Group member flags (AN/1) -->
+            <column name="ACTIFGROUPE"         type="NVARCHAR(1)"/>
+            <column name="ANALPHABETE"         type="NVARCHAR(1)"/>
+            <column name="CHEF"                type="NVARCHAR(1)"/>
+            <column name="DROITSIGNATURE"      type="NVARCHAR(1)"/>
+
+            <!-- Code member group (AN/255) -->
+            <column name="CODEMEMBREGROUPP"    type="NVARCHAR(255)"/>
+
+            <!-- Financial -->
+            <column name="MONTANTGROUPE"       type="DECIMAL(19,4)"/>
+
+            <!-- Contact & role -->
+            <column name="PERSONNECONTACT"     type="NVARCHAR(255)"/>
+            <column name="POSTEOCCUPE"         type="NVARCHAR(255)"/>
+            <column name="fonction"            type="NVARCHAR(50)"/>
+            <column name="SECTIONGROUPE"       type="INT"/>
+
+            <!-- History -->
+            <column name="REFERENCE_PIECE"     type="NVARCHAR(100)"/>
+            <column name="num_membre_old"      type="NVARCHAR(25)"/>
+
+            <!-- Blobs (stored as raw numeric ref) -->
+            <column name="photo"               type="BIGINT"/>
+            <column name="signature"           type="BIGINT"/>
+
+            <!-- Optimistic lock -->
+            <column name="VERSION"             type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- FK to membres (AN/25) -->
+            <column name="NUMMEMBRE"           type="NVARCHAR(25)"/>
+
+            <!-- Phase-2+ FK columns (no constraints yet) -->
+            <column name="idgroupeinterne"     type="BIGINT"/>
+            <column name="idGroupement"        type="NVARCHAR(25)"/>
+            <column name="idSolidarite"        type="BIGINT"/>
+            <column name="typeActivite"        type="BIGINT"/>
+            <column name="CODE_BRANCHE_ACTIVITE" type="NVARCHAR(25)"/>
+            <column name="CODE_TYPE_DE_PIECE"  type="BIGINT"/>
+            <column name="Activite"            type="BIGINT"/>
+        </createTable>
+
+        <!-- JOINED inheritance: CODE_TIERS FK to TIERS -->
+        <addForeignKeyConstraint
+            baseTableName="MembreGroupe"    baseColumnNames="CODE_TIERS"
+            referencedTableName="TIERS"     referencedColumnNames="CODE_TIERS"
+            constraintName="FK_MembreGroupe_TIERS"/>
+
+        <!-- FK to membres -->
+        <addForeignKeyConstraint
+            baseTableName="MembreGroupe"    baseColumnNames="NUMMEMBRE"
+            referencedTableName="membres"   referencedColumnNames="NUM_MEMBRE"
+            constraintName="FK_MembreGroupe_membres"/>
+
+        <rollback>
+            <dropAllForeignKeyConstraints baseTableName="MembreGroupe"/>
+            <dropTable tableName="MembreGroupe"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

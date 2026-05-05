@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P10-002-CREATE-TABLE-garantie_document" author="cursor-ai">
+        <createTable tableName="garantie_document">
+            <column name="ID" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+
+            <column name="IDGARANTIE" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="FILENAME" type="NVARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="CONTENT_TYPE" type="NVARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="SIZE_BYTES" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="STORAGE_PATH" type="NVARCHAR(500)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="UPLOADED_BY" type="NVARCHAR(100)"/>
+            <column name="UPLOADED_AT" type="DATETIME2"/>
+
+            <column name="VERSION" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+                baseTableName="garantie_document"
+                baseColumnNames="IDGARANTIE"
+                referencedTableName="Garantie"
+                referencedColumnNames="IDGARANTIE"
+                constraintName="FK_garantie_document_Garantie"/>
+
+        <createIndex tableName="garantie_document" indexName="IDX_garantie_document_IDGARANTIE">
+            <column name="IDGARANTIE"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>
+

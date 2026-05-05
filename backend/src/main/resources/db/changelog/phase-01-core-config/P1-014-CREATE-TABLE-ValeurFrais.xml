@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P1-014 – ValeurFrais  (SINGLE_TABLE inheritance)
+        Both ValeurFrais and ValeurFraisAdhesion subtypes share this single table.
+        The DTYPE discriminator column identifies the concrete subtype.
+
+        Final corrections (reconciliation pass 3):
+          - ACTIF removed (not in MediaSoft spec).
+          - formeJuridique / age_min / age_max removed (not in spec for this table).
+          - compte:     NVARCHAR(15)  — AN/15 account-number string, not a numeric ID.
+          - numproduit: NVARCHAR(20)  — AN/20 product-code string, not a numeric ID.
+          - natureFrais added as BIGINT FK (spec p.69).
+    -->
+    <changeSet id="P1-014-CREATE-TABLE-ValeurFrais" author="microfina">
+        <comment>Create ValeurFrais table – SINGLE_TABLE for ValeurFrais + ValeurFraisAdhesion subtypes</comment>
+
+        <createTable tableName="ValeurFrais">
+            <column name="IDVALEURFRAIS"  type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="PK_ValeurFrais"/>
+            </column>
+
+            <!-- Discriminator for SINGLE_TABLE inheritance -->
+            <column name="DTYPE"          type="NVARCHAR(31)"/>
+
+            <!-- Base fee columns -->
+            <column name="VALEURFRAIS"    type="DECIMAL(19,4)"/>
+            <!-- "M" = fixed amount, "P" = percentage -->
+            <column name="TYPE_VALEUR"    type="NVARCHAR(1)"/>
+            <column name="VERSION"        type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- FK: fee definition (numeric N type, phase 2) -->
+            <column name="frais"          type="BIGINT"/>
+            <!-- FK: nature of fee (numeric N type, spec p.69) -->
+            <column name="natureFrais"    type="BIGINT"/>
+            <!-- FK: accounting account — AN/15 (account number string) -->
+            <column name="compte"         type="NVARCHAR(15)"/>
+            <!-- FK: sousTypeMembre (numeric N type, phase 2) -->
+            <column name="sousTypeMembre" type="BIGINT"/>
+            <!-- FK: typeMembre (numeric N type, phase 2) -->
+            <column name="typeMembre"     type="BIGINT"/>
+            <!-- FK: credit product — AN/20 (product code string) -->
+            <column name="numproduit"     type="NVARCHAR(20)"/>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="ValeurFrais"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

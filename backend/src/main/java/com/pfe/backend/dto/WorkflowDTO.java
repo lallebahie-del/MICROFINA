@@ -110,6 +110,21 @@ public final class WorkflowDTO {
         @NotNull LocalDate            datePremiereEcheance,
         @NotNull String               periodicite,
         @NotNull @Positive Integer    nombreEcheance,
-        Integer                       delaiGrace
+        Integer                       delaiGrace,
+
+        /**
+         * Canal de déblocage : CAISSE | BANQUE | WALLET (optionnel selon intégration).
+         */
+        @NotNull String               canal,
+
+        /**
+         * Si canal = BANQUE : identifiant du CompteBanque source.
+         */
+        Long                          compteBanqueId,
+
+        /**
+         * Si canal = CAISSE : numéro du CompteEps utilisé comme caisse/compte source.
+         */
+        String                        numCompteCaisse
     ) {}
 }

@@ -73,6 +73,9 @@ export interface DeblocageRequest {
   periodicite:           string;
   nombreEcheance:        number;
   delaiGrace?:           number;
+  canal:                 'CAISSE' | 'BANQUE' | 'WALLET';
+  compteBanqueId?:       number;
+  numCompteCaisse?:      string;
 }
 
 export interface WorkflowCreditSummary {

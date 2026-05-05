@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P4-009 – Caution
+        Financial surety / bond caution securing a credit.
+        A Caution is a formal guarantee document issued by a third party
+        (bank, insurer, employer) committing to pay if the borrower defaults.
+        FK dependencies: Credits (IDCREDIT) – P4-001
+        DDL source of truth: Phase 4 spec – Section 11.
+    -->
+    <changeSet id="P4-009-create-Caution" author="microfina">
+
+        <createTable tableName="Caution">
+
+            <column name="IDCAUTION" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true"
+                             primaryKeyName="PK_Caution"
+                             nullable="false"/>
+            </column>
+
+            <!-- Name of the surety organisation / issuer -->
+            <column name="NOM_CAUTION"      type="NVARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- BANCAIRE | EMPLOYEUR | ASSURANCE | MUTUELLE | AUTRE -->
+            <column name="TYPE_CAUTION"     type="NVARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Guaranteed amount (may be partial coverage) -->
+            <column name="MONTANT_CAUTION"  type="DECIMAL(19,4)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Reference number of the caution document -->
+            <column name="REFERENCE_DOC"    type="NVARCHAR(100)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Date the caution was issued -->
+            <column name="DATE_CAUTION"     type="DATE">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Caution expiry date -->
+            <column name="DATE_EXPIRATION"  type="DATE">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="VERSION" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="Caution"/>
+        </rollback>
+
+    </changeSet>
+
+    <changeSet id="P4-009-fk-Caution-Credits" author="microfina">
+
+        <addColumn tableName="Caution">
+            <column name="idcredit" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <addForeignKeyConstraint
+            constraintName        = "FK_Caution_Credits"
+            baseTableName         = "Caution"
+            baseColumnNames       = "idcredit"
+            referencedTableName   = "Credits"
+            referencedColumnNames = "IDCREDIT"
+            onDelete              = "CASCADE"
+            onUpdate="NO ACTION"/>
+
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="Caution"
+                                      constraintName="FK_Caution_Credits"/>
+            <dropColumn tableName="Caution" columnName="idcredit"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

@@ -130,12 +130,25 @@ public class MicrofinaUserDetailsService implements UserDetailsService {
         Long   idUtilisateur = ((Number) rowUtilisateur[0]).longValue();
         String login         = (String) rowUtilisateur[1];
         String motDePasseHash = (String) rowUtilisateur[2];
-        Boolean actif        = rowUtilisateur[3] != null && ((Number) rowUtilisateur[3]).intValue() != 0;
+        
+        Object actifObj = rowUtilisateur[3];
+        boolean actif = false;
+        if (actifObj instanceof Boolean) {
+            actif = (Boolean) actifObj;
+        } else if (actifObj instanceof Number) {
+            actif = ((Number) actifObj).intValue() != 0;
+        } else if (actifObj instanceof String) {
+            actif = "O".equalsIgnoreCase((String) actifObj) || "true".equalsIgnoreCase((String) actifObj) || "1".equals(actifObj);
+        }
 
-        if (!Boolean.TRUE.equals(actif)) {
+        if (!actif) {
+            System.out.println(">>> AUTH: Utilisateur " + username + " trouvé mais inactif.");
             throw new UsernameNotFoundException(
                 "Le compte Utilisateur " + username + " est désactivé.");
         }
+
+        System.out.println(">>> AUTH: Utilisateur " + username + " chargé avec succès depuis table Utilisateur.");
+
 
         // Chargement des privilèges via la chaîne de jointure complète
         String sqlPrivileges =
@@ -157,6 +170,27 @@ public class MicrofinaUserDetailsService implements UserDetailsService {
                 // Phase 11 : les @PreAuthorize utilisent le préfixe PRIV_
                 String authority = code.startsWith("PRIV_") ? code : "PRIV_" + code;
                 authorities.add(new SimpleGrantedAuthority(authority));
+            }
+        }
+
+        // Charger aussi les rôles pour rendre le "role" lisible côté client
+        // (ex: ROLE_ADMIN) sans impacter les @PreAuthorize basés sur PRIV_*
+        String sqlRoles =
+            "SELECT DISTINCT r.code_role " +
+            "FROM UtilisateurRole ur " +
+            "INNER JOIN Role r ON r.id = ur.id_role " +
+            "WHERE ur.id_utilisateur = :idUtilisateur " +
+            "  AND r.code_role IS NOT NULL";
+
+        @SuppressWarnings("unchecked")
+        List<String> codeRoles = (List<String>) em.createNativeQuery(sqlRoles)
+                                                  .setParameter("idUtilisateur", idUtilisateur)
+                                                  .getResultList();
+
+        for (String codeRole : codeRoles) {
+            if (codeRole != null && !codeRole.isBlank()) {
+                String roleAuthority = codeRole.startsWith("ROLE_") ? codeRole : "ROLE_" + codeRole;
+                authorities.add(new SimpleGrantedAuthority(roleAuthority));
             }
         }
 
@@ -219,6 +253,17 @@ public class MicrofinaUserDetailsService implements UserDetailsService {
         for (String code : mapTfunctionToPrivileges(tfunction)) {
             authorities.add(new SimpleGrantedAuthority(code));
         }
+
+        // Ajouter un rôle lisible en plus des PRIV_* pour que /api/auth/login
+        // puisse retourner ROLE_ADMIN / ROLE_AGENT / ROLE_COMITE.
+        String t = tfunction.toUpperCase();
+        String role = switch (t) {
+            case "ADMIN" -> "ROLE_ADMIN";
+            case "COMITE" -> "ROLE_COMITE";
+            case "AGENT_CREDIT" -> "ROLE_AGENT";
+            default -> "ROLE_AGENT";
+        };
+        authorities.add(new SimpleGrantedAuthority(role));
 
         return User.builder()
                    .username(dbUsercode)

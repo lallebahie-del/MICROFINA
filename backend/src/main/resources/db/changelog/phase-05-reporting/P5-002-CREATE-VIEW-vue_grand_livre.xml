@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P5-002 – Vue Grand Livre (vue_grand_livre)
+
+        Le Grand Livre consolide toutes les écritures comptables
+        (table comptabilite) enrichies du contexte remboursement
+        (Reglement) et crédit (Credits).
+
+        Utilisation principale :
+          - Rapport Grand Livre par période (débit/crédit par compte)
+          - Réconciliation comptable des remboursements
+          - Export BCM des flux financiers journaliers
+
+        TAXE (MONTANT_TAXE) incluse depuis P4-013.
+
+        Tables source :
+          comptabilite  – écriture comptable (PK : IDCOMPTABILITE)
+          Reglement     – remboursement client lié à l'écriture
+                          (FK : Reglement.idcomptabilite → comptabilite.IDCOMPTABILITE)
+          Credits       – crédit concerné par le remboursement
+    -->
+
+    <changeSet id="P5-002-create-view-vue_grand_livre" author="microfina">
+
+        <createView
+            viewName        = "vue_grand_livre"
+            replaceIfExists = "true">
+            <![CDATA[
+SELECT
+    /* ── Écriture comptable ───────────────────────────────────── */
+    cpt.IDCOMPTABILITE,
+    cpt.DATEOPERATION,
+    cpt.DATESERVEUR,
+    cpt.DATEPIECE,
+    cpt.NUMPIECE                                        AS num_piece_comptable,
+    cpt.LIBELLE,
+    cpt.DEBIT,
+    cpt.CREDIT,
+    cpt.ENTREE,
+    cpt.SORTIE,
+
+    /* ── Plan comptable ──────────────────────────────────────── */
+    cpt.planComptable                                   AS num_compte,
+    cpt.CompteAuxi                                      AS compte_auxiliaire,
+    cpt.compteTiers                                     AS compte_tiers,
+    cpt.Compte1                                         AS compte_contrepartie,
+    cpt.CODE_SENS                                       AS sens,
+
+    /* ── Référence de l'opération ────────────────────────────── */
+    cpt.NUMCREDIT                                       AS ref_credit_comptable,
+    cpt.REFERENCE,
+    cpt.LETTRE                                          AS lettrage,
+    cpt.DATELETTRAGE,
+    cpt.ETAT                                            AS etat_ecriture,
+    cpt.MARQUE                                          AS marque_validation,
+    cpt.CODE_AGENCE                                     AS agence_ecriture,
+    cpt.utilisateur                                     AS agent_saisie,
+
+    /* ── Remboursement lié (Reglement) ───────────────────────── */
+    r.IDREGLEMENT,
+    r.DATE_REGLEMENT,
+    r.NUMPIECE                                          AS num_piece_reglement,
+    r.MONTANT_TOTAL,
+    r.MONTANT_CAPITAL,
+    r.MONTANT_INTERET,
+    r.MONTANT_PENALITE,
+    r.MONTANT_ASSURANCE,
+    r.MONTANT_COMMISSION,
+    r.MONTANT_TAXE,
+    r.MODE_PAIEMENT,
+    r.STATUT                                            AS statut_reglement,
+
+    /* ── Crédit concerné ─────────────────────────────────────── */
+    cr.IDCREDIT,
+    cr.NUMCREDIT                                        AS num_credit,
+    cr.STATUT                                           AS statut_credit,
+    cr.SOLDE_CAPITAL                                    AS solde_capital_credit,
+    cr.DATE_DEBLOCAGE,
+    cr.DATE_ECHEANCE                                    AS date_echeance_credit,
+
+    /* ── Ligne de résultat : revenus inclus dans l'écriture ───── */
+    /*    Utilisée pour le rapport des produits (Phase 5 synthèse) */
+    COALESCE(r.MONTANT_INTERET,    0)
+    + COALESCE(r.MONTANT_COMMISSION, 0)
+    + COALESCE(r.MONTANT_TAXE,     0)                   AS total_revenus_ecriture
+
+FROM comptabilite cpt
+
+LEFT JOIN Reglement r
+       ON r.idcomptabilite = cpt.IDCOMPTABILITE
+
+LEFT JOIN Credits cr
+       ON cr.IDCREDIT = r.idcredit
+            ]]>
+        </createView>
+
+        <rollback>
+            <dropView viewName="vue_grand_livre"/>
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

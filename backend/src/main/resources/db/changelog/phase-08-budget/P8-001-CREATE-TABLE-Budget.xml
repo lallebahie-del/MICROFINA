@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    P8-001 — Création de la table Budget (entité racine du Module Budget)
+    Dépendances :
+      - AGENCE (Phase 1) → FK_Budget_Agence (code_agence)
+    Référencée par : LigneBudget (Phase 8, P8-002)
+    Statuts valides : BROUILLON / VALIDE / CLOTURE
+    Index composé : IDX_Budget_exercice_agence (exercice_fiscal, code_agence)
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P8-001-create-Budget" author="microfina">
+        <createTable tableName="Budget">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="PK_Budget" nullable="false"/>
+            </column>
+            <column name="exercice_fiscal" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_creation" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_validation" type="DATE"/>
+            <column name="statut" type="NVARCHAR(20)" defaultValue="BROUILLON">
+                <constraints nullable="false"/>
+            </column>
+            <column name="montant_total_recettes" type="DECIMAL(19,4)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="montant_total_depenses" type="DECIMAL(19,4)" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="utilisateur" type="NVARCHAR(100)"/>
+            <column name="version" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code_agence" type="NVARCHAR(25)"/>
+        </createTable>
+
+        <createIndex indexName="IDX_Budget_exercice_agence" tableName="Budget">
+            <column name="exercice_fiscal"/>
+            <column name="code_agence"/>
+        </createIndex>
+
+        <addForeignKeyConstraint
+            constraintName="FK_Budget_Agence"
+            baseTableName="Budget"
+            baseColumnNames="code_agence"
+            referencedTableName="AGENCE"
+            referencedColumnNames="CODE_AGENCE"/>
+
+        <rollback>
+            <dropAllForeignKeyConstraints baseTableName="Budget"/>
+            <dropIndex indexName="IDX_Budget_exercice_agence" tableName="Budget"/>
+            <dropTable tableName="Budget"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

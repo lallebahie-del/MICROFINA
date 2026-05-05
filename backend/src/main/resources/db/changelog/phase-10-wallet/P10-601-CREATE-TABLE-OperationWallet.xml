@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    P10-601 — Création de la table OperationWallet
+    ─────────────────────────────────────────────────────────────────────
+    Enregistre chaque transaction de monnaie mobile effectuée via Bankily :
+      DEBLOCAGE    — Décaissement d'un crédit vers le wallet du membre
+      REMBOURSEMENT — Collecte d'un remboursement depuis le wallet du membre
+      DEPOT_EPARGNE — Dépôt d'épargne mobile
+
+    Dépendances :
+      membres  (P2-003) → FK_OperationWallet_Membre     (nullable)
+      Credits  (P4-001) → FK_OperationWallet_Credit     (nullable)
+      AGENCE   (P1-002) → FK_OperationWallet_Agence     (nullable)
+
+    Statuts : EN_ATTENTE | CONFIRME | REJETE | ANNULE | EXPIRE
+    Types   : DEBLOCAGE | REMBOURSEMENT | DEPOT_EPARGNE
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!-- ── Création de la table ────────────────────────────────────────── -->
+    <changeSet id="P10-601-create-OperationWallet" author="microfina">
+
+        <createTable tableName="OperationWallet">
+
+            <!-- PK -->
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" primaryKeyName="PK_OperationWallet" nullable="false"/>
+            </column>
+
+            <!-- ── Références ─────────────────────────────────────────── -->
+            <!-- Référence interne MFI (générée côté applicatif) -->
+            <column name="reference_mfi" type="NVARCHAR(60)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="UQ_OperationWallet_RefMfi"/>
+            </column>
+
+            <!-- Référence renvoyée par Bankily après initiation -->
+            <column name="reference_bankily" type="NVARCHAR(100)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Identification du portefeuille ─────────────────────── -->
+            <!-- Numéro de téléphone du wallet Bankily (format international : +222XXXXXXXX) -->
+            <column name="numero_telephone" type="NVARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- ── Montant et type ─────────────────────────────────────── -->
+            <column name="montant" type="DECIMAL(19,4)">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- DEBLOCAGE | REMBOURSEMENT | DEPOT_EPARGNE -->
+            <column name="type_operation" type="NVARCHAR(30)">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- EN_ATTENTE | CONFIRME | REJETE | ANNULE | EXPIRE -->
+            <column name="statut" type="NVARCHAR(20)" defaultValue="EN_ATTENTE">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- ── Chronologie ─────────────────────────────────────────── -->
+            <column name="date_operation" type="DATE">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- Horodatage de la confirmation ou du rejet par Bankily -->
+            <column name="date_confirmation" type="DATETIME">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Délai d'expiration en minutes (défaut 30) -->
+            <column name="delai_expiration_min" type="INT" defaultValueNumeric="30">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- ── Motif / description ──────────────────────────────────── -->
+            <column name="motif" type="NVARCHAR(255)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Réponse Bankily ─────────────────────────────────────── -->
+            <!-- Code retour Bankily (ex. "SUCCESS", "INSUFFICIENT_FUNDS") -->
+            <column name="code_retour" type="NVARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Message texte renvoyé par Bankily -->
+            <column name="message_retour" type="NVARCHAR(500)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- Payload brut du callback Bankily (JSON, pour audit) -->
+            <column name="payload_callback" type="NVARCHAR(MAX)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Liens métier ────────────────────────────────────────── -->
+            <!-- FK → membres.NUM_MEMBRE -->
+            <column name="num_membre" type="NVARCHAR(25)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- FK → Credits.IDCREDIT (pour DEBLOCAGE et REMBOURSEMENT) -->
+            <column name="id_credit" type="BIGINT">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- FK → AGENCE.CODE_AGENCE -->
+            <column name="code_agence" type="NVARCHAR(25)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Audit ───────────────────────────────────────────────── -->
+            <column name="utilisateur" type="NVARCHAR(100)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- ── Optimistic lock ─────────────────────────────────────── -->
+            <column name="VERSION" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+
+        <!-- Index sur statut (requêtes de surveillance EN_ATTENTE) -->
+        <createIndex tableName="OperationWallet" indexName="IDX_OperationWallet_statut">
+            <column name="statut"/>
+        </createIndex>
+
+        <!-- Index sur num_membre (historique d'un membre) -->
+        <createIndex tableName="OperationWallet" indexName="IDX_OperationWallet_membre">
+            <column name="num_membre"/>
+        </createIndex>
+
+        <!-- Index sur reference_bankily (lookup webhook) -->
+        <createIndex tableName="OperationWallet" indexName="IDX_OperationWallet_refBankily">
+            <column name="reference_bankily"/>
+        </createIndex>
+
+        <rollback>
+            <dropIndex tableName="OperationWallet" indexName="IDX_OperationWallet_statut"/>
+            <dropIndex tableName="OperationWallet" indexName="IDX_OperationWallet_membre"/>
+            <dropIndex tableName="OperationWallet" indexName="IDX_OperationWallet_refBankily"/>
+            <dropTable tableName="OperationWallet"/>
+        </rollback>
+
+    </changeSet>
+
+    <!-- ── FK → membres ───────────────────────────────────────────────── -->
+    <changeSet id="P10-601-fk-OperationWallet-Membre" author="microfina">
+        <addForeignKeyConstraint
+            constraintName="FK_OperationWallet_Membre"
+            baseTableName="OperationWallet"
+            baseColumnNames="num_membre"
+            referencedTableName="membres"
+            referencedColumnNames="NUM_MEMBRE"
+            onDelete="SET NULL"
+            onUpdate="NO ACTION"/>
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="OperationWallet"
+                                      constraintName="FK_OperationWallet_Membre"/>
+        </rollback>
+    </changeSet>
+
+    <!-- ── FK → Credits ───────────────────────────────────────────────── -->
+    <changeSet id="P10-601-fk-OperationWallet-Credit" author="microfina">
+        <addForeignKeyConstraint
+            constraintName="FK_OperationWallet_Credit"
+            baseTableName="OperationWallet"
+            baseColumnNames="id_credit"
+            referencedTableName="Credits"
+            referencedColumnNames="IDCREDIT"
+            onDelete="SET NULL"
+            onUpdate="NO ACTION"/>
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="OperationWallet"
+                                      constraintName="FK_OperationWallet_Credit"/>
+        </rollback>
+    </changeSet>
+
+    <!-- ── FK → AGENCE ────────────────────────────────────────────────── -->
+    <changeSet id="P10-601-fk-OperationWallet-Agence" author="microfina">
+        <addForeignKeyConstraint
+            constraintName="FK_OperationWallet_Agence"
+            baseTableName="OperationWallet"
+            baseColumnNames="code_agence"
+            referencedTableName="AGENCE"
+            referencedColumnNames="CODE_AGENCE"
+            onDelete="SET NULL"
+            onUpdate="NO ACTION"/>
+        <rollback>
+            <dropForeignKeyConstraint baseTableName="OperationWallet"
+                                      constraintName="FK_OperationWallet_Agence"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

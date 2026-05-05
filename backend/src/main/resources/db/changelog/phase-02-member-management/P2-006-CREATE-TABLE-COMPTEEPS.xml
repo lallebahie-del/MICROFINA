@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+        P2-006 – COMPTEEPS  (savings account table)
+        Spec p.20-21.  PK = NUMCOMPTE (AN/255).
+        FKs wired: membre → membres, agence → AGENCE.
+        Phase-2+ FKs (produitEpargne, produitPartSociale) stored as plain columns.
+    -->
+    <changeSet id="P2-006-CREATE-TABLE-COMPTEEPS" author="microfina">
+        <comment>Create COMPTEEPS table – savings accounts for members per spec p.20-21</comment>
+
+        <createTable tableName="COMPTEEPS">
+            <!-- PK: account number (AN/255 per spec) -->
+            <column name="NUMCOMPTE"           type="NVARCHAR(255)">
+                <constraints primaryKey="true" nullable="false" primaryKeyName="PK_COMPTEEPS"/>
+            </column>
+
+            <!-- SMS notification flags (AN/255 used as O/N flag per spec) -->
+            <column name="SMSDEPOTCHEQUE"      type="NVARCHAR(255)"/>
+            <column name="SMSPRELEVEMENT"      type="NVARCHAR(255)"/>
+            <column name="SMSRETRAIT"          type="NVARCHAR(255)"/>
+            <column name="SMSVIREMENTSALAIRE"  type="NVARCHAR(255)"/>
+            <column name="CODESMS"             type="NVARCHAR(255)"/>
+
+            <!-- Account state flags -->
+            <column name="BLOQUE"              type="NVARCHAR(255)"/>
+            <column name="FERME"               type="NVARCHAR(255)"/>
+            <column name="ENCAISSE"            type="INT"/>
+            <column name="EXONERE"             type="NVARCHAR(255)"/>
+            <column name="OPTIONEPARGNE"       type="NVARCHAR(255)"/>
+            <column name="PRIORITAIRE"         type="NVARCHAR(255)"/>
+            <column name="REMARQUE"            type="NVARCHAR(255)"/>
+            <column name="TYPEEPARGNE"         type="NVARCHAR(255)"/>
+            <column name="DETAILDEPOT"         type="NVARCHAR(255)"/>
+            <column name="NUMFRAISSMS"         type="NVARCHAR(255)"/>
+            <column name="NUMCOMPTABILITE"     type="NVARCHAR(255)"/>
+
+            <!-- Financial amounts -->
+            <column name="AGIOS"               type="DECIMAL(19,4)"/>
+            <column name="MONTANTOUVERT"       type="DECIMAL(19,4)"/>
+            <column name="MONTANTBLOQUE"       type="DECIMAL(19,4)"/>
+            <column name="MONTANTDEPOT"        type="DECIMAL(19,4)"/>
+            <column name="MONTANTMG"           type="DECIMAL(19,4)"/>
+            <column name="MONTANTINTERET"      type="DECIMAL(19,4)"/>
+            <column name="INTERETS"            type="DECIMAL(19,4)"/>
+            <column name="TAUX"                type="DECIMAL(19,4)"/>
+            <column name="TAUXINTERET"         type="DECIMAL(19,4)"/>
+
+            <!-- Dates -->
+            <column name="DATEBLOQUE"          type="DATE"/>
+            <column name="DATECREATION"        type="DATE"/>
+            <column name="DATEDEBLOQUAGE"      type="DATE"/>
+            <column name="DATEECHEANCE"        type="DATE"/>
+            <column name="DATEFERMEE"          type="DATE"/>
+
+            <!-- Duration -->
+            <column name="DUREE"               type="INT"/>
+
+            <!-- Extra identifiers -->
+            <column name="numcompte_old"       type="NVARCHAR(50)"/>
+            <column name="rang_compte"         type="INT"/>
+            <column name="code_membre"         type="NVARCHAR(25)"/>
+            <column name="COMPTEEPS_new"       type="NVARCHAR(25)"/>
+            <column name="NUMCOMPTE_bis"       type="NVARCHAR(25)"/>
+            <column name="compte_manuelle"     type="NVARCHAR(30)"/>
+            <column name="CODE_PROD"           type="NVARCHAR(10)"/>
+
+            <!-- Optimistic lock -->
+            <column name="VERSION"             type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+
+            <!-- FK columns wired in Phase 2 -->
+            <column name="membre"              type="NVARCHAR(25)"/>
+            <column name="agence"              type="NVARCHAR(25)"/>
+
+            <!-- Phase-2+ FK columns (no constraints yet) -->
+            <column name="produitEpargne"      type="NVARCHAR(20)"/>
+            <column name="produitPartSociale"  type="NVARCHAR(50)"/>
+        </createTable>
+
+        <!-- FK to membres -->
+        <addForeignKeyConstraint
+            baseTableName="COMPTEEPS"       baseColumnNames="membre"
+            referencedTableName="membres"   referencedColumnNames="NUM_MEMBRE"
+            constraintName="FK_COMPTEEPS_membres"/>
+
+        <!-- FK to AGENCE (Phase 1) -->
+        <addForeignKeyConstraint
+            baseTableName="COMPTEEPS"       baseColumnNames="agence"
+            referencedTableName="AGENCE"    referencedColumnNames="CODE_AGENCE"
+            constraintName="FK_COMPTEEPS_AGENCE"/>
+
+        <rollback>
+            <dropAllForeignKeyConstraints baseTableName="COMPTEEPS"/>
+            <dropTable tableName="COMPTEEPS"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
