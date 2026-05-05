@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule }              from '@angular/common';
 import { FormsModule }               from '@angular/forms';
 import { Router, RouterModule }      from '@angular/router';
+import { HttpErrorResponse }         from '@angular/common/http';
 import { MembresService, Membre, PageResult } from '../../services/membres.service';
 
 @Component({
@@ -37,7 +38,22 @@ export class MembresListComponent implements OnInit {
     this.service.search(this.search, this.statut, this.etat, this.page, this.size)
       .subscribe({
         next:  r => { this.result.set(r); this.loading.set(false); },
-        error: e => { this.error.set('Erreur de chargement : ' + (e.message ?? e)); this.loading.set(false); }
+        error: e => {
+          let detail = String(e);
+          if (e instanceof HttpErrorResponse) {
+            if (e.status === 401) {
+              detail = 'non authentifié (401). Reconnectez-vous.';
+            } else if (e.status === 403) {
+              detail = 'accès refusé (403) — privilège manquant pour lire les membres.';
+            } else if (e.status === 0) {
+              detail = 'impossible de joindre l’API (serveur arrêté, mauvaise URL ou CORS). Vérifiez que le backend tourne sur ' + (e.url ?? 'l’URL configurée dans environment.apiUrl') + '.';
+            } else {
+              detail = e.error?.message ?? e.message ?? e.statusText ?? String(e.status);
+            }
+          }
+          this.error.set('Erreur de chargement : ' + detail);
+          this.loading.set(false);
+        }
       });
   }
 

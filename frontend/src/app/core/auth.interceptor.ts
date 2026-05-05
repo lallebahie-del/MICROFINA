@@ -1,6 +1,7 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { AuthService } from './auth.service';
+import { environment } from '../../environments/environment';
 
 /**
  * authInterceptor – functional HTTP interceptor (Angular 15+ style).
@@ -15,11 +16,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const header      = authService.authHeader();
 
-  // Only attach credentials to calls going to our own API
-  // Covers: local dev (8080), Docker-mapped port (8081), and relative /api paths
-  const isApiCall = req.url.includes('localhost:8080')
-                 || req.url.includes('localhost:8081')
-                 || req.url.startsWith('/api');
+  const apiBase = (environment.apiUrl ?? '').replace(/\/$/, '');
+  const isApiCall =
+    (!!apiBase && req.url.startsWith(apiBase)) || req.url.startsWith('/api');
 
   if (header && isApiCall) {
     const authenticatedReq = req.clone({

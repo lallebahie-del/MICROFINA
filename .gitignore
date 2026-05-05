@@ -21,3 +21,6 @@ yarn-error.log*
 # System files
 .DS_Store
 Thumbs.db
+
+# Secrets locales (chargé par le backend au démarrage)
+.env

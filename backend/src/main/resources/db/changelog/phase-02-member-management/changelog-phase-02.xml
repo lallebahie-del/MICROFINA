@@ -33,4 +33,7 @@
     <!-- ── Adhesion fee snapshot ──────────────────────────── -->
     <include file="db/changelog/phase-02-member-management/P2-009-CREATE-TABLE-ValeurFraisMembre.xml"/>
 
+    <!-- ── Schema drift fix (agence_origine vs agenceOrigine) ── -->
+    <include file="db/changelog/phase-02-member-management/P2-010-ADD-agence_origine.xml"/>
+
 </databaseChangeLog>
