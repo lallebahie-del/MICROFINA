@@ -8,6 +8,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,6 +125,23 @@ public class GlobalExceptionHandler {
                         "Forbidden",
                         "ACCESS_DENIED",
                         "Accès refusé — privilège insuffisant pour cette opération.",
+                        req.getRequestURI()
+                ));
+    }
+
+    // ── NoResourceFoundException — 404 (static resources, favicon, etc.) ───────
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResource(
+            NoResourceFoundException ex, HttpServletRequest req) {
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(
+                        404,
+                        "Not Found",
+                        "RESOURCE_NOT_FOUND",
+                        ex.getMessage(),
                         req.getRequestURI()
                 ));
     }

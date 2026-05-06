@@ -1,0 +1,169 @@
+<div class="page-container">
+
+  <div class="page-header">
+    <div>
+      <h2 class="page-title">Parts Sociales</h2>
+      <p class="page-subtitle">Gestion des produits de parts sociales des membres</p>
+    </div>
+    <button class="btn btn-primary" (click)="openNew()">+ Nouveau produit</button>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
+
+  <!-- ── Formulaire ─────────────────────────────────────────── -->
+  @if (showForm()) {
+    <div class="form-card" style="margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h3 style="font-size:15px;font-weight:600;color:var(--text-primary)">
+          {{ editingId() ? 'Modifier le produit' : 'Nouveau produit de parts sociales' }}
+        </h3>
+        <button class="btn btn-outline btn-sm" (click)="cancel()">Annuler</button>
+      </div>
+
+      <fieldset class="form-section">
+        <legend>Identification</legend>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Code produit *</label>
+            <input [(ngModel)]="form.numProduit" name="numProduit" placeholder="Ex: PS-001"
+                   [disabled]="!!editingId()"/>
+          </div>
+          <div class="form-group">
+            <label>Nom du produit *</label>
+            <input [(ngModel)]="form.nomProduit" name="nomProduit" placeholder="Nom du produit"/>
+          </div>
+          <div class="form-group" style="max-width:120px">
+            <label>Statut</label>
+            <select [(ngModel)]="form.actif" name="actif">
+              <option [value]="1">Actif</option>
+              <option [value]="0">Inactif</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Description</label>
+            <textarea [(ngModel)]="form.description" name="description" rows="2"
+                      placeholder="Description du produit"></textarea>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="form-section">
+        <legend>Paramètres financiers</legend>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Valeur nominale (MRU)</label>
+            <input type="number" [(ngModel)]="form.valeurNominale" name="valeurNominale"
+                   step="0.01" placeholder="Ex: 1000"/>
+          </div>
+          <div class="form-group">
+            <label>Nbre parts min</label>
+            <input type="number" [(ngModel)]="form.nombrePartsMin" name="nombrePartsMin" min="1"/>
+          </div>
+          <div class="form-group">
+            <label>Nbre parts max</label>
+            <input type="number" [(ngModel)]="form.nombrePartsMax" name="nombrePartsMax" min="1"/>
+          </div>
+          <div class="form-group">
+            <label>Taux dividende (%)</label>
+            <input type="number" [(ngModel)]="form.tauxDividende" name="tauxDividende" step="0.01"/>
+          </div>
+          <div class="form-group">
+            <label>Périodicité dividende</label>
+            <select [(ngModel)]="form.periodiciteDividende" name="periodiciteDividende">
+              <option value="">— Sélectionner —</option>
+              <option value="ANNUEL">Annuel</option>
+              <option value="SEMESTRIEL">Semestriel</option>
+              <option value="TRIMESTRIEL">Trimestriel</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="form-section">
+        <legend>Comptes comptables</legend>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Compte capital social</label>
+            <input [(ngModel)]="form.compteCapitalSocial" name="compteCapitalSocial" placeholder="Ex: 101000"/>
+          </div>
+          <div class="form-group">
+            <label>Compte dividende</label>
+            <input [(ngModel)]="form.compteDividende" name="compteDividende" placeholder="Ex: 460000"/>
+          </div>
+          <div class="form-group">
+            <label>Compte réserve</label>
+            <input [(ngModel)]="form.compteReserve" name="compteReserve" placeholder="Ex: 106000"/>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" (click)="submit()" [disabled]="saving()">
+          {{ saving() ? 'Enregistrement…' : (editingId() ? 'Mettre à jour' : 'Créer le produit') }}
+        </button>
+        <button class="btn btn-secondary" (click)="cancel()">Annuler</button>
+      </div>
+    </div>
+  }
+
+  <!-- ── Liste ───────────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Nom du produit</th>
+            <th>Valeur nominale</th>
+            <th>Parts (min – max)</th>
+            <th>Taux dividende</th>
+            <th>Périodicité</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of items(); track item.numProduit) {
+            <tr>
+              <td class="mono">{{ item.numProduit }}</td>
+              <td>
+                <div>{{ item.nomProduit }}</div>
+                @if (item.description) {
+                  <div class="sub-text">{{ item.description }}</div>
+                }
+              </td>
+              <td class="amount">{{ formatMontant(item.valeurNominale) }}</td>
+              <td>{{ item.nombrePartsMin ?? '—' }} – {{ item.nombrePartsMax ?? '—' }}</td>
+              <td>{{ item.tauxDividende != null ? (item.tauxDividende + ' %') : '—' }}</td>
+              <td>{{ item.periodiciteDividende ?? '—' }}</td>
+              <td>
+                <span [class]="item.actif === 1 ? 'badge badge-success' : 'badge badge-neutral'">
+                  {{ item.actif === 1 ? 'Actif' : 'Inactif' }}
+                </span>
+              </td>
+              <td>
+                <div class="actions-cell">
+                  <button class="btn btn-outline btn-sm" (click)="openEdit(item)">Modifier</button>
+                  <button class="btn btn-danger btn-sm" (click)="delete(item.numProduit)">Supprimer</button>
+                </div>
+              </td>
+            </tr>
+          }
+          @if (items().length === 0) {
+            <tr><td colspan="8" class="empty-row">Aucun produit de parts sociales trouvé.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+</div>
