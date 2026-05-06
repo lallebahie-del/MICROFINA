@@ -19,9 +19,8 @@ RUN mvn dependency:go-offline -B \
 # Copy backend source code
 COPY backend/src/ src/
 
-# Copy entity sources from project root (pom.xml references ../src/main/java)
-# Maven resolves ${project.basedir}/../src = /app/../src = /src
-COPY src/ /src/
+# NOTE: The domain packages (com.microfina.*) now live inside backend/src,
+# so we no longer copy a top-level /src directory into the image.
 
 # Build the fat JAR
 RUN mvn clean package -DskipTests -B \

@@ -12,6 +12,7 @@ services:
     container_name: microfina-sqlserver
     environment:
       ACCEPT_EULA: "Y"
+      # Complex password (SQL Server policy). Override via .env if needed.
       MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-Password123!}"
       MSSQL_PID: "Developer"
     volumes:
@@ -19,7 +20,8 @@ services:
     ports:
       - "1434:1433"
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P '${MSSQL_SA_PASSWORD:-Password123!}' -C -Q 'SELECT 1' || exit 1"]
+      # Use container env var MSSQL_SA_PASSWORD (do NOT single-quote it, or it won't expand)
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -35,6 +37,7 @@ services:
         condition: service_healthy
     environment:
       ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-Password123!}"
     command: >
       /opt/mssql-tools18/bin/sqlcmd
       -S sqlserver -U sa -P "${MSSQL_SA_PASSWORD:-Password123!}"
