@@ -1,37 +1,82 @@
 <div class="page-container">
+
   <div class="page-header">
-    <h1>Comité de crédit — Dossiers en attente</h1>
-    <button class="btn btn-secondary" (click)="charger()">↻ Rafraîchir</button>
+    <h2 class="page-title">Comité de crédit — Dossiers en attente</h2>
+    <button class="btn btn-outline btn-sm" (click)="charger()" [disabled]="loading()">↻ Rafraîchir</button>
   </div>
 
-  <div *ngIf="error"   class="alert alert-danger">{{ error }}</div>
-  <div *ngIf="loading" class="loading">Chargement…</div>
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
 
-  <table *ngIf="!loading" class="table table-hover">
-    <thead>
-      <tr>
-        <th>N° crédit</th>
-        <th>Membre</th>
-        <th>Montant demandé</th>
-        <th>Étape</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let d of dossiers">
-        <td>{{ d.numCredit }}</td>
-        <td>—</td>
-        <td>—</td>
-        <td>{{ etapeLabel(d.etapeCourante) }}</td>
-        <td>
-          <button class="btn btn-sm btn-primary" (click)="ouvrir(d.idCredit)">
-            Ouvrir
-          </button>
-        </td>
-      </tr>
-      <tr *ngIf="dossiers.length === 0">
-        <td colspan="5" class="text-center">Aucun dossier en attente de décision comité.</td>
-      </tr>
-    </tbody>
-  </table>
+  @if (decisionDossier()) {
+    <div class="form-card" style="margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="font-size:15px;font-weight:600;color:var(--text-dark)">
+          {{ decisionDossier()!.type === 'approuver' ? 'Approuver' : 'Rejeter' }} le dossier #{{ decisionDossier()!.id }}
+        </h3>
+        <button class="btn btn-outline btn-sm" (click)="cancelDecision()">Annuler</button>
+      </div>
+
+      <fieldset class="form-section">
+        <legend>{{ decisionDossier()!.type === 'rejeter' ? 'Motif (obligatoire)' : 'Commentaire (optionnel)' }}</legend>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Commentaire</label>
+            <textarea [(ngModel)]="commentaire" name="commentaire" rows="3"
+                      placeholder="Justification de la décision…"></textarea>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-actions">
+        <button [class]="decisionDossier()!.type === 'approuver' ? 'btn btn-success' : 'btn btn-danger'"
+                (click)="submitDecision()" [disabled]="saving() !== null">
+          {{ saving() !== null ? 'Enregistrement…' : (decisionDossier()!.type === 'approuver' ? '✓ Confirmer l\'approbation' : '✗ Confirmer le rejet') }}
+        </button>
+        <button class="btn btn-secondary" (click)="cancelDecision()">Annuler</button>
+      </div>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>N° crédit</th>
+            <th>Statut</th>
+            <th>Étape courante</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (d of dossiers(); track d.idCredit) {
+            <tr>
+              <td class="mono"><strong>{{ d.numCredit }}</strong></td>
+              <td><span class="badge badge-info">{{ d.statut }}</span></td>
+              <td><span [class]="etapeBadge(d.etapeCourante)">{{ etapeLabel(d.etapeCourante) }}</span></td>
+              <td>
+                <div class="actions-cell">
+                  <button class="btn btn-outline btn-sm" (click)="detail(d.idCredit)">Détail</button>
+                  <button class="btn btn-outline btn-sm" (click)="ouvrir(d.idCredit)">Workflow</button>
+                  <button class="btn btn-success btn-sm" (click)="openApprouver(d.idCredit)" [disabled]="saving() !== null">✓ Approuver</button>
+                  <button class="btn btn-danger btn-sm"  (click)="openRejeter(d.idCredit)"  [disabled]="saving() !== null">✗ Rejeter</button>
+                </div>
+              </td>
+            </tr>
+          }
+          @if (dossiers().length === 0) {
+            <tr><td colspan="4" class="empty-row">Aucun dossier en attente de décision comité.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
 </div>

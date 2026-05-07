@@ -1,22 +1,92 @@
 <div class="page-container">
-  <h2 class="page-title">Rôles système</h2>
 
-  <div *ngIf="loading" class="loading">Chargement…</div>
+  <div class="page-header">
+    <h2 class="page-title">Rôles système</h2>
+    <button class="btn btn-primary" (click)="openNew()">+ Nouveau rôle</button>
+  </div>
 
-  <table *ngIf="!loading && roles.length > 0" class="table">
-    <thead>
-      <tr>
-        <th>Code rôle</th><th>Libellé</th><th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let r of roles">
-        <td><code>{{ r.codeRole }}</code></td>
-        <td>{{ r.libelle }}</td>
-        <td>—</td>
-      </tr>
-    </tbody>
-  </table>
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
 
-  <p *ngIf="!loading && roles.length === 0" class="empty-state">Aucun rôle configuré.</p>
+  @if (showForm()) {
+    <div class="form-card" style="margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h3 style="font-size:15px;font-weight:600;color:var(--text-dark)">
+          {{ editingId() ? 'Modifier le rôle' : 'Nouveau rôle' }}
+        </h3>
+        <button class="btn btn-outline btn-sm" (click)="cancel()">Annuler</button>
+      </div>
+
+      <fieldset class="form-section">
+        <legend>Définition</legend>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Code rôle *</label>
+            <input [(ngModel)]="form.codeRole" name="codeRole"
+                   placeholder="Ex: ADMIN" [disabled]="!!editingId()"/>
+          </div>
+          <div class="form-group">
+            <label>Libellé *</label>
+            <input [(ngModel)]="form.libelle" name="libelle" placeholder="Libellé du rôle"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Description</label>
+            <textarea [(ngModel)]="form.description" name="description" rows="2"
+                      placeholder="Description du rôle et de ses responsabilités"></textarea>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" (click)="submit()" [disabled]="saving()">
+          {{ saving() ? 'Enregistrement…' : (editingId() ? 'Mettre à jour' : 'Créer le rôle') }}
+        </button>
+        <button class="btn btn-secondary" (click)="cancel()">Annuler</button>
+      </div>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Code rôle</th>
+            <th>Libellé</th>
+            <th>Description</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of items(); track r.id) {
+            <tr>
+              <td class="mono">#{{ r.id }}</td>
+              <td class="mono"><strong>{{ r.codeRole }}</strong></td>
+              <td>{{ r.libelle }}</td>
+              <td class="sub-text">{{ r.description || '—' }}</td>
+              <td>
+                <div class="actions-cell">
+                  <button class="btn btn-outline btn-sm" (click)="openEdit(r)">Modifier</button>
+                  <button class="btn btn-danger btn-sm" (click)="delete(r.id, r.codeRole)">Supprimer</button>
+                </div>
+              </td>
+            </tr>
+          }
+          @if (items().length === 0) {
+            <tr><td colspan="5" class="empty-row">Aucun rôle configuré.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
 </div>

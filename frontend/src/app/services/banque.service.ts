@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface Banque {
   codeBanque: string;
@@ -14,7 +15,7 @@ export interface Banque {
 @Injectable({ providedIn: 'root' })
 export class BanqueService {
   private readonly http = inject(HttpClient);
-  private readonly base = '/api/v1/banques';
+  private readonly base = `${environment.apiUrl}/api/v1/banques`;
 
   getAll(): Observable<Banque[]> { return this.http.get<Banque[]>(this.base); }
   getActives(): Observable<Banque[]> { return this.http.get<Banque[]>(`${this.base}/actives`); }

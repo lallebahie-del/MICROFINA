@@ -1,6 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ComptabiliteService, BilanLigne } from '../../services/comptabilite.service';
+
+interface BilanRow extends BilanLigne {
+  libellePoste: string;
+  montant: number;
+  typePoste: 'ACTIF' | 'PASSIF';
+}
 
 @Component({
   selector: 'app-bilan',
@@ -9,43 +15,44 @@ import { ComptabiliteService, BilanLigne } from '../../services/comptabilite.ser
   templateUrl: './bilan.html'
 })
 export class BilanComponent implements OnInit {
-  actif: BilanLigne[] = [];
-  passif: BilanLigne[] = [];
-  loading = false;
+  actif   = signal<BilanRow[]>([]);
+  passif  = signal<BilanRow[]>([]);
+  loading = signal(false);
+  error   = signal<string | null>(null);
+
+  totalActif  = computed<number>(() => this.actif().reduce((s, l) => s + (l.montant ?? 0), 0));
+  totalPassif = computed<number>(() => this.passif().reduce((s, l) => s + (l.montant ?? 0), 0));
 
   constructor(private svc: ComptabiliteService) {}
 
-  ngOnInit(): void {
-    this.loading = true;
+  ngOnInit(): void { this.load(); }
+
+  load(): void {
+    this.loading.set(true);
+    this.error.set(null);
     this.svc.getBilan().subscribe({
       next: data => {
-        // vue_bilan renvoie une ligne par rubrique avec montant_actif / montant_passif.
-        // On éclate en deux listes pour l'affichage Actif / Passif.
-        this.actif = data
+        this.actif.set(data
           .filter(l => (l.montantActif ?? 0) !== 0)
           .map(l => ({
             ...l,
             libellePoste: l.libelleRubrique ?? l.rubrique ?? l.numCompte ?? '',
             montant: l.montantActif ?? 0,
             typePoste: 'ACTIF' as const
-          }));
+          })));
 
-        this.passif = data
+        this.passif.set(data
           .filter(l => (l.montantPassif ?? 0) !== 0)
           .map(l => ({
             ...l,
             libellePoste: l.libelleRubrique ?? l.rubrique ?? l.numCompte ?? '',
             montant: l.montantPassif ?? 0,
             typePoste: 'PASSIF' as const
-          }));
+          })));
 
-        this.loading = false;
+        this.loading.set(false);
       },
-      error: () => { this.loading = false; }
+      error: e => { this.error.set('Erreur : ' + (e.error?.message ?? e.message)); this.loading.set(false); }
     });
-  }
-
-  total(lines: BilanLigne[]): number {
-    return lines.reduce((s, l) => s + (l.montant ?? 0), 0);
   }
 }

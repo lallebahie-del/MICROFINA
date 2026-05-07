@@ -102,6 +102,9 @@ ul {
 .btn-danger    { background: #dc3545; color: #fff; border-color: #dc3545; }
 .btn-danger:hover:not(:disabled) { background: #c82333; }
 
+.btn-warning   { background: #ffc107; color: #1c1d1f; border-color: #ffc107; }
+.btn-warning:hover:not(:disabled) { background: #e0a800; }
+
 .btn-sm { padding: 5px 10px; font-size: 12px; }
 
 /* ── Filter bar ─────────────────────────────────────────────── */
@@ -165,6 +168,8 @@ ul {
 .actions-cell { white-space: nowrap; display: flex; gap: 6px; align-items: center; }
 .mono   { font-family: 'Courier New', Courier, monospace; font-size: 12px; }
 .amount { text-align: right; font-family: 'Courier New', Courier, monospace; font-size: 13px; }
+
+.data-table th.num, .data-table td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* ── Pagination ─────────────────────────────────────────────── */
 .pagination {

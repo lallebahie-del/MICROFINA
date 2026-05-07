@@ -74,7 +74,7 @@
               <td class="mono">{{ c.numCredit }}</td>
               <td>{{ c.nomMembre }} {{ c.prenomMembre }}</td>
               <td>{{ c.nomAgence }}</td>
-              <td><span class="badge" [class]="'badge-' + c.statutCredit?.toLowerCase()">{{ c.statutCredit }}</span></td>
+              <td><span class="badge" [class]="'badge-' + c.statutCredit.toLowerCase()">{{ c.statutCredit }}</span></td>
               <td class="num">{{ formatMontant(c.montantAccorde) }}</td>
               <td class="num">{{ formatMontant(c.soldeCapital) }}</td>
               <td class="num">{{ formatMontant(c.totalArrieres) }}</td>
@@ -83,7 +83,7 @@
                   {{ c.categoriePar || 'SAIN' }}
                 </span>
               </td>
-              <td class="num">{{ c.tauxCouverturePct?.toFixed(1) ?? '—' }}%</td>
+              <td class="num">{{ c.tauxCouverturePct.toFixed(1) }}%</td>
             </tr>
           }
           @if (credits().length === 0) {
@@ -120,7 +120,7 @@
               <td class="num" [class.alerte]="r.par90 > 0.03">{{ formatPct(r.par90) }}</td>
               <td class="num">{{ formatMontant(r.totalArrieres) }}</td>
               <td class="num">{{ formatMontant(r.totalGaranties) }}</td>
-              <td class="num">{{ r.tauxCouverture?.toFixed(1) ?? '—' }}%</td>
+              <td class="num">{{ r.tauxCouverture.toFixed(1) }}%</td>
             </tr>
           }
           @if (ratios().length === 0) {

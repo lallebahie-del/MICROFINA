@@ -1,40 +1,65 @@
 <div class="page-container">
+
   <h2 class="page-title">Centre d'exports</h2>
 
-  <div class="filters mb-4">
-    <label class="form-label">Filtrer par agence (optionnel) :</label>
-    <input type="text" [(ngModel)]="agenceFilter" placeholder="Code agence" class="form-control w-auto" />
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
+
+  <div class="filter-bar">
+    <input class="filter-input"
+           type="text"
+           placeholder="Filtrer par agence (vide = toutes)…"
+           [ngModel]="agenceFilter()" (ngModelChange)="agenceFilter.set($event)"/>
+
+    <span style="margin-left:auto;font-size:12px;color:var(--text-medium)">
+      {{ items.length }} rapports disponibles
+    </span>
   </div>
 
-  <div *ngIf="loading" class="alert alert-info">Export en cours…</div>
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width:280px">Rapport</th>
+          <th>Description</th>
+          <th style="width:280px">Formats</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of items; track item.etat) {
+          <tr>
+            <td><strong>{{ item.label }}</strong></td>
+            <td class="sub-text">{{ item.description }}</td>
+            <td>
+              <div class="actions-cell">
+                @for (fmt of item.formats; track fmt) {
+                  <button class="btn btn-outline btn-sm"
+                          (click)="download(item.etat, fmt)"
+                          [disabled]="loading() !== null">
+                    {{ isLoading(item.etat, fmt) ? '…' : fmt.toUpperCase() }}
+                  </button>
+                }
+              </div>
+            </td>
+          </tr>
+        }
+        <tr style="background:var(--bg-light)">
+          <td><strong>Export Sage Compta Ligne L</strong></td>
+          <td class="sub-text">Export comptable au format Sage L (CSV) pour intégration ERP tiers.</td>
+          <td>
+            <button class="btn btn-outline btn-sm"
+                    (click)="downloadSage()"
+                    [disabled]="loading() !== null">
+              {{ loading() === 'sage' ? '…' : 'CSV' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Rapport</th><th>Formats disponibles</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let item of items">
-        <td>{{ item.label }}</td>
-        <td>
-          <button
-            *ngFor="let fmt of item.formats"
-            (click)="download(item.etat, fmt)"
-            class="btn btn-sm btn-outline-primary me-1"
-            [disabled]="loading">
-            {{ fmt | uppercase }}
-          </button>
-        </td>
-      </tr>
-      <tr>
-        <td>Export Sage Compta Ligne L</td>
-        <td>
-          <button (click)="downloadSage()" class="btn btn-sm btn-outline-secondary" [disabled]="loading">
-            CSV
-          </button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
 </div>

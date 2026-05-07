@@ -1,39 +1,152 @@
 <div class="page-container">
-  <h2 class="page-title">Opérations bancaires</h2>
 
-  <div class="filters">
-    <input type="text" [(ngModel)]="agenceFilter" placeholder="Agence" class="form-control" />
-    <button (click)="load()" class="btn btn-primary">Filtrer</button>
+  <div class="page-header">
+    <h2 class="page-title">Opérations bancaires</h2>
+    <button class="btn btn-primary" (click)="openNew()">+ Nouvelle opération</button>
   </div>
 
-  <div *ngIf="loading" class="loading">Chargement…</div>
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
 
-  <table *ngIf="!loading && operations.length > 0" class="table">
-    <thead>
-      <tr>
-        <th>ID</th><th>Type</th><th>Montant</th><th>Devise</th>
-        <th>Date</th><th>Banque</th><th>Réf. virement</th><th>Statut</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let op of operations">
-        <td>{{ op.id }}</td>
-        <td>{{ op.typeOperation }}</td>
-        <td class="montant">{{ op.montant | number:'1.2-2' }}</td>
-        <td>{{ op.devise }}</td>
-        <td>{{ op.dateOperation }}</td>
-        <td>{{ op.codeBanque ?? '—' }}</td>
-        <td>{{ op.referenceVirement ?? '—' }}</td>
-        <td><span class="badge">{{ op.statut }}</span></td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="filter-bar">
+    <select class="filter-select"
+            [ngModel]="agenceFilter()" (ngModelChange)="agenceFilter.set($event); page.set(0); load()">
+      <option value="">Toutes agences</option>
+      @for (a of agences(); track a.codeAgence) {
+        <option [value]="a.codeAgence">{{ a.codeAgence }} — {{ a.nomAgence }}</option>
+      }
+    </select>
 
-  <div *ngIf="totalPages > 1" class="pagination">
-    <button (click)="prev()" [disabled]="page === 0" class="btn btn-sm btn-secondary">‹ Précédent</button>
-    <span>Page {{ page + 1 }} / {{ totalPages }}</span>
-    <button (click)="next()" [disabled]="page >= totalPages - 1" class="btn btn-sm btn-secondary">Suivant ›</button>
+    <button class="btn btn-outline btn-sm" (click)="load()" [disabled]="loading()">↻ Actualiser</button>
+
+    <span style="margin-left:auto;font-size:12px;color:var(--text-medium)">
+      Page {{ page() + 1 }} / {{ totalPages() || 1 }}
+    </span>
   </div>
 
-  <p *ngIf="!loading && operations.length === 0" class="empty-state">Aucune opération bancaire.</p>
+  @if (showForm()) {
+    <div class="form-card" style="margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h3 style="font-size:15px;font-weight:600;color:var(--text-dark)">Nouvelle opération bancaire</h3>
+        <button class="btn btn-outline btn-sm" (click)="cancel()">Annuler</button>
+      </div>
+
+      <fieldset class="form-section">
+        <legend>Détails</legend>
+        <div class="form-row">
+          <div class="form-group" style="max-width:200px">
+            <label>Type *</label>
+            <select [(ngModel)]="form.typeOperation" name="typeOperation">
+              @for (t of typesOperation; track t) {
+                <option [value]="t">{{ t }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group" style="max-width:200px">
+            <label>Montant *</label>
+            <input type="number" step="0.01" min="0"
+                   [(ngModel)]="form.montant" name="montant"/>
+          </div>
+          <div class="form-group" style="max-width:120px">
+            <label>Devise</label>
+            <input [(ngModel)]="form.devise" name="devise"/>
+          </div>
+          <div class="form-group" style="max-width:200px">
+            <label>Date *</label>
+            <input type="date" [(ngModel)]="form.dateOperation" name="dateOperation"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Agence *</label>
+            <select [(ngModel)]="form.agence" name="agence">
+              <option [ngValue]="undefined">— Sélectionner —</option>
+              @for (a of agences(); track a.codeAgence) {
+                <option [value]="a.codeAgence">{{ a.codeAgence }} — {{ a.nomAgence }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Banque</label>
+            <select [(ngModel)]="form.codeBanque" name="codeBanque">
+              <option [ngValue]="undefined">— Aucune —</option>
+              @for (b of banques(); track b.codeBanque) {
+                <option [value]="b.codeBanque">{{ b.codeBanque }} — {{ b.nom }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Réf. virement</label>
+            <input [(ngModel)]="form.referenceVirement" name="referenceVirement"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Libellé</label>
+            <input [(ngModel)]="form.libelle" name="libelle"/>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" (click)="submit()" [disabled]="saving()">
+          {{ saving() ? 'Enregistrement…' : 'Enregistrer l\'opération' }}
+        </button>
+        <button class="btn btn-secondary" (click)="cancel()">Annuler</button>
+      </div>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Date</th>
+            <th>Type</th>
+            <th class="num">Montant</th>
+            <th>Devise</th>
+            <th>Agence</th>
+            <th>Banque</th>
+            <th>Réf. virement</th>
+            <th>Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (op of operations(); track op.id) {
+            <tr>
+              <td class="mono">#{{ op.id }}</td>
+              <td>{{ op.dateOperation | date:'dd/MM/yyyy' }}</td>
+              <td><span [class]="typeClass(op.typeOperation)">{{ op.typeOperation }}</span></td>
+              <td class="num">{{ op.montant | number:'1.2-2' }}</td>
+              <td class="mono">{{ op.devise }}</td>
+              <td class="mono">{{ op.agence }}</td>
+              <td class="mono">{{ op.codeBanque || '—' }}</td>
+              <td class="mono">{{ op.referenceVirement || '—' }}</td>
+              <td><span [class]="statutClass(op.statut)">{{ op.statut }}</span></td>
+            </tr>
+          }
+          @if (operations().length === 0) {
+            <tr><td colspan="9" class="empty-row">Aucune opération bancaire.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (totalPages() > 1) {
+      <div class="actions-cell" style="justify-content:center;margin-top:16px">
+        <button class="btn btn-outline btn-sm" (click)="prev()" [disabled]="page() === 0">‹ Précédent</button>
+        <span class="sub-text">Page {{ page() + 1 }} / {{ totalPages() }}</span>
+        <button class="btn btn-outline btn-sm" (click)="next()" [disabled]="page() >= totalPages() - 1">Suivant ›</button>
+      </div>
+    }
+  }
+
 </div>

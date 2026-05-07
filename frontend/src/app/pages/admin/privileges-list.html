@@ -1,22 +1,111 @@
 <div class="page-container">
-  <h2 class="page-title">Privilèges (PRIV_*)</h2>
 
-  <div *ngIf="loading" class="loading">Chargement…</div>
+  <div class="page-header">
+    <h2 class="page-title">Privilèges</h2>
+    <button class="btn btn-primary" (click)="openNew()">+ Nouveau privilège</button>
+  </div>
 
-  <table *ngIf="!loading && privileges.length > 0" class="table">
-    <thead>
-      <tr>
-        <th>Code privilège</th><th>Libellé</th><th>Module</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let p of privileges">
-        <td><code>{{ p.codePrivilege }}</code></td>
-        <td>{{ p.libelle }}</td>
-        <td>{{ p.module ?? '—' }}</td>
-      </tr>
-    </tbody>
-  </table>
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
 
-  <p *ngIf="!loading && privileges.length === 0" class="empty-state">Aucun privilège configuré.</p>
+  <div class="filter-bar">
+    <input class="filter-input"
+           type="text"
+           placeholder="Rechercher (code, libellé)…"
+           [ngModel]="search()" (ngModelChange)="search.set($event)"/>
+
+    <select class="filter-select"
+            [ngModel]="filtreModule()" (ngModelChange)="filtreModule.set($event)">
+      <option value="">Tous les modules</option>
+      @for (m of modules(); track m) {
+        <option [value]="m">{{ m }}</option>
+      }
+    </select>
+
+    <button class="btn btn-outline btn-sm" (click)="resetFilters()">Réinitialiser</button>
+
+    <span style="margin-left:auto;font-size:12px;color:var(--text-medium)">
+      {{ privileges().length }} privilège{{ privileges().length > 1 ? 's' : '' }}
+    </span>
+  </div>
+
+  @if (showForm()) {
+    <div class="form-card" style="margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h3 style="font-size:15px;font-weight:600;color:var(--text-dark)">
+          {{ editingId() ? 'Modifier le privilège' : 'Nouveau privilège' }}
+        </h3>
+        <button class="btn btn-outline btn-sm" (click)="cancel()">Annuler</button>
+      </div>
+
+      <fieldset class="form-section">
+        <legend>Définition</legend>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Code privilège *</label>
+            <input [(ngModel)]="form.codePrivilege" name="codePrivilege"
+                   placeholder="Ex: MANAGE_USERS" [disabled]="!!editingId()"/>
+          </div>
+          <div class="form-group">
+            <label>Libellé *</label>
+            <input [(ngModel)]="form.libelle" name="libelle" placeholder="Description courte"/>
+          </div>
+          <div class="form-group" style="max-width:200px">
+            <label>Module *</label>
+            <input [(ngModel)]="form.module" name="module"
+                   placeholder="Ex: ADMIN, CREDIT…"/>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" (click)="submit()" [disabled]="saving()">
+          {{ saving() ? 'Enregistrement…' : (editingId() ? 'Mettre à jour' : 'Créer le privilège') }}
+        </button>
+        <button class="btn btn-secondary" (click)="cancel()">Annuler</button>
+      </div>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Code privilège</th>
+            <th>Libellé</th>
+            <th>Module</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of privileges(); track p.id) {
+            <tr>
+              <td class="mono">#{{ p.id }}</td>
+              <td class="mono"><strong>{{ p.codePrivilege }}</strong></td>
+              <td>{{ p.libelle }}</td>
+              <td><span class="badge badge-info">{{ p.module }}</span></td>
+              <td>
+                <div class="actions-cell">
+                  <button class="btn btn-outline btn-sm" (click)="openEdit(p)">Modifier</button>
+                  <button class="btn btn-danger btn-sm" (click)="delete(p.id, p.codePrivilege)">Supprimer</button>
+                </div>
+              </td>
+            </tr>
+          }
+          @if (privileges().length === 0) {
+            <tr><td colspan="5" class="empty-row">Aucun privilège trouvé.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
 </div>

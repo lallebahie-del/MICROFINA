@@ -201,6 +201,27 @@ export const routes: Routes = [
           import('./pages/budget/budget-list').then(m => m.BudgetListComponent)
       },
 
+      // ── Parts sociales ────────────────────────────────────────────
+      {
+        path: 'parts-sociales',
+        loadComponent: () =>
+          import('./pages/parts-sociales/parts-sociales').then(m => m.PartsSocialesComponent)
+      },
+
+      // ── Types de garantie ─────────────────────────────────────────
+      {
+        path: 'types-garantie',
+        loadComponent: () =>
+          import('./pages/types-garantie/types-garantie-list').then(m => m.TypesGarantieListComponent)
+      },
+
+      // ── Produits islamiques ───────────────────────────────────────
+      {
+        path: 'produits-islamic',
+        loadComponent: () =>
+          import('./pages/produits-islamic/produits-islamic-list').then(m => m.ProduitsIslamicListComponent)
+      },
+
       // ── Simulation crédit ─────────────────────────────────────────
       {
         path: 'simulation',
@@ -238,6 +259,21 @@ export const routes: Routes = [
         path: 'admin/monitoring',
         loadComponent: () =>
           import('./pages/admin/monitoring').then(m => m.MonitoringComponent)
+      },
+      {
+        path: 'admin/jobs',
+        loadComponent: () =>
+          import('./pages/admin/jobs').then(m => m.AdminJobsComponent)
+      },
+      {
+        path: 'admin/cloture',
+        loadComponent: () =>
+          import('./pages/admin/cloture').then(m => m.AdminClotureComponent)
+      },
+      {
+        path: 'admin/parametres',
+        loadComponent: () =>
+          import('./pages/admin/parametres').then(m => m.AdminParametresComponent)
       },
     ]
   },

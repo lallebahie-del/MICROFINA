@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface Budget {
   id: number;
@@ -17,7 +18,7 @@ export interface Budget {
 @Injectable({ providedIn: 'root' })
 export class BudgetService {
   private readonly http = inject(HttpClient);
-  private readonly base = '/api/v1/budgets';
+  private readonly base = `${environment.apiUrl}/api/v1/budgets`;
 
   getAll(): Observable<Budget[]> { return this.http.get<Budget[]>(this.base); }
   getById(id: number): Observable<Budget> { return this.http.get<Budget>(`${this.base}/${id}`); }

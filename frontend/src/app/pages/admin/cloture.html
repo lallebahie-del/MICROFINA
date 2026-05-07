@@ -1,0 +1,88 @@
+<div class="page-container">
+
+  <h2 class="page-title">Clôture comptable</h2>
+
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
+
+  <div class="alert" style="background:#fff3cd;color:#856404;border:1px solid #ffeeba;border-radius:6px;padding:10px 14px;margin-bottom:20px">
+    ⚠ La clôture est <strong>définitive</strong> : aucune écriture comptable ne peut plus être saisie ni modifiée sur la période clôturée. Vérifiez les balances et journaux avant de procéder.
+  </div>
+
+  <!-- ── Clôture mensuelle ─────────────────────────────────── -->
+  <div class="form-card" style="margin-bottom:24px">
+    <h3 style="font-size:15px;font-weight:600;color:var(--text-dark);margin:0 0 4px">
+      Clôture mensuelle
+    </h3>
+    <p class="sub-text" style="margin:0 0 16px">
+      Verrouille toutes les écritures de la période sélectionnée et calcule les soldes de fin de mois.
+    </p>
+
+    <fieldset class="form-section">
+      <legend>Période à clôturer</legend>
+      <div class="form-row">
+        <div class="form-group" style="max-width:160px">
+          <label>Année *</label>
+          <select [(ngModel)]="anneeMensuelle" name="anneeMensuelle">
+            @for (a of annees; track a) {
+              <option [ngValue]="a">{{ a }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group" style="max-width:200px">
+          <label>Mois *</label>
+          <select [(ngModel)]="moisMensuel" name="moisMensuel">
+            @for (m of mois; track m.v) {
+              <option [ngValue]="m.v">{{ m.l }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="form-actions">
+      <button class="btn btn-primary"
+              (click)="clotureMensuelle()"
+              [disabled]="running() !== null">
+        {{ running() === 'mensuelle' ? 'Clôture en cours…' : '🔒 Lancer la clôture mensuelle' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Clôture annuelle ──────────────────────────────────── -->
+  <div class="form-card">
+    <h3 style="font-size:15px;font-weight:600;color:var(--text-dark);margin:0 0 4px">
+      Clôture annuelle
+    </h3>
+    <p class="sub-text" style="margin:0 0 16px">
+      Clôture définitive de l'exercice. Les 12 périodes mensuelles doivent déjà être clôturées.
+    </p>
+
+    <fieldset class="form-section">
+      <legend>Exercice à clôturer</legend>
+      <div class="form-row">
+        <div class="form-group" style="max-width:160px">
+          <label>Année *</label>
+          <select [(ngModel)]="anneeAnnuelle" name="anneeAnnuelle">
+            @for (a of annees; track a) {
+              <option [ngValue]="a">{{ a }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="form-actions">
+      <button class="btn btn-danger"
+              (click)="clotureAnnuelle()"
+              [disabled]="running() !== null">
+        {{ running() === 'annuelle' ? 'Clôture en cours…' : '🔒 Lancer la clôture annuelle' }}
+      </button>
+    </div>
+  </div>
+
+</div>

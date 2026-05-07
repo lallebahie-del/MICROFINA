@@ -1,10 +1,7 @@
 <div class="page-container">
 
   <div class="page-header">
-    <div>
-      <h2 class="page-title">Parts Sociales</h2>
-      <p class="page-subtitle">Gestion des produits de parts sociales des membres</p>
-    </div>
+    <h2 class="page-title">Parts Sociales</h2>
     <button class="btn btn-primary" (click)="openNew()">+ Nouveau produit</button>
   </div>
 
@@ -19,7 +16,7 @@
   @if (showForm()) {
     <div class="form-card" style="margin-bottom:24px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
-        <h3 style="font-size:15px;font-weight:600;color:var(--text-primary)">
+        <h3 style="font-size:15px;font-weight:600;color:var(--text-dark)">
           {{ editingId() ? 'Modifier le produit' : 'Nouveau produit de parts sociales' }}
         </h3>
         <button class="btn btn-outline btn-sm" (click)="cancel()">Annuler</button>
@@ -146,7 +143,7 @@
               <td>{{ item.tauxDividende != null ? (item.tauxDividende + ' %') : '—' }}</td>
               <td>{{ item.periodiciteDividende ?? '—' }}</td>
               <td>
-                <span [class]="item.actif === 1 ? 'badge badge-success' : 'badge badge-neutral'">
+                <span [class]="item.actif === 1 ? 'badge badge-success' : 'badge badge-info'">
                   {{ item.actif === 1 ? 'Actif' : 'Inactif' }}
                 </span>
               </td>

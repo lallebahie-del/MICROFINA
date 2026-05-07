@@ -1,38 +1,120 @@
 <div class="page-container">
-  <h2 class="page-title">Écritures comptables</h2>
 
-  <div class="filters">
-    <input type="text" [(ngModel)]="agenceFilter" placeholder="Filtrer par agence" class="form-control" />
-    <button (click)="load()" class="btn btn-primary">Rechercher</button>
+  <div class="page-header">
+    <h2 class="page-title">Écritures comptables</h2>
+    <button class="btn btn-outline btn-sm" (click)="load()" [disabled]="loading()">↻ Actualiser</button>
   </div>
 
-  <div *ngIf="loading" class="loading">Chargement…</div>
-  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
 
-  <table *ngIf="!loading && ecritures.length > 0" class="table">
-    <thead>
-      <tr>
-        <th>ID</th><th>Date</th><th>Compte</th><th>Libellé</th>
-        <th>Débit</th><th>Crédit</th><th>Lettrage</th><th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let e of ecritures">
-        <td>{{ e.idComptabilite }}</td>
-        <td>{{ e.dateEcriture ?? '—' }}</td>
-        <td>{{ e.numCompte ?? '—' }}</td>
-        <td>{{ e.libelle ?? '—' }}</td>
-        <td class="montant">{{ (e.debit ?? 0) | number:'1.2-2' }}</td>
-        <td class="montant">{{ (e.credit ?? 0) | number:'1.2-2' }}</td>
-        <td>{{ e.codeLettrage ?? '—' }}</td>
-        <td>
-          <button *ngIf="!e.codeLettrage && e.idComptabilite" (click)="lettrer(e.idComptabilite!)" class="btn btn-sm btn-secondary">
-            Lettrer
-          </button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="filter-bar">
+    <input class="filter-input"
+           type="text"
+           placeholder="Rechercher (compte, libellé, code lettrage…)"
+           [ngModel]="search()" (ngModelChange)="search.set($event)"/>
 
-  <p *ngIf="!loading && ecritures.length === 0" class="empty-state">Aucune écriture trouvée.</p>
+    <input class="filter-select"
+           type="text"
+           placeholder="Code agence…"
+           style="max-width:160px"
+           [ngModel]="agenceFilter()" (ngModelChange)="agenceFilter.set($event)"
+           (keyup.enter)="load()"/>
+
+    <select class="filter-select"
+            [ngModel]="filtreLettre()" (ngModelChange)="filtreLettre.set($event)">
+      <option value="">Tous lettrages</option>
+      <option value="lettre">Lettrées</option>
+      <option value="non">Non lettrées</option>
+    </select>
+
+    <button class="btn btn-outline btn-sm" (click)="resetFilters()">Réinitialiser</button>
+
+    <span style="margin-left:auto;font-size:12px;color:var(--text-medium)">
+      {{ ecritures().length }} écriture{{ ecritures().length > 1 ? 's' : '' }}
+    </span>
+  </div>
+
+  @if (showLettrage() !== null) {
+    <div class="form-card" style="margin-bottom:24px">
+      <h3 style="font-size:15px;font-weight:600;color:var(--text-dark);margin:0 0 16px">
+        Lettrer l'écriture #{{ showLettrage() }}
+      </h3>
+      <div class="form-row">
+        <div class="form-group" style="max-width:240px">
+          <label>Code de lettrage *</label>
+          <input [(ngModel)]="codeLettrage" name="codeLettrage" maxlength="10" placeholder="Max 10 car."/>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" (click)="submitLettrage()" [disabled]="saving()">
+          {{ saving() ? 'Enregistrement…' : 'Appliquer le lettrage' }}
+        </button>
+        <button class="btn btn-secondary" (click)="showLettrage.set(null)">Annuler</button>
+      </div>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Date</th>
+            <th>Compte</th>
+            <th>Libellé</th>
+            <th class="num">Débit</th>
+            <th class="num">Crédit</th>
+            <th>Lettrage</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (e of ecritures(); track e.idComptabilite) {
+            <tr>
+              <td class="mono">#{{ e.idComptabilite }}</td>
+              <td>{{ e.dateEcriture ? (e.dateEcriture | date:'dd/MM/yyyy') : '—' }}</td>
+              <td class="mono">{{ e.numCompte || '—' }}</td>
+              <td>{{ e.libelle || '—' }}</td>
+              <td class="num">{{ (e.debit ?? 0) | number:'1.2-2' }}</td>
+              <td class="num">{{ (e.credit ?? 0) | number:'1.2-2' }}</td>
+              <td>
+                @if (e.codeLettrage) {
+                  <span class="badge badge-success mono">{{ e.codeLettrage }}</span>
+                } @else {
+                  <span class="sub-text">—</span>
+                }
+              </td>
+              <td>
+                @if (!e.codeLettrage && e.idComptabilite) {
+                  <button class="btn btn-outline btn-sm" (click)="openLettrage(e.idComptabilite!)">
+                    Lettrer
+                  </button>
+                }
+              </td>
+            </tr>
+          }
+          @if (ecritures().length === 0) {
+            <tr><td colspan="8" class="empty-row">Aucune écriture trouvée.</td></tr>
+          }
+        </tbody>
+        <tfoot>
+          <tr style="background:var(--bg-light);font-weight:600">
+            <td colspan="4" style="text-align:right">Totaux :</td>
+            <td class="num">{{ totalDebit() | number:'1.2-2' }}</td>
+            <td class="num">{{ totalCredit() | number:'1.2-2' }}</td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  }
+
 </div>
