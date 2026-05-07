@@ -200,6 +200,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/budget/budget-list').then(m => m.BudgetListComponent)
       },
+      {
+        path: 'budgets/:id',
+        loadComponent: () =>
+          import('./pages/budget/budget-detail').then(m => m.BudgetDetailComponent)
+      },
 
       // ── Parts sociales ────────────────────────────────────────────
       {

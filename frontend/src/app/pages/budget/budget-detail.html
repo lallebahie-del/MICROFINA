@@ -1,0 +1,297 @@
+<div class="page-container">
+
+  <div class="page-header">
+    <div>
+      <a routerLink="/budgets" class="sub-text" style="text-decoration:none">‹ Retour à la liste</a>
+      <h2 class="page-title" style="margin-top:4px">
+        Budget #{{ budget()?.id }} — Exercice {{ budget()?.exerciceFiscal }}
+        @if (budget()) {
+          <span [class]="statutClass(budget()!.statut)" style="margin-left:12px;font-size:11px;vertical-align:middle">{{ budget()!.statut }}</span>
+        }
+      </h2>
+    </div>
+    <button class="btn btn-outline btn-sm" (click)="reload()" [disabled]="loading()">↻ Actualiser</button>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else if (budget()) {
+
+    <!-- ── Synthèse ──────────────────────────────────────────── -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:24px">
+      <div class="form-card">
+        <h3 style="font-size:13px;font-weight:600;color:var(--text-medium);margin:0 0 8px;text-transform:uppercase;letter-spacing:0.3px">
+          Recettes
+        </h3>
+        <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px">
+          <span class="sub-text">Prévu</span><strong>{{ totalRecettesPrevu() | number:'1.2-2' }} MRU</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:14px">
+          <span class="sub-text">Réalisé</span><strong style="color:#28a745">{{ totalRecettesRealise() | number:'1.2-2' }} MRU</strong>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <h3 style="font-size:13px;font-weight:600;color:var(--text-medium);margin:0 0 8px;text-transform:uppercase;letter-spacing:0.3px">
+          Dépenses
+        </h3>
+        <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px">
+          <span class="sub-text">Prévu</span><strong>{{ totalDepensesPrevu() | number:'1.2-2' }} MRU</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:14px">
+          <span class="sub-text">Réalisé</span><strong style="color:#dc3545">{{ totalDepensesRealise() | number:'1.2-2' }} MRU</strong>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <h3 style="font-size:13px;font-weight:600;color:var(--text-medium);margin:0 0 8px;text-transform:uppercase;letter-spacing:0.3px">
+          Solde
+        </h3>
+        <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px">
+          <span class="sub-text">Prévu</span>
+          <strong [style.color]="(totalRecettesPrevu() - totalDepensesPrevu()) >= 0 ? '#28a745' : '#dc3545'">
+            {{ (totalRecettesPrevu() - totalDepensesPrevu()) | number:'1.2-2' }} MRU
+          </strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:14px">
+          <span class="sub-text">Réalisé</span>
+          <strong [style.color]="(totalRecettesRealise() - totalDepensesRealise()) >= 0 ? '#28a745' : '#dc3545'">
+            {{ (totalRecettesRealise() - totalDepensesRealise()) | number:'1.2-2' }} MRU
+          </strong>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Lignes budgétaires ─────────────────────────────────── -->
+    <div class="page-header" style="margin-top:24px;margin-bottom:8px">
+      <h3 style="font-size:15px;font-weight:600;color:var(--text-dark);margin:0">Lignes budgétaires</h3>
+      @if (isBrouillon()) {
+        <button class="btn btn-primary btn-sm" (click)="openLigneNew()">+ Nouvelle ligne</button>
+      }
+    </div>
+
+    @if (!isBrouillon()) {
+      <p class="sub-text" style="margin:0 0 12px">
+        Le budget est <strong>{{ budget()!.statut }}</strong> : les lignes ne sont plus modifiables. Saisie des mouvements possible.
+      </p>
+    }
+
+    <div class="filter-bar">
+      <select class="filter-select"
+              [ngModel]="filtreType()" (ngModelChange)="filtreType.set($event)">
+        <option value="">Toutes les lignes</option>
+        <option value="RECETTE">Recettes uniquement</option>
+        <option value="DEPENSE">Dépenses uniquement</option>
+      </select>
+
+      <span style="margin-left:auto;font-size:12px;color:var(--text-medium)">
+        {{ filteredLignes().length }} ligne{{ filteredLignes().length > 1 ? 's' : '' }}
+      </span>
+    </div>
+
+    @if (showLigneForm()) {
+      <div class="form-card" style="margin-bottom:24px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <h3 style="font-size:15px;font-weight:600;color:var(--text-dark)">
+            {{ editingLigneId() ? 'Modifier la ligne' : 'Nouvelle ligne' }}
+          </h3>
+          <button class="btn btn-outline btn-sm" (click)="cancelLigne()">Annuler</button>
+        </div>
+
+        <fieldset class="form-section">
+          <legend>Détails</legend>
+          <div class="form-row">
+            <div class="form-group" style="max-width:200px">
+              <label>Code rubrique *</label>
+              <input [(ngModel)]="ligneForm.codeRubrique" name="codeRubrique" placeholder="Ex: REC-001"/>
+            </div>
+            <div class="form-group">
+              <label>Libellé *</label>
+              <input [(ngModel)]="ligneForm.libelle" name="libelle" placeholder="Description de la ligne"/>
+            </div>
+            <div class="form-group" style="max-width:160px">
+              <label>Type *</label>
+              <select [(ngModel)]="ligneForm.typeLigne" name="typeLigne">
+                <option value="RECETTE">Recette</option>
+                <option value="DEPENSE">Dépense</option>
+              </select>
+            </div>
+            <div class="form-group" style="max-width:200px">
+              <label>Montant prévu (MRU) *</label>
+              <input type="number" step="0.01" min="0"
+                     [(ngModel)]="ligneForm.montantPrevu" name="montantPrevu"/>
+            </div>
+            <div class="form-group" style="max-width:200px">
+              <label>Compte (optionnel)</label>
+              <input [(ngModel)]="ligneForm.compte" name="compte"/>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" (click)="submitLigne()" [disabled]="saving()">
+            {{ saving() ? 'Enregistrement…' : (editingLigneId() ? 'Mettre à jour' : 'Créer la ligne') }}
+          </button>
+          <button class="btn btn-secondary" (click)="cancelLigne()">Annuler</button>
+        </div>
+      </div>
+    }
+
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Libellé</th>
+            <th>Type</th>
+            <th class="num">Prévu (MRU)</th>
+            <th class="num">Réalisé (MRU)</th>
+            <th class="num">Écart</th>
+            <th>Avancement</th>
+            <th>Compte</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (l of filteredLignes(); track l.id) {
+            <tr>
+              <td class="mono"><strong>{{ l.codeRubrique }}</strong></td>
+              <td>
+                <div>{{ l.libelle }}</div>
+                @if (mouvementsForLigne(l.id).length > 0) {
+                  <div class="sub-text">{{ mouvementsForLigne(l.id).length }} mouvement{{ mouvementsForLigne(l.id).length > 1 ? 's' : '' }}</div>
+                }
+              </td>
+              <td>
+                <span [class]="l.typeLigne === 'RECETTE' ? 'badge badge-success' : 'badge badge-danger'">
+                  {{ l.typeLigne }}
+                </span>
+              </td>
+              <td class="num">{{ l.montantPrevu | number:'1.2-2' }}</td>
+              <td class="num">{{ l.montantRealise | number:'1.2-2' }}</td>
+              <td class="num" [style.color]="ecartLigne(l) >= 0 ? '#28a745' : '#dc3545'">
+                {{ ecartLigne(l) | number:'1.2-2' }}
+              </td>
+              <td style="min-width:140px">
+                <div style="height:6px;background:#eef1f5;border-radius:3px;overflow:hidden;margin-bottom:4px">
+                  <div [style.width.%]="pctRealise(l)"
+                       [style.background]="pctRealise(l) > 100 ? '#dc3545' : pctRealise(l) > 80 ? '#ffc107' : '#28a745'"
+                       style="height:100%"></div>
+                </div>
+                <span class="sub-text">{{ pctRealise(l) }} %</span>
+              </td>
+              <td class="mono">{{ l.compte || '—' }}</td>
+              <td>
+                <div class="actions-cell">
+                  <button class="btn btn-outline btn-sm" (click)="openMouvementForm(l.id)">+ Mouv.</button>
+                  @if (isBrouillon()) {
+                    <button class="btn btn-outline btn-sm" (click)="openLigneEdit(l)">Modifier</button>
+                    <button class="btn btn-danger btn-sm" (click)="deleteLigne(l.id, l.libelle)">Suppr.</button>
+                  }
+                </div>
+              </td>
+            </tr>
+            @if (showMvtFormForLigne() === l.id) {
+              <tr>
+                <td colspan="9" style="background:#fafbfc;padding:16px">
+                  <h4 style="font-size:13px;font-weight:600;color:var(--text-dark);margin:0 0 12px">
+                    Saisir un mouvement sur "{{ l.libelle }}"
+                  </h4>
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label>Écriture comptable *</label>
+                      <select [(ngModel)]="mvtForm.idComptabilite" name="idComptabilite">
+                        <option [ngValue]="0">— Sélectionner une écriture —</option>
+                        @for (e of ecritures(); track e.idComptabilite) {
+                          <option [ngValue]="e.idComptabilite">
+                            #{{ e.idComptabilite }} — {{ e.dateEcriture }} — {{ e.numCompte }} — {{ e.libelle }}
+                          </option>
+                        }
+                      </select>
+                    </div>
+                    <div class="form-group" style="max-width:200px">
+                      <label>Date *</label>
+                      <input type="date" [(ngModel)]="mvtForm.dateMouvement" name="dateMouvement"/>
+                    </div>
+                    <div class="form-group" style="max-width:200px">
+                      <label>Montant (MRU) *</label>
+                      <input type="number" step="0.01" min="0.01"
+                             [(ngModel)]="mvtForm.montant" name="montantMvt"/>
+                    </div>
+                    <div class="form-group">
+                      <label>Libellé</label>
+                      <input [(ngModel)]="mvtForm.libelle" name="libelleMvt"/>
+                    </div>
+                  </div>
+                  <div class="form-actions">
+                    <button class="btn btn-primary btn-sm" (click)="submitMouvement()" [disabled]="saving()">
+                      {{ saving() ? 'Enregistrement…' : 'Enregistrer le mouvement' }}
+                    </button>
+                    <button class="btn btn-secondary btn-sm" (click)="cancelMouvement()">Annuler</button>
+                  </div>
+
+                  @if (mouvementsForLigne(l.id).length > 0) {
+                    <h5 style="font-size:12px;font-weight:600;color:var(--text-medium);margin:16px 0 8px;text-transform:uppercase;letter-spacing:0.3px">
+                      Mouvements existants
+                    </h5>
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>ID</th><th>Date</th><th>Écriture</th>
+                          <th class="num">Montant</th><th>Libellé</th>
+                          <th>Utilisateur</th><th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (m of mouvementsForLigne(l.id); track m.id) {
+                          <tr>
+                            <td class="mono">#{{ m.id }}</td>
+                            <td>{{ m.dateMouvement | date:'dd/MM/yyyy' }}</td>
+                            <td class="mono">#{{ m.idComptabilite }}</td>
+                            <td class="num">{{ m.montant | number:'1.2-2' }}</td>
+                            <td>{{ m.libelle || '—' }}</td>
+                            <td>{{ m.utilisateur || '—' }}</td>
+                            <td>
+                              <button class="btn btn-danger btn-sm" (click)="deleteMouvement(m.id)">Suppr.</button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  }
+                </td>
+              </tr>
+            }
+          }
+          @if (filteredLignes().length === 0) {
+            <tr><td colspan="9" class="empty-row">
+              @if (isBrouillon()) {
+                Aucune ligne pour ce budget. Clique <strong>+ Nouvelle ligne</strong> pour commencer.
+              } @else {
+                Aucune ligne pour ce budget.
+              }
+            </td></tr>
+          }
+        </tbody>
+        @if (filteredLignes().length > 0) {
+          <tfoot>
+            <tr style="background:var(--bg-light);font-weight:600">
+              <td colspan="3" style="text-align:right">Totaux :</td>
+              <td class="num">{{ (totalRecettesPrevu() + totalDepensesPrevu()) | number:'1.2-2' }}</td>
+              <td class="num">{{ (totalRecettesRealise() + totalDepensesRealise()) | number:'1.2-2' }}</td>
+              <td colspan="4"></td>
+            </tr>
+          </tfoot>
+        }
+      </table>
+    </div>
+  }
+
+</div>

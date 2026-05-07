@@ -89,6 +89,7 @@
               <td class="num">{{ b.montantTotalDepenses | number:'1.2-2' }}</td>
               <td>
                 <div class="actions-cell">
+                  <a class="btn btn-outline btn-sm" [routerLink]="['/budgets', b.id]">Lignes &amp; mouvements</a>
                   @if (b.statut === 'BROUILLON') {
                     <button class="btn btn-outline btn-sm" (click)="openEdit(b)">Modifier</button>
                     <button class="btn btn-success btn-sm" (click)="valider(b.id)">Valider</button>
