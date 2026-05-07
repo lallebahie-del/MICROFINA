@@ -32,7 +32,6 @@ public interface CreditsRepository extends JpaRepository<Credits, Long> {
         )
         AND (:statut IS NULL OR c.statut = :statut)
         AND (:numMembre IS NULL OR :numMembre = '' OR m.numMembre = :numMembre)
-        ORDER BY c.idCredit DESC
         """)
     Page<Credits> search(
         @Param("search")     String       search,

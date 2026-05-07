@@ -16,7 +16,7 @@ public interface ProduitCreditRepository extends JpaRepository<ProduitCredit, St
     /** All active products – used by credit-creation forms. */
     List<ProduitCredit> findByActif(Integer actif);
 
-    /** Paginated search by name or product code. */
+    /** Paginated search by name or product code. Le tri est porté par le Pageable. */
     @Query("""
         SELECT p FROM ProduitCredit p
         WHERE (:search IS NULL OR :search = ''
@@ -25,7 +25,6 @@ public interface ProduitCreditRepository extends JpaRepository<ProduitCredit, St
             OR LOWER(p.description) LIKE LOWER(CONCAT('%',:search,'%'))
         )
         AND (:actif IS NULL OR p.actif = :actif)
-        ORDER BY p.nomProduit ASC
         """)
     Page<ProduitCredit> search(
         @Param("search") String search,

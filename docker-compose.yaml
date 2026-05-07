@@ -1,12 +1,9 @@
-version: "3.9"
-
 # Dev local (Spring sur 8080, Angular sur 4200) : lancer sans le profil docker-backend
 #   docker compose up -d
 # Stack complète avec API dans Docker (publie aussi le port 8080) :
 #   docker compose --profile docker-backend up -d
 
 services:
-
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: microfina-sqlserver
@@ -59,6 +56,12 @@ services:
     depends_on:
       sqlserver-init:
         condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
     restart: unless-stopped
 
   adminer:

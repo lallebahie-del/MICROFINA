@@ -32,6 +32,11 @@ FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
+# curl est utilisé par le healthcheck défini dans docker-compose.yaml
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080

@@ -14,6 +14,7 @@
 
     <include file="db/changelog/phase-11-security/P11-001-PATCH-VIEW-vue_etat_credits.xml"/>
     <include file="db/changelog/phase-11-security/P11-002-INSERT-privileges-phase11.xml"/>
+    <include file="db/changelog/phase-11-security/P11-003-INSERT-priv-admin.xml"/>
     <include file="db/changelog/phase-11-security/P11-701-CREATE-TABLE-job_execution.xml"/>
 
 </databaseChangeLog>
