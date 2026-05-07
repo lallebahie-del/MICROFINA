@@ -1,97 +1,321 @@
-<div class="home-container">
-  <div class="welcome-scene">
-    <!-- Sky background with clouds and money -->
-    <div class="sky">
-      <!-- Clouds -->
-      <div class="cloud cloud-1"></div>
-      <div class="cloud cloud-2"></div>
-      <div class="cloud cloud-3"></div>
-      <div class="cloud cloud-4"></div>
-      <div class="cloud cloud-5"></div>
-      <div class="cloud cloud-6"></div>
+<div class="dashboard">
 
-      <!-- Floating money bills -->
-      <div class="money money-1">
-        <svg viewBox="0 0 40 24" fill="none" width="40" height="24">
-          <rect x="1" y="1" width="38" height="22" rx="3" stroke="white" stroke-width="1.5" fill="rgba(255,255,255,0.3)"/>
-          <circle cx="20" cy="12" r="6" stroke="white" stroke-width="1.2"/>
-          <text x="20" y="15" text-anchor="middle" fill="white" font-size="10" font-weight="bold">$</text>
-        </svg>
-      </div>
-      <div class="money money-2">
-        <svg viewBox="0 0 40 24" fill="none" width="36" height="22">
-          <rect x="1" y="1" width="38" height="22" rx="3" stroke="white" stroke-width="1.5" fill="rgba(255,255,255,0.3)"/>
-          <circle cx="20" cy="12" r="6" stroke="white" stroke-width="1.2"/>
-          <text x="20" y="15" text-anchor="middle" fill="white" font-size="10" font-weight="bold">$</text>
-        </svg>
-      </div>
-      <div class="money money-3">
-        <svg viewBox="0 0 40 24" fill="none" width="44" height="26">
-          <rect x="1" y="1" width="38" height="22" rx="3" stroke="white" stroke-width="1.5" fill="rgba(255,255,255,0.3)"/>
-          <circle cx="20" cy="12" r="6" stroke="white" stroke-width="1.2"/>
-          <text x="20" y="15" text-anchor="middle" fill="white" font-size="10" font-weight="bold">$</text>
-        </svg>
-      </div>
-      <div class="money money-4">
-        <svg viewBox="0 0 40 24" fill="none" width="38" height="23">
-          <rect x="1" y="1" width="38" height="22" rx="3" stroke="white" stroke-width="1.5" fill="rgba(255,255,255,0.3)"/>
-          <circle cx="20" cy="12" r="6" stroke="white" stroke-width="1.2"/>
-          <text x="20" y="15" text-anchor="middle" fill="white" font-size="10" font-weight="bold">$</text>
-        </svg>
-      </div>
-      <div class="money money-5">
-        <svg viewBox="0 0 40 24" fill="none" width="42" height="25">
-          <rect x="1" y="1" width="38" height="22" rx="3" stroke="white" stroke-width="1.5" fill="rgba(255,255,255,0.3)"/>
-          <circle cx="20" cy="12" r="6" stroke="white" stroke-width="1.2"/>
-          <text x="20" y="15" text-anchor="middle" fill="white" font-size="10" font-weight="bold">$</text>
-        </svg>
-      </div>
-      <div class="money money-6">
-        <svg viewBox="0 0 40 24" fill="none" width="35" height="21">
-          <rect x="1" y="1" width="38" height="22" rx="3" stroke="white" stroke-width="1.5" fill="rgba(255,255,255,0.3)"/>
-          <circle cx="20" cy="12" r="6" stroke="white" stroke-width="1.2"/>
-          <text x="20" y="15" text-anchor="middle" fill="white" font-size="10" font-weight="bold">$</text>
-        </svg>
-      </div>
-      <div class="money money-7">
-        <svg viewBox="0 0 40 24" fill="none" width="40" height="24">
-          <rect x="1" y="1" width="38" height="22" rx="3" stroke="white" stroke-width="1.5" fill="rgba(255,255,255,0.3)"/>
-          <circle cx="20" cy="12" r="6" stroke="white" stroke-width="1.2"/>
-          <text x="20" y="15" text-anchor="middle" fill="white" font-size="10" font-weight="bold">$</text>
-        </svg>
-      </div>
-      <div class="money money-8">
-        <svg viewBox="0 0 40 24" fill="none" width="38" height="23">
-          <rect x="1" y="1" width="38" height="22" rx="3" stroke="white" stroke-width="1.5" fill="rgba(255,255,255,0.3)"/>
-          <circle cx="20" cy="12" r="6" stroke="white" stroke-width="1.2"/>
-          <text x="20" y="15" text-anchor="middle" fill="white" font-size="10" font-weight="bold">$</text>
-        </svg>
-      </div>
-
-      <!-- Pie chart decoration -->
-      <div class="pie-chart">
-        <svg viewBox="0 0 120 120" width="120" height="120">
-          <circle cx="60" cy="60" r="55" fill="rgba(255,255,255,0.15)"/>
-          <path d="M60 5 A55 55 0 0 1 115 60 L60 60 Z" fill="rgba(255,255,255,0.25)"/>
-          <line x1="60" y1="60" x2="60" y2="5" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
-          <line x1="60" y1="60" x2="115" y2="60" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
-        </svg>
-      </div>
+  <!-- ── Header ──────────────────────────────────────────────────────── -->
+  <div class="db-header">
+    <div>
+      <div class="db-greeting">Bonjour, {{ user()?.username || 'utilisateur' }} 👋</div>
+      <div class="db-subtitle">{{ today | date:'EEEE d MMMM y' }} — Tableau de bord MicroFina++</div>
     </div>
-
-    <!-- Bottom clouds landscape -->
-    <div class="cloud-landscape">
-      <div class="landscape-cloud lc-1"></div>
-      <div class="landscape-cloud lc-2"></div>
-      <div class="landscape-cloud lc-3"></div>
-      <div class="landscape-cloud lc-4"></div>
-      <div class="landscape-cloud lc-5"></div>
-    </div>
-
-    <!-- Brand text -->
-    <div class="brand-overlay">
-      <span class="brand-micro">MicroCrédit</span>
-      <span class="brand-plus">++</span>
+    <div class="db-header-actions">
+      <button class="btn btn-outline btn-sm" (click)="refresh()" [disabled]="loading()">↻ Actualiser</button>
+      <a class="btn btn-primary btn-sm" routerLink="/reporting">Reporting BCM →</a>
     </div>
   </div>
+
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+
+  <!-- ── KPI cards ───────────────────────────────────────────────────── -->
+  <div class="kpi-grid">
+    <a class="kpi-card kpi-blue" routerLink="/membres">
+      <div class="kpi-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24">
+          <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+        </svg>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-label">Membres</div>
+        <div class="kpi-value">{{ fmt(nbMembres()) }}</div>
+        <div class="kpi-trend">
+          <span class="kpi-mini">{{ fmt(nbMembresActifs()) }} actifs</span>
+          <span class="kpi-mini-pct">{{ pctMembresActifs() | number:'1.0-0' }} %</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="kpi-card kpi-orange" routerLink="/credits">
+      <div class="kpi-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24">
+          <path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-label">Crédits actifs</div>
+        <div class="kpi-value">{{ fmt(nbCreditsActifs()) }}</div>
+        <div class="kpi-trend">
+          <span class="kpi-mini">portefeuille en cours</span>
+        </div>
+      </div>
+    </a>
+
+    <a class="kpi-card kpi-green" routerLink="/reporting">
+      <div class="kpi-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24">
+          <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-label">Encours brut</div>
+        <div class="kpi-value">{{ fmt(encoursBrutTotal()) }} <span class="kpi-unit">MRU</span></div>
+        <div class="kpi-trend">
+          <span class="kpi-mini">tous portefeuilles</span>
+        </div>
+      </div>
+    </a>
+
+    <div class="kpi-card kpi-red">
+      <div class="kpi-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24">
+          <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <div class="kpi-body">
+        <div class="kpi-label">PAR 30</div>
+        <div class="kpi-value" [class]="parClass(par30Moyen())">{{ fmtPct(par30Moyen()) }}</div>
+        <div class="kpi-trend">
+          <span class="kpi-mini">PAR 90 : {{ fmtPct(par90Moyen()) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 2 charts (donut + bar) ─────────────────────────────────────── -->
+  <div class="chart-grid">
+
+    <!-- Donut PAR -->
+    <div class="chart-card">
+      <div class="chart-head">
+        <h3>Répartition du portefeuille par catégorie PAR</h3>
+        <span class="sub-text">{{ donutParTotal() }} crédit{{ donutParTotal() > 1 ? 's' : '' }}</span>
+      </div>
+      <div class="donut-wrap">
+        @if (donutParTotal() === 0) {
+          <p class="sub-text" style="margin:auto">Aucune donnée disponible.</p>
+        } @else {
+          <svg viewBox="0 0 160 160" width="160" height="160" class="donut">
+            @for (s of donutPar(); track s.label) {
+              @if (s.value > 0) {
+                <path [attr.d]="donutPath(s, donutPar(), donutParTotal())" [attr.fill]="s.color"/>
+              }
+            }
+            <circle cx="80" cy="80" r="44" fill="#fff"/>
+            <text x="80" y="76" text-anchor="middle" font-size="11" fill="#4a6785" font-weight="600">Total</text>
+            <text x="80" y="92" text-anchor="middle" font-size="18" fill="#2c3e50" font-weight="700">{{ donutParTotal() }}</text>
+          </svg>
+          <ul class="donut-legend">
+            @for (s of donutPar(); track s.label) {
+              <li>
+                <span class="legend-dot" [style.background]="s.color"></span>
+                <span class="legend-label">{{ s.label }}</span>
+                <span class="legend-value">{{ s.value }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </div>
+
+    <!-- Bar encours par agence -->
+    <div class="chart-card">
+      <div class="chart-head">
+        <h3>Encours brut par agence (top 8)</h3>
+        <span class="sub-text">{{ barEncours().length }} agence{{ barEncours().length > 1 ? 's' : '' }}</span>
+      </div>
+      <div class="bar-wrap">
+        @if (barEncours().length === 0) {
+          <p class="sub-text" style="margin:auto">Aucune donnée disponible.</p>
+        } @else {
+          @for (b of barEncours(); track b.label) {
+            <div class="bar-row">
+              <div class="bar-label">{{ b.label }}</div>
+              <div class="bar-track">
+                <div class="bar-fill" [style.width.%]="(b.value / barEncoursMax()) * 100"></div>
+              </div>
+              <div class="bar-value">{{ fmt(b.value) }} MRU</div>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Indicators row (donut flux + couverture) + raccourcis ─────── -->
+  <div class="chart-grid chart-grid-3">
+
+    <div class="chart-card">
+      <div class="chart-head">
+        <h3>Flux du jour</h3>
+      </div>
+      <div class="donut-wrap">
+        @if (donutFluxTotal() === 0) {
+          <p class="sub-text" style="margin:auto">Aucun flux enregistré aujourd'hui.</p>
+        } @else {
+          <svg viewBox="0 0 160 160" width="140" height="140" class="donut">
+            @for (s of donutFlux(); track s.label) {
+              @if (s.value > 0) {
+                <path [attr.d]="donutPath(s, donutFlux(), donutFluxTotal())" [attr.fill]="s.color"/>
+              }
+            }
+            <circle cx="80" cy="80" r="44" fill="#fff"/>
+            <text x="80" y="76" text-anchor="middle" font-size="10" fill="#4a6785" font-weight="600">Total flux</text>
+            <text x="80" y="92" text-anchor="middle" font-size="13" fill="#2c3e50" font-weight="700">{{ fmt(donutFluxTotal()) }} MRU</text>
+          </svg>
+          <ul class="donut-legend">
+            @for (s of donutFlux(); track s.label) {
+              <li>
+                <span class="legend-dot" [style.background]="s.color"></span>
+                <span class="legend-label">{{ s.label }}</span>
+                <span class="legend-value">{{ fmt(s.value) }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </div>
+
+    <div class="chart-card chart-card-gauge">
+      <div class="chart-head">
+        <h3>Taux de couverture moyen</h3>
+        <span class="sub-text">pondéré par encours</span>
+      </div>
+      <div class="gauge-wrap">
+        @let cov = tauxCouvertureMoyen();
+        <div class="gauge-value" [class]="cov >= 1 ? 'kpi-ok' : cov >= 0.7 ? 'kpi-warn' : 'kpi-bad'">
+          {{ (cov * 100) | number:'1.1-1' }} <span class="gauge-unit">%</span>
+        </div>
+        <div class="gauge-bar">
+          <div class="gauge-fill"
+               [style.width.%]="cov >= 1.5 ? 100 : (cov / 1.5) * 100"
+               [style.background]="cov >= 1 ? '#28a745' : cov >= 0.7 ? '#ffc107' : '#dc3545'">
+          </div>
+        </div>
+        <p class="sub-text" style="margin-top:8px">
+          Garanties / capital à risque. Cible BCM : ≥ 100 %.
+        </p>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-head">
+        <h3>Raccourcis</h3>
+      </div>
+      <div class="shortcuts">
+        <a routerLink="/credits/comite" class="shortcut">
+          <span class="shortcut-icon">📋</span>
+          <span class="shortcut-label">Comité crédit</span>
+        </a>
+        <a routerLink="/credits/nouveau" class="shortcut">
+          <span class="shortcut-icon">➕</span>
+          <span class="shortcut-label">Nouveau crédit</span>
+        </a>
+        <a routerLink="/operations-caisse" class="shortcut">
+          <span class="shortcut-icon">💰</span>
+          <span class="shortcut-label">Caisse</span>
+        </a>
+        <a routerLink="/operations-banque" class="shortcut">
+          <span class="shortcut-icon">🏦</span>
+          <span class="shortcut-label">Banque</span>
+        </a>
+        <a routerLink="/comptabilite" class="shortcut">
+          <span class="shortcut-icon">📊</span>
+          <span class="shortcut-label">Comptabilité</span>
+        </a>
+        <a routerLink="/exports" class="shortcut">
+          <span class="shortcut-icon">📥</span>
+          <span class="shortcut-label">Exports</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Indicateurs détaillés par agence ─────────────────────────── -->
+  <div class="chart-card chart-card-full">
+    <div class="chart-head">
+      <h3>Indicateurs détaillés par agence</h3>
+      <a routerLink="/reporting" class="sub-text" style="text-decoration:none">Voir le reporting complet →</a>
+    </div>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Agence</th>
+            <th class="num">Membres</th>
+            <th class="num">Actifs</th>
+            <th class="num">Crédits actifs</th>
+            <th class="num">Encours brut (MRU)</th>
+            <th class="num">Décaissé jour</th>
+            <th class="num">Remboursé jour</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (i of indicateurs(); track i.codeAgence) {
+            <tr>
+              <td><strong>{{ i.nomAgence }}</strong> <span class="sub-text">{{ i.codeAgence }}</span></td>
+              <td class="num">{{ i.nbMembres }}</td>
+              <td class="num">{{ i.nbMembresActifs }}</td>
+              <td class="num">{{ i.nbCreditsActifs }}</td>
+              <td class="num">{{ fmt(i.encoursBrut) }}</td>
+              <td class="num">{{ fmt(i.montantDecaisse) }}</td>
+              <td class="num">{{ fmt(i.montantRembourse) }}</td>
+            </tr>
+          }
+          @if (indicateurs().length === 0 && !loading()) {
+            <tr><td colspan="7" class="empty-row">Aucun indicateur disponible.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Activité récente ──────────────────────────────────────────── -->
+  <div class="chart-card chart-card-full">
+    <div class="chart-head">
+      <h3>Derniers crédits décaissés</h3>
+      <a routerLink="/credits" class="sub-text" style="text-decoration:none">Voir tous les crédits →</a>
+    </div>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>N° Crédit</th>
+            <th>Membre</th>
+            <th>Agence</th>
+            <th>Date déblocage</th>
+            <th class="num">Montant accordé</th>
+            <th class="num">Solde capital</th>
+            <th>Catégorie PAR</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of lastCredits(); track c.idCredit) {
+            <tr>
+              <td class="mono">{{ c.numCredit }}</td>
+              <td>{{ c.nomMembre }} {{ c.prenomMembre }}</td>
+              <td class="mono">{{ c.codeAgence }}</td>
+              <td>{{ c.dateDeblocage | date:'dd/MM/yyyy' }}</td>
+              <td class="num">{{ fmt(c.montantAccorde) }} MRU</td>
+              <td class="num">{{ fmt(c.soldeCapital) }} MRU</td>
+              <td>
+                <span [class]="
+                  c.categoriePar === 'SAIN' ? 'badge badge-success' :
+                  c.categoriePar === 'PAR30' ? 'badge badge-warning' :
+                  c.categoriePar === 'PAR90' ? 'badge badge-danger' : 'badge badge-info'">
+                  {{ c.categoriePar || 'SAIN' }}
+                </span>
+              </td>
+            </tr>
+          }
+          @if (lastCredits().length === 0 && !loading()) {
+            <tr><td colspan="7" class="empty-row">Aucun crédit décaissé.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement du tableau de bord…</div>
+  }
+
 </div>
