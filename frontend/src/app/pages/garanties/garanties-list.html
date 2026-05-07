@@ -17,17 +17,17 @@
     </thead>
     <tbody>
       <tr *ngFor="let g of garanties">
-        <td>{{ g.id }}</td>
-        <td>{{ g.typeGarantie }}</td>
+        <td>{{ g.idGarantie }}</td>
+        <td>{{ g.codeTypeGarantie ?? g.libelleTypeGarantie ?? '—' }}</td>
         <td class="montant">{{ g.valeurEstimee | number:'1.2-2' }}</td>
-        <td>{{ g.description ?? '—' }}</td>
+        <td>{{ g.observations ?? '—' }}</td>
         <td>
-          <span [class]="g.statut === 'ACTIVE' ? 'badge badge-success' : 'badge badge-secondary'">
+          <span [class]="g.statut === 'ACTIF' ? 'badge badge-success' : 'badge badge-secondary'">
             {{ g.statut }}
           </span>
         </td>
         <td>
-          <button *ngIf="g.statut === 'ACTIVE'" (click)="liberer(g.id)" class="btn btn-sm btn-warning">
+          <button *ngIf="g.statut === 'ACTIF'" (click)="liberer(g.idGarantie)" class="btn btn-sm btn-warning">
             Libérer
           </button>
         </td>

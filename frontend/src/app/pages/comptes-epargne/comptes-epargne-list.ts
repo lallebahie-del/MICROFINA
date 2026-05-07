@@ -26,8 +26,8 @@ export class ComptesEpargneListComponent implements OnInit {
     });
   }
 
-  bloquer(id: number): void {
+  bloquer(numCompte: string): void {
     if (!confirm('Bloquer ce compte épargne ?')) return;
-    this.svc.bloquer(id).subscribe({ next: () => this.load() });
+    this.svc.bloquer(numCompte).subscribe({ next: () => this.load() });
   }
 }

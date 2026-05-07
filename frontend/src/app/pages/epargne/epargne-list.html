@@ -13,15 +13,15 @@
       <strong>{{ c.numCompte }}</strong> — {{ c.nomMembre ?? c.numMembre }}
       <span class="float-right montant">{{ c.solde | number:'1.2-2' }} MRU</span>
     </div>
-    <div class="card-body" *ngIf="selectedId === c.id">
+    <div class="card-body" *ngIf="selectedNumCompte === c.numCompte">
       <input type="number" [(ngModel)]="montant" placeholder="Montant" class="form-control mb-2" />
       <input type="text"   [(ngModel)]="libelle"  placeholder="Libellé" class="form-control mb-2" />
-      <button (click)="depot(c.id)"   class="btn btn-success me-2">Dépôt</button>
-      <button (click)="retrait(c.id)" class="btn btn-danger">Retrait</button>
+      <button (click)="depot(c.numCompte)"   class="btn btn-success me-2">Dépôt</button>
+      <button (click)="retrait(c.numCompte)" class="btn btn-danger">Retrait</button>
     </div>
     <div class="card-footer">
-      <button (click)="selectedId = selectedId === c.id ? null : c.id" class="btn btn-sm btn-secondary">
-        {{ selectedId === c.id ? 'Annuler' : 'Opération' }}
+      <button (click)="selectedNumCompte = selectedNumCompte === c.numCompte ? null : c.numCompte" class="btn btn-sm btn-secondary">
+        {{ selectedNumCompte === c.numCompte ? 'Annuler' : 'Opération' }}
       </button>
     </div>
   </div>

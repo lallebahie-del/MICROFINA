@@ -13,7 +13,7 @@ export class EpargneListComponent implements OnInit {
   comptes: CompteEpargne[] = [];
   agenceFilter = '';
   loading = false;
-  selectedId: number | null = null;
+  selectedNumCompte: string | null = null;
   montant = 0;
   libelle = '';
 
@@ -29,11 +29,11 @@ export class EpargneListComponent implements OnInit {
     });
   }
 
-  depot(id: number): void {
-    this.svc.depot(id, this.montant, this.libelle).subscribe({ next: () => this.load() });
+  depot(numCompte: string): void {
+    this.svc.depot(numCompte, this.montant, this.libelle).subscribe({ next: () => this.load() });
   }
 
-  retrait(id: number): void {
-    this.svc.retrait(id, this.montant, this.libelle).subscribe({ next: () => this.load() });
+  retrait(numCompte: string): void {
+    this.svc.retrait(numCompte, this.montant, this.libelle).subscribe({ next: () => this.load() });
   }
 }

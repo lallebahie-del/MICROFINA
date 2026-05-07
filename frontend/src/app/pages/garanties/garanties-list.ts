@@ -30,8 +30,8 @@ export class GarantiesListComponent implements OnInit {
     });
   }
 
-  liberer(id: number): void {
+  liberer(idGarantie: number): void {
     if (!confirm('Confirmer la libération de la garantie ?')) return;
-    this.svc.liberer(id).subscribe({ next: () => this.load() });
+    this.svc.liberer(idGarantie).subscribe({ next: () => this.load() });
   }
 }
