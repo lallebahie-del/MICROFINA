@@ -14,7 +14,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -286,6 +288,39 @@ public class CreditWorkflowService {
     @Transactional(readOnly = true)
     public List<Credits> getComitePending() {
         return creditsRepo.findByEtapeCourante("COMITE");
+    }
+
+    /** Dossiers en attente d'action agent (complétude + analyse + visa RC). */
+    @Transactional(readOnly = true)
+    public List<Credits> getAgentPending() {
+        List<Credits> all = creditsRepo.findByEtapeCourante("COMPLETUDE");
+        all.addAll(creditsRepo.findByEtapeCourante("ANALYSE_FINANCIERE"));
+        all.addAll(creditsRepo.findByEtapeCourante("VISA_RC"));
+        return all;
+    }
+
+    /** Dossiers à une étape précise (paramétrable). */
+    @Transactional(readOnly = true)
+    public List<Credits> getQueueByEtape(String etape) {
+        if (etape == null || etape.isBlank()) {
+            throw new IllegalArgumentException("Étape requise.");
+        }
+        return creditsRepo.findByEtapeCourante(etape.toUpperCase());
+    }
+
+    /** Compteurs de dossiers par étape (workflow stats). */
+    @Transactional(readOnly = true)
+    public Map<String, Long> getWorkflowStats() {
+        String[] etapes = {
+            "SAISIE", "COMPLETUDE", "ANALYSE_FINANCIERE",
+            "VISA_RC", "COMITE", "VISA_SF",
+            "DEBLOCAGE_PENDING", "DEBLOQUE", "REJETE", "CLOTURE"
+        };
+        Map<String, Long> stats = new HashMap<>();
+        for (String e : etapes) {
+            stats.put(e, (long) creditsRepo.findByEtapeCourante(e).size());
+        }
+        return stats;
     }
 
     // =========================================================================

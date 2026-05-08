@@ -9,6 +9,7 @@ import {
   WorkflowCreditSummary,
   WorkflowDecisionRequest,
   WorkflowTimelineEntry,
+  WorkflowStats,
 } from '../models/credit-workflow.model';
 
 @Injectable({ providedIn: 'root' })
@@ -64,5 +65,17 @@ export class CreditWorkflowService {
 
   getComitePending(): Observable<WorkflowCreditSummary[]> {
     return this.http.get<WorkflowCreditSummary[]>(`${this.base}/workflow/comite/pending`);
+  }
+
+  getAgentPending(): Observable<WorkflowCreditSummary[]> {
+    return this.http.get<WorkflowCreditSummary[]>(`${this.base}/workflow/agent/pending`);
+  }
+
+  getQueueByEtape(etape: string): Observable<WorkflowCreditSummary[]> {
+    return this.http.get<WorkflowCreditSummary[]>(`${this.base}/workflow/queue/${etape}`);
+  }
+
+  getStats(): Observable<WorkflowStats> {
+    return this.http.get<WorkflowStats>(`${this.base}/workflow/stats`);
   }
 }

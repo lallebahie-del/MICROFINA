@@ -65,6 +65,11 @@ export const routes: Routes = [
           import('./pages/credits/credit-form').then(m => m.CreditFormComponent)
       },
       {
+        path: 'credits/agent',
+        loadComponent: () =>
+          import('./pages/credits/credits-agent-page.component').then(m => m.CreditsAgentPageComponent)
+      },
+      {
         path: 'credits/comite',
         loadComponent: () =>
           import('./pages/credits/credits-comite-page.component').then(m => m.CreditsComitePageComponent)

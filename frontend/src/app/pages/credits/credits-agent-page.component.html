@@ -1,0 +1,236 @@
+<div class="page-container">
+
+  <div class="page-header">
+    <h2 class="page-title">Mes dossiers — Agent crédit</h2>
+    <button class="btn btn-outline btn-sm" (click)="charger()" [disabled]="loading()">↻ Rafraîchir</button>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
+
+  <!-- ── Cartes par étape (cliquables → filtre) ──────────────────────── -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:16px">
+
+    <button class="form-card" type="button"
+            (click)="filtreEtape.set(filtreEtape() === 'COMPLETUDE' ? '' : 'COMPLETUDE')"
+            [style.border-color]="filtreEtape() === 'COMPLETUDE' ? '#1970c2' : null"
+            style="text-align:left;cursor:pointer;padding:14px;border-width:2px">
+      <div style="font-size:11px;color:var(--text-medium);text-transform:uppercase;letter-spacing:0.4px;font-weight:600">
+        Complétude documentaire
+      </div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-top:4px">
+        <span style="font-size:26px;font-weight:700;color:var(--text-dark)">{{ countCompletude() }}</span>
+        <span style="font-size:11px;color:var(--text-medium)">dossier{{ countCompletude() > 1 ? 's' : '' }}</span>
+      </div>
+      <div class="sub-text" style="margin-top:4px">{{ fmt(montantCompletude()) }} MRU à instruire</div>
+    </button>
+
+    <button class="form-card" type="button"
+            (click)="filtreEtape.set(filtreEtape() === 'ANALYSE_FINANCIERE' ? '' : 'ANALYSE_FINANCIERE')"
+            [style.border-color]="filtreEtape() === 'ANALYSE_FINANCIERE' ? '#1970c2' : null"
+            style="text-align:left;cursor:pointer;padding:14px;border-width:2px">
+      <div style="font-size:11px;color:var(--text-medium);text-transform:uppercase;letter-spacing:0.4px;font-weight:600">
+        Analyse financière
+      </div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-top:4px">
+        <span style="font-size:26px;font-weight:700;color:var(--text-dark)">{{ countAnalyse() }}</span>
+        <span style="font-size:11px;color:var(--text-medium)">dossier{{ countAnalyse() > 1 ? 's' : '' }}</span>
+      </div>
+      <div class="sub-text" style="margin-top:4px">{{ fmt(montantAnalyse()) }} MRU à analyser</div>
+    </button>
+
+    <button class="form-card" type="button"
+            (click)="filtreEtape.set(filtreEtape() === 'VISA_RC' ? '' : 'VISA_RC')"
+            [style.border-color]="filtreEtape() === 'VISA_RC' ? '#1970c2' : null"
+            style="text-align:left;cursor:pointer;padding:14px;border-width:2px">
+      <div style="font-size:11px;color:var(--text-medium);text-transform:uppercase;letter-spacing:0.4px;font-weight:600">
+        Visa Responsable Crédit
+      </div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-top:4px">
+        <span style="font-size:26px;font-weight:700;color:var(--text-dark)">{{ countVisaRc() }}</span>
+        <span style="font-size:11px;color:var(--text-medium)">dossier{{ countVisaRc() > 1 ? 's' : '' }}</span>
+      </div>
+      <div class="sub-text" style="margin-top:4px">{{ fmt(montantVisaRc()) }} MRU à viser</div>
+    </button>
+  </div>
+
+  <!-- ── Filtres ────────────────────────────────────────────────────── -->
+  <div class="filter-bar">
+    <input class="filter-input"
+           type="text"
+           placeholder="Rechercher (n° crédit, membre, n° membre…)"
+           [ngModel]="search()" (ngModelChange)="search.set($event)"/>
+
+    <select class="filter-select"
+            [ngModel]="filtreAgence()" (ngModelChange)="filtreAgence.set($event)">
+      <option value="">Toutes agences</option>
+      @for (a of agencesUniques(); track a) {
+        <option [value]="a">{{ a }}</option>
+      }
+    </select>
+
+    <select class="filter-select"
+            [ngModel]="filtreEtape()" (ngModelChange)="filtreEtape.set($event)">
+      <option value="">Toutes étapes</option>
+      <option value="COMPLETUDE">Complétude</option>
+      <option value="ANALYSE_FINANCIERE">Analyse financière</option>
+      <option value="VISA_RC">Visa RC</option>
+    </select>
+
+    <button class="btn btn-outline btn-sm" (click)="resetFilters()">Réinitialiser</button>
+
+    <span style="margin-left:auto;font-size:12px;color:var(--text-medium)">
+      {{ dossiers().length }} dossier{{ dossiers().length > 1 ? 's' : '' }}
+    </span>
+  </div>
+
+  <!-- ── Modale d'action ──────────────────────────────────────────── -->
+  @if (action(); as a) {
+    <div class="form-card" style="margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="font-size:15px;font-weight:600;color:var(--text-dark)">
+          {{ actionLabel(a.type) }} — dossier {{ a.numCredit }}
+        </h3>
+        <button class="btn btn-outline btn-sm" (click)="cancelAction()">Annuler</button>
+      </div>
+
+      @if (a.type === 'analyse') {
+        <fieldset class="form-section">
+          <legend>Données financières</legend>
+          <div class="form-row">
+            <div class="form-group" style="max-width:240px">
+              <label>Revenus mensuels (MRU) *</label>
+              <input type="number" step="0.01" min="0"
+                     [(ngModel)]="analyseForm.revenusMensuels" name="revenusMensuels"/>
+            </div>
+            <div class="form-group" style="max-width:240px">
+              <label>Charges mensuelles (MRU) *</label>
+              <input type="number" step="0.01" min="0"
+                     [(ngModel)]="analyseForm.chargesMensuelles" name="chargesMensuelles"/>
+            </div>
+            <div class="form-group" style="max-width:240px">
+              <label>Total actif (MRU)</label>
+              <input type="number" step="0.01" min="0"
+                     [(ngModel)]="analyseForm.totalActif" name="totalActif"/>
+            </div>
+            <div class="form-group" style="max-width:240px">
+              <label>Total passif (MRU)</label>
+              <input type="number" step="0.01" min="0"
+                     [(ngModel)]="analyseForm.totalPassif" name="totalPassif"/>
+            </div>
+          </div>
+          <p class="sub-text" style="margin:8px 0 0">
+            Ratio charges/revenus : <span [class]="capaciteLiveClass()">{{ capaciteLive() }}</span>
+            <span style="margin-left:8px">— alerte si > 50 %, refus suggéré si > 70 %.</span>
+          </p>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend>Avis & commentaire</legend>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Avis agent</label>
+              <textarea [(ngModel)]="analyseForm.avisAgent" name="avisAgent" rows="2"
+                        placeholder="Avis détaillé sur la solvabilité du membre…"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Commentaire</label>
+              <textarea [(ngModel)]="analyseForm.commentaire" name="commentaireAnalyse" rows="2"
+                        placeholder="Notes additionnelles…"></textarea>
+            </div>
+          </div>
+        </fieldset>
+      } @else {
+        <fieldset class="form-section">
+          <legend>{{ a.type === 'rejeter' ? 'Motif du rejet (obligatoire)' : 'Commentaire (optionnel)' }}</legend>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Commentaire</label>
+              <textarea [(ngModel)]="commentaire" name="commentaire" rows="3"
+                        placeholder="Justification de la décision…"></textarea>
+            </div>
+          </div>
+        </fieldset>
+      }
+
+      <div class="form-actions">
+        <button [class]="a.type === 'rejeter' ? 'btn btn-danger' : 'btn btn-primary'"
+                (click)="submitAction()" [disabled]="saving() !== null">
+          {{ saving() !== null ? 'Enregistrement…' : '✓ Confirmer' }}
+        </button>
+        <button class="btn btn-secondary" (click)="cancelAction()">Annuler</button>
+      </div>
+    </div>
+  }
+
+  <!-- ── Liste enrichie ─────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>N° Crédit</th>
+            <th>Membre</th>
+            <th>Agence</th>
+            <th class="num">Montant demandé</th>
+            <th>Date demande</th>
+            <th>Délai</th>
+            <th>Étape</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (d of dossiers(); track d.idCredit) {
+            <tr>
+              <td class="mono"><strong>{{ d.numCredit }}</strong></td>
+              <td>
+                <div>{{ d.nomMembre }} {{ d.prenomMembre }}</div>
+                @if (d.numMembre) {
+                  <div class="sub-text">{{ d.numMembre }}</div>
+                }
+              </td>
+              <td>{{ d.nomAgence || d.codeAgence || '—' }}</td>
+              <td class="num"><strong>{{ fmt(d.montantDemande) }} MRU</strong></td>
+              <td>{{ d.dateDemande ? (d.dateDemande | date:'dd/MM/yyyy') : '—' }}</td>
+              <td>
+                @if (d.joursDansEtape != null) {
+                  <span [class]="joursClass(d.joursDansEtape)">{{ d.joursDansEtape }}j</span>
+                } @else {
+                  <span class="sub-text">—</span>
+                }
+              </td>
+              <td><span [class]="etapeBadge(d.etapeCourante)">{{ etapeLabel(d.etapeCourante) }}</span></td>
+              <td>
+                <div class="actions-cell">
+                  @switch (d.etapeCourante) {
+                    @case ('COMPLETUDE') {
+                      <button class="btn btn-primary btn-sm" (click)="openCompletude(d)" [disabled]="saving() !== null">✓ Valider</button>
+                    }
+                    @case ('ANALYSE_FINANCIERE') {
+                      <button class="btn btn-primary btn-sm" (click)="openAnalyse(d)" [disabled]="saving() !== null">📋 Analyse</button>
+                    }
+                    @case ('VISA_RC') {
+                      <button class="btn btn-primary btn-sm" (click)="openVisaRc(d)" [disabled]="saving() !== null">✓ Viser</button>
+                    }
+                  }
+                  <button class="btn btn-danger btn-sm" (click)="openRejeter(d)" [disabled]="saving() !== null">✗ Rejeter</button>
+                  <button class="btn btn-outline btn-sm" (click)="ouvrir(d.idCredit)">Workflow</button>
+                </div>
+              </td>
+            </tr>
+          }
+          @if (dossiers().length === 0) {
+            <tr><td colspan="8" class="empty-row">Aucun dossier en attente d'action.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+</div>
