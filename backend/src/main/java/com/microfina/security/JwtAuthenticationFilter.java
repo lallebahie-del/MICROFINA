@@ -68,7 +68,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (username != null &&
             SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            // L'utilisateur référencé par le JWT peut avoir été supprimé ou désactivé.
+            // Dans ce cas, on laisse le contexte non authentifié → Spring Security
+            // renverra 401/403, le client mobile pourra clear son token et re-login.
+            UserDetails userDetails;
+            try {
+                userDetails = userDetailsService.loadUserByUsername(username);
+            } catch (Exception e) {
+                filterChain.doFilter(request, response);
+                return;
+            }
 
             if (jwtService.isTokenValid(token, userDetails)) {
                 UsernamePasswordAuthenticationToken authToken =

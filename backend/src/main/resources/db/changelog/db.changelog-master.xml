@@ -37,4 +37,7 @@
     <!-- ── Phase 12 – Workflow d'approbation crédit (6 étapes) ──── -->
     <include file="db/changelog/phase-12-credit-workflow/changelog-phase-12.xml"/>
 
+    <!-- ── Phase 13 – Mobile self-service (notifications, register) ──── -->
+    <include file="db/changelog/phase-13-mobile/changelog-phase-13.xml"/>
+
 </databaseChangeLog>

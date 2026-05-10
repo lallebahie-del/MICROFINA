@@ -1,0 +1,6 @@
+#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
+#include "Generated.xcconfig"
+
+// Apple Silicon + iOS 26+ : le simulateur DOIT être arm64 (x86_64 est mort).
+EXCLUDED_ARCHS[sdk=iphonesimulator*] = i386
+ONLY_ACTIVE_ARCH = YES

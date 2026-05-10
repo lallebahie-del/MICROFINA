@@ -112,6 +112,7 @@ public class SecurityConfig {
                 // ── Public ────────────────────────────────────────────────
                 .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/api/auth/login").permitAll()
+                .requestMatchers("/api/v1/auth/register-mobile").permitAll()
                 .requestMatchers("/api/v1/wallet/callback").permitAll()
 
                 // ── Swagger UI / OpenAPI (Phase 11.1) ────────────────────

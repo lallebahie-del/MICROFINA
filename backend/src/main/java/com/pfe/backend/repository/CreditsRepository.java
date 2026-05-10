@@ -42,6 +42,12 @@ public interface CreditsRepository extends JpaRepository<Credits, Long> {
 
     List<Credits> findByEtapeCourante(String etapeCourante);
 
+    /** Crédits d'un membre donné (mobile self-service). */
+    List<Credits> findByMembre_NumMembre(String numMembre);
+
+    /** Crédits d'une agence — fallback pour user mobile sans rattachement membre. */
+    List<Credits> findByAgence_CodeAgence(String codeAgence);
+
     @Query("""
         SELECT DISTINCT c FROM Credits c
         LEFT JOIN FETCH c.produitCredit pc
