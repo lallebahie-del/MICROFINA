@@ -11,6 +11,10 @@ import '../../presentation/screens/register/register_screen.dart';
 import '../../presentation/screens/dashboard/dashboard_screen.dart';
 import '../../presentation/screens/transactions/transactions_screen.dart';
 import '../../presentation/screens/profile/profile_screen.dart';
+import '../../presentation/screens/transfer/transfer_screen.dart';
+import '../../presentation/screens/scan/scan_screen.dart';
+import '../../presentation/screens/pay/pay_screen.dart';
+import '../../presentation/screens/notifications/notification_screen.dart';
 import '../../presentation/screens/dashboard/main_navigation_wrapper.dart';
 
 class AppRouter {
@@ -19,6 +23,10 @@ class AppRouter {
   static const String register = '/register';
   static const String dashboard = '/dashboard';
   static const String transactions = '/transactions';
+  static const String transfer = '/transfer';
+  static const String scan = '/scan';
+  static const String pay = '/pay';
+  static const String notifications = '/notifications';
   static const String profile = '/profile';
 
   static final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -84,6 +92,22 @@ class AppRouter {
             GoRoute(
               path: profile,
               builder: (context, state) => const ProfileScreen(),
+            ),
+            GoRoute(
+              path: transfer,
+              builder: (context, state) => const TransferScreen(),
+            ),
+            GoRoute(
+              path: scan,
+              builder: (context, state) => const ScanScreen(),
+            ),
+            GoRoute(
+              path: pay,
+              builder: (context, state) => const PayScreen(),
+            ),
+            GoRoute(
+              path: notifications,
+              builder: (context, state) => const NotificationScreen(),
             ),
           ],
         ),

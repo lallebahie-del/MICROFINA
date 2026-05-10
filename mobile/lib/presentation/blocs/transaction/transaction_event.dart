@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:equatable/equatable.dart';
 
 abstract class TransactionEvent extends Equatable {
@@ -9,10 +10,20 @@ abstract class TransactionEvent extends Equatable {
 
 class LoadTransactions extends TransactionEvent {
   final String accountId;
-  const LoadTransactions(this.accountId);
+  final DateTimeRange? dateRange;
+  const LoadTransactions(this.accountId, {this.dateRange});
 
   @override
-  List<Object?> get props => [accountId];
+  List<Object?> get props => [accountId, dateRange];
+}
+
+class FilterTransactionsByDate extends TransactionEvent {
+  final String accountId;
+  final DateTimeRange dateRange;
+  const FilterTransactionsByDate(this.accountId, this.dateRange);
+
+  @override
+  List<Object?> get props => [accountId, dateRange];
 }
 
 class LoadMoreTransactions extends TransactionEvent {

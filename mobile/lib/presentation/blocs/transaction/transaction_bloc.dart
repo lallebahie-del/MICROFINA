@@ -1,31 +1,50 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/datasources/mock/mock_data.dart';
 import 'transaction_event.dart';
 import 'transaction_state.dart';
 
 class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
-  static const int _pageSize = 15;
+  static const int _pageSize = 20; // Mis à jour à 20 selon Tâche 3.4
+  DateTimeRange? _currentDateRange;
 
   TransactionBloc() : super(TransactionInitial()) {
     on<LoadTransactions>(_onLoadTransactions);
     on<LoadMoreTransactions>(_onLoadMoreTransactions);
+    on<FilterTransactionsByDate>(_onFilterTransactionsByDate);
   }
 
   Future<void> _onLoadTransactions(LoadTransactions event, Emitter<TransactionState> emit) async {
     emit(TransactionLoading());
+    _currentDateRange = event.dateRange;
     
-    // Simulation du délai de chargement initial (pour voir le Shimmer)
-    await Future.delayed(const Duration(milliseconds: 1500));
-    
-    final allTransactions = MockData.mockEpargneTransactions
-        .where((tx) => tx['accountId'] == event.accountId)
-        .toList();
-    
-    final firstBatch = allTransactions.take(_pageSize).toList();
+    final firstBatch = await MockData.getPaginatedTransactions(
+      accountId: event.accountId,
+      page: 0,
+      pageSize: _pageSize,
+      dateRange: _currentDateRange,
+    );
     
     emit(TransactionLoaded(
       transactions: firstBatch,
-      hasReachedMax: firstBatch.length >= allTransactions.length,
+      hasReachedMax: firstBatch.length < _pageSize,
+    ));
+  }
+
+  Future<void> _onFilterTransactionsByDate(FilterTransactionsByDate event, Emitter<TransactionState> emit) async {
+    emit(TransactionLoading());
+    _currentDateRange = event.dateRange;
+    
+    final filteredBatch = await MockData.getPaginatedTransactions(
+      accountId: event.accountId,
+      page: 0,
+      pageSize: _pageSize,
+      dateRange: _currentDateRange,
+    );
+    
+    emit(TransactionLoaded(
+      transactions: filteredBatch,
+      hasReachedMax: filteredBatch.length < _pageSize,
     ));
   }
 
@@ -35,19 +54,26 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     final currentState = state as TransactionLoaded;
     if (currentState.hasReachedMax) return;
 
-    // Simulation d'un petit délai réseau pour le load more
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    final allTransactions = MockData.mockEpargneTransactions
-        .where((tx) => tx['accountId'] == event.accountId)
-        .toList();
-    
     final nextIndex = currentState.transactions.length;
-    final nextBatch = allTransactions.skip(nextIndex).take(_pageSize).toList();
+    final page = nextIndex ~/ _pageSize;
     
-    emit(TransactionLoaded(
-      transactions: List.of(currentState.transactions)..addAll(nextBatch),
-      hasReachedMax: (nextIndex + nextBatch.length) >= allTransactions.length,
-    ));
+    final nextBatch = await MockData.getPaginatedTransactions(
+      accountId: event.accountId,
+      page: page,
+      pageSize: _pageSize,
+      dateRange: _currentDateRange,
+    );
+    
+    if (nextBatch.isEmpty) {
+      emit(TransactionLoaded(
+        transactions: currentState.transactions,
+        hasReachedMax: true,
+      ));
+    } else {
+      emit(TransactionLoaded(
+        transactions: List.of(currentState.transactions)..addAll(nextBatch),
+        hasReachedMax: nextBatch.length < _pageSize,
+      ));
+    }
   }
 }
