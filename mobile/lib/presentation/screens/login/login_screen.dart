@@ -8,8 +8,6 @@ import '../../../core/router/app_router.dart';
 import '../../../core/storage/secure_storage_service.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../blocs/auth/auth_bloc.dart';
-import '../../blocs/auth/auth_event.dart';
-import '../../blocs/auth/auth_state.dart';
 import '../../widgets/numeric_keypad.dart';
 
 class LoginScreen extends StatefulWidget {

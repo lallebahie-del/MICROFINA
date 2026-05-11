@@ -101,13 +101,14 @@ class AppTheme {
   static final ThemeData darkTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: accentBlue,
-      brightness: Brightness.dark,
+    colorScheme: const ColorScheme.dark(
       primary: accentBlue,
       secondary: accentBlue,
       surface: surfaceDark,
       background: bgDark,
+      onPrimary: Colors.white,
+      onSurface: Colors.white,
+      onBackground: Colors.white,
     ),
     scaffoldBackgroundColor: bgDark,
     fontFamily: 'Inter',
@@ -147,7 +148,8 @@ class AppTheme {
         borderRadius: BorderRadius.circular(20),
         borderSide: const BorderSide(color: accentBlue, width: 1.5),
       ),
-      labelStyle: const TextStyle(color: Colors.white60, fontWeight: FontWeight.w500),
+      labelStyle: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w500),
+      hintStyle: const TextStyle(color: Colors.white30),
     ),
 
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -159,6 +161,13 @@ class AppTheme {
         elevation: 0,
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.2),
       ),
+    ),
+    
+    textTheme: const TextTheme(
+      displayLarge: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+      displayMedium: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+      bodyLarge: TextStyle(color: Colors.white),
+      bodyMedium: TextStyle(color: Colors.white70),
     ),
   );
 }

@@ -7,6 +7,7 @@ class SecureStorageService {
   SecureStorageService(this._storage);
 
   static const String _tokenKey = 'auth_token';
+  static const String _refreshTokenKey = 'refresh_token';
   static const String _userKey = 'user_data';
   static const String _secureModeKey = 'secure_mode';
   static const String _lastPhoneKey = 'last_phone';
@@ -39,6 +40,32 @@ class SecureStorageService {
       await _storage.delete(key: _tokenKey);
     } on PlatformException catch (e) {
       debugPrint('Erreur lors de la suppression du token: ${e.message}');
+    }
+  }
+
+  Future<void> saveRefreshToken(String token) async {
+    try {
+      await _storage.write(key: _refreshTokenKey, value: token);
+    } on PlatformException catch (e) {
+      debugPrint('Erreur lors de la sauvegarde du refresh token: ${e.message}');
+      rethrow;
+    }
+  }
+
+  Future<String?> getRefreshToken() async {
+    try {
+      return await _storage.read(key: _refreshTokenKey);
+    } on PlatformException catch (e) {
+      debugPrint('Erreur lors de la lecture du refresh token: ${e.message}');
+      return null;
+    }
+  }
+
+  Future<void> deleteRefreshToken() async {
+    try {
+      await _storage.delete(key: _refreshTokenKey);
+    } on PlatformException catch (e) {
+      debugPrint('Erreur lors de la suppression du refresh token: ${e.message}');
     }
   }
 

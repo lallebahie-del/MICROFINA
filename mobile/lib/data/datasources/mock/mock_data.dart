@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class MockData {
+  static String currentUserPhone = '771234567'; // Défaut pour la démo
+
   /// --- GESTION DYNAMIQUE DES COMPTES ---
   static final Map<String, List<Map<String, dynamic>>> _userAccountsMap = {
     '771234567': [
@@ -63,6 +66,13 @@ class MockData {
     return _userAccountsMap[phone]!;
   }
 
+  static double getDefaultAccountBalance() {
+    final accounts = _userAccountsMap[currentUserPhone] ?? getAccountsForPhone(currentUserPhone);
+    if (accounts.isEmpty) return 0.0;
+    final defaultAcc = accounts.firstWhere((acc) => acc['isDefaultAccount'] == true, orElse: () => accounts.first);
+    return (defaultAcc['availableBalance'] as num).toDouble();
+  }
+
   /// Simulation d'un virement interne
   static Future<bool> performInternalTransfer({
     required String fromAccountId,
@@ -91,6 +101,12 @@ class MockData {
     fromAcc['availableBalance'] -= amount;
     toAcc['availableBalance'] += amount;
 
+    // Ajouter une notification
+    addNotification(
+      title: 'Virement effectué',
+      message: 'Votre virement de ${amount.toInt()} FCFA vers ${toAcc['libelle']} a été validé.',
+    );
+
     // Ajouter à l'historique
     mockEpargneTransactions.insert(0, {
       'id': 'tx_transfer_deb_${DateTime.now().millisecondsSinceEpoch}',
@@ -110,6 +126,38 @@ class MockData {
       'libelle': 'Virement reçu de ${fromAcc['libelle']} : $reason',
     });
     
+    return true;
+  }
+
+  /// Simulation d'un paiement d'échéance de prêt
+  static Future<bool> payLoanInstallment({
+    required String loanId,
+    required double amount,
+    required int installmentId,
+  }) async {
+    await Future.delayed(const Duration(seconds: 1));
+    
+    // On utilise le compte de l'utilisateur courant
+    final accounts = _userAccountsMap[currentUserPhone] ?? getAccountsForPhone(currentUserPhone);
+    final account = accounts.firstWhere((acc) => acc['isDefaultAccount'] == true, orElse: () => accounts.first);
+
+    if (account['availableBalance'] < amount) {
+      return false; // Solde insuffisant
+    }
+
+    // Débit effectif
+    account['availableBalance'] -= amount;
+
+    // Ajouter à l'historique des transactions
+    mockEpargneTransactions.insert(0, {
+      'id': 'tx_loan_${DateTime.now().millisecondsSinceEpoch}',
+      'accountId': account['id'],
+      'date': DateTime.now().toIso8601String(),
+      'montant': amount,
+      'type': 'DEBIT',
+      'libelle': 'Remboursement Prêt $loanId - Échéance n°$installmentId',
+    });
+
     return true;
   }
 
@@ -134,6 +182,12 @@ class MockData {
 
     // Débit effectif
     account['availableBalance'] -= amount;
+
+    // Ajouter une notification
+    addNotification(
+      title: 'Paiement effectué',
+      message: 'Votre paiement de ${amount.toInt()} FCFA pour $serviceName a été enregistré.',
+    );
 
     // Ajouter à l'historique
     mockEpargneTransactions.insert(0, {
@@ -233,14 +287,89 @@ class MockData {
 
   static List<Map<String, dynamic>> getNotifications() => _notifications;
 
+  static void markAllNotificationsAsRead() {
+    for (var notif in _notifications) {
+      notif['isRead'] = true;
+    }
+  }
+
+  static void addNotification({required String title, required String message}) {
+    _notifications.insert(0, {
+      'id': 'not_${DateTime.now().millisecondsSinceEpoch}',
+      'title': title,
+      'message': message,
+      'date': DateTime.now().toIso8601String(),
+      'isRead': false,
+    });
+  }
+
+  static void checkUpcomingPayments() {
+    final now = DateTime.now();
+    for (var amortp in mockAmortpList) {
+      if (!amortp['estPaye']) {
+        final dueDate = DateTime.parse(amortp['dateEcheance']);
+        final difference = dueDate.difference(now).inDays;
+        
+        // Si l'échéance est dans moins de 5 jours et pas encore notifiée
+        if (difference >= 0 && difference <= 5) {
+          final message = 'Votre échéance de ${amortp['montantCapital'] + amortp['montantInteret'] + amortp['montantTva']} FCFA est prévue pour le ${DateFormat('dd/MM/yyyy').format(dueDate)}.';
+          
+          // Éviter les doublons de notification pour la même échéance aujourd'hui
+          bool alreadyNotified = _notifications.any((n) => 
+            n['title'] == 'Rappel de Paiement' && 
+            n['message'].contains(DateFormat('dd/MM/yyyy').format(dueDate))
+          );
+
+          if (!alreadyNotified) {
+            addNotification(
+              title: 'Rappel de Paiement',
+              message: message,
+            );
+          }
+        }
+      }
+    }
+  }
+
   /// --- CREDITS (Prêts) ---
+  static final List<Map<String, dynamic>> mockCredits = [
+    {
+      'loanId': 'cre_882',
+      'totalAmount': 6000000.0,
+      'remainingCapital': 4500000.0,
+      'interestRate': 12.5,
+      'endDate': '2026-12-15',
+      'statusCode': 1, // Actif
+      'nextInstallmentDueDate': '2026-05-15',
+    },
+    {
+      'loanId': 'cre_883',
+      'totalAmount': 2000000.0,
+      'remainingCapital': 1200000.0,
+      'interestRate': 10.0,
+      'endDate': '2026-08-10',
+      'statusCode': 2, // En retard
+      'nextInstallmentDueDate': '2026-05-01',
+    },
+    {
+      'loanId': 'cre_884',
+      'totalAmount': 1000000.0,
+      'remainingCapital': 0.0,
+      'interestRate': 11.0,
+      'endDate': '2026-01-20',
+      'statusCode': 3, // Clôturé
+      'nextInstallmentDueDate': null,
+    },
+  ];
+
   static const Map<String, dynamic> mockCredit = {
-    'id': 'cre_882',
-    'capitalRestantDu': 4500000.0,
-    'taux': 12.5,
-    'statut': 'ACTIF',
-    'dateDeblocage': '2026-01-15',
-    'montantInitial': 6000000.0,
+    'loanId': 'cre_882',
+    'totalAmount': 6000000.0,
+    'remainingCapital': 4500000.0,
+    'interestRate': 12.5,
+    'endDate': '2026-12-15',
+    'statusCode': 1,
+    'nextInstallmentDueDate': '2026-05-15',
   };
 
   /// --- AMORTP (Échéancier - 6 échéances) ---
@@ -323,7 +452,17 @@ class MockData {
       'numeroCertificat': 'DAT-2026-001',
       'montantPlacement': 5000000.0,
       'tauxInteret': 5.5,
+      'startDate': '2026-01-15',
       'dateEcheance': '2027-01-15',
+    },
+    {
+      'id': 'cert_002',
+      'accountId': 'acc_001',
+      'numeroCertificat': 'DAT-2026-002',
+      'montantPlacement': 2000000.0,
+      'tauxInteret': 4.5,
+      'startDate': '2026-03-01',
+      'dateEcheance': '2026-09-01',
     },
   ];
 

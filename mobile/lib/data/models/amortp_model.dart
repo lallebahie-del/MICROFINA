@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 
 class AmortpModel extends Equatable {
   final int id;
+  final String loanId;
   final String dateEcheance;
   final double montantCapital;
   final double montantInteret;
@@ -10,6 +11,7 @@ class AmortpModel extends Equatable {
 
   const AmortpModel({
     required this.id,
+    required this.loanId,
     required this.dateEcheance,
     required this.montantCapital,
     required this.montantInteret,
@@ -20,6 +22,7 @@ class AmortpModel extends Equatable {
   factory AmortpModel.fromJson(Map<String, dynamic> json) {
     return AmortpModel(
       id: json['id'] as int,
+      loanId: json['loanId'] as String? ?? '',
       dateEcheance: json['dateEcheance'] as String,
       montantCapital: (json['montantCapital'] as num).toDouble(),
       montantInteret: (json['montantInteret'] as num).toDouble(),
@@ -31,6 +34,7 @@ class AmortpModel extends Equatable {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'loanId': loanId,
       'dateEcheance': dateEcheance,
       'montantCapital': montantCapital,
       'montantInteret': montantInteret,
@@ -44,6 +48,7 @@ class AmortpModel extends Equatable {
   @override
   List<Object?> get props => [
         id,
+        loanId,
         dateEcheance,
         montantCapital,
         montantInteret,

@@ -12,7 +12,7 @@ class DioClient {
       ..options.receiveTimeout = const Duration(seconds: 10)
       ..options.responseType = ResponseType.json
       ..interceptors.addAll([
-        AuthInterceptor(_secureStorage),
+        AuthInterceptor(_secureStorage, _dio),
         LogInterceptor(
           requestHeader: true,
           requestBody: true,
@@ -69,8 +69,9 @@ class DioClient {
 
 class AuthInterceptor extends Interceptor {
   final SecureStorageService _secureStorage;
+  final Dio _dio;
 
-  AuthInterceptor(this._secureStorage);
+  AuthInterceptor(this._secureStorage, this._dio);
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
@@ -84,9 +85,36 @@ class AuthInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     if (err.response?.statusCode == 401) {
-      // Logique de déconnexion automatique ou refresh token
-      await _secureStorage.deleteToken();
-      // On pourrait ici notifier un bloc ou le routeur pour rediriger vers /login
+      // Logic for refresh token
+      final refreshToken = await _secureStorage.getRefreshToken();
+      if (refreshToken != null) {
+        try {
+          // Attempt to refresh the token
+          final response = await _dio.post('/auth/refresh', data: {
+            'refreshToken': refreshToken,
+          });
+
+          if (response.statusCode == 200) {
+            final newToken = response.data['token'];
+            final newRefreshToken = response.data['refreshToken'];
+
+            await _secureStorage.saveToken(newToken);
+            await _secureStorage.saveRefreshToken(newRefreshToken);
+
+            // Retry the original request with the new token
+            err.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+            final cloneReq = await _dio.fetch(err.requestOptions);
+            return handler.resolve(cloneReq);
+          }
+        } catch (e) {
+          // If refresh fails, logout
+          await _secureStorage.deleteToken();
+          await _secureStorage.deleteRefreshToken();
+          // You might want to trigger a logout event here
+        }
+      } else {
+        await _secureStorage.deleteToken();
+      }
     }
     return handler.next(err);
   }

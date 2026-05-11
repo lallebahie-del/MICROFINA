@@ -12,12 +12,21 @@ import 'core/network/connectivity_service.dart';
 import 'domain/repositories/auth_repository.dart';
 import 'data/repositories/auth_repository_impl.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
-import 'presentation/blocs/auth/auth_event.dart';
+import 'presentation/blocs/loan/loan_bloc.dart';
+import 'presentation/blocs/transfer/transfer_bloc.dart';
+import 'presentation/blocs/loan_simulator/loan_simulator_bloc.dart';
+import 'presentation/blocs/certificat/certificat_bloc.dart';
 import 'core/di/service_locator.dart';
 import 'core/utils/bloc_observer.dart';
 
+import 'package:hive_flutter/hive_flutter.dart';
+
+import 'presentation/blocs/account/account_bloc.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  
   await initializeDateFormatting('fr_FR', null);
   setupLocator();
   Bloc.observer = SimpleBlocObserver();
@@ -47,6 +56,11 @@ class _MyAppState extends State<MyApp> {
     return MultiBlocProvider(
       providers: [
         BlocProvider.value(value: _authBloc),
+        BlocProvider(create: (context) => sl<AccountBloc>()..add(FetchAccounts())),
+        BlocProvider(create: (context) => sl<LoanBloc>()),
+        BlocProvider(create: (context) => sl<TransferBloc>()),
+        BlocProvider(create: (context) => sl<LoanSimulatorBloc>()),
+        BlocProvider(create: (context) => sl<CertificatBloc>()),
       ],
       child: RepositoryProvider(
         create: (context) => sl<ConnectivityService>(),

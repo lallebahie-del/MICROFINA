@@ -35,7 +35,8 @@ class CertificatModel extends Equatable {
   final String numeroCertificat;
   final double montantPlacement;
   final double tauxInteret;
-  final String dateEcheance;
+  final DateTime startDate;
+  final DateTime maturityDate;
 
   const CertificatModel({
     required this.id,
@@ -43,7 +44,8 @@ class CertificatModel extends Equatable {
     required this.numeroCertificat,
     required this.montantPlacement,
     required this.tauxInteret,
-    required this.dateEcheance,
+    required this.startDate,
+    required this.maturityDate,
   });
 
   factory CertificatModel.fromJson(Map<String, dynamic> json) {
@@ -53,12 +55,33 @@ class CertificatModel extends Equatable {
       numeroCertificat: json['numeroCertificat'] as String,
       montantPlacement: (json['montantPlacement'] as num).toDouble(),
       tauxInteret: (json['tauxInteret'] as num).toDouble(),
-      dateEcheance: json['dateEcheance'] as String,
+      startDate: DateTime.parse(json['startDate'] ?? DateTime.now().subtract(const Duration(days: 30)).toIso8601String()),
+      maturityDate: DateTime.parse(json['dateEcheance'] ?? json['maturityDate']),
     );
   }
 
+  double get progress {
+    final now = DateTime.now();
+    final total = maturityDate.difference(startDate).inSeconds;
+    final elapsed = now.difference(startDate).inSeconds;
+    if (total <= 0) return 1.0;
+    return (elapsed / total).clamp(0.0, 1.0);
+  }
+
+  int get remainingDays {
+    final diff = maturityDate.difference(DateTime.now()).inDays;
+    return diff < 0 ? 0 : diff;
+  }
+
+  double get expectedInterests {
+    final totalDays = maturityDate.difference(startDate).inDays;
+    if (totalDays <= 0) return 0;
+    // Formule simplifiée : (Capital * Taux * (Jours / 365)) / 100
+    return (montantPlacement * tauxInteret * (totalDays / 365)) / 100;
+  }
+
   @override
-  List<Object?> get props => [id, accountId, numeroCertificat, montantPlacement, tauxInteret, dateEcheance];
+  List<Object?> get props => [id, accountId, numeroCertificat, montantPlacement, tauxInteret, startDate, maturityDate];
 }
 
 class EpargneTransactionModel extends Equatable {

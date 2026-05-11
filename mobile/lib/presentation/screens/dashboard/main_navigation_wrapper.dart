@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../blocs/auth/auth_bloc.dart';
-import '../../blocs/auth/auth_state.dart';
 import '../dashboard/dashboard_screen.dart';
 
 class MainNavigationWrapper extends StatefulWidget {
@@ -20,6 +19,8 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
     final String location = GoRouterState.of(context).matchedLocation;
     if (location.startsWith('/dashboard')) return 0;
     if (location.startsWith('/transactions')) return 1;
+    if (location.startsWith('/loans')) return 2;
+    if (location.startsWith('/loan-detail')) return 2;
     if (location.startsWith('/profile')) return 3;
     return 0;
   }
@@ -34,10 +35,7 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
         context.go('/transactions/acc_001');
         break;
       case 2:
-        // Prêts - Non implémenté pour l'instant
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Section Prêts bientôt disponible')),
-        );
+        context.go('/loans');
         break;
       case 3:
         context.go('/profile');

@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../presentation/blocs/auth/auth_bloc.dart';
-import '../../presentation/blocs/auth/auth_state.dart';
 import '../../presentation/blocs/transaction/transaction_bloc.dart';
-import '../../presentation/blocs/transaction/transaction_event.dart';
 import '../../presentation/screens/login/login_screen.dart';
 import '../../presentation/screens/register/register_screen.dart';
 import '../../presentation/screens/dashboard/dashboard_screen.dart';
@@ -16,6 +14,11 @@ import '../../presentation/screens/scan/scan_screen.dart';
 import '../../presentation/screens/pay/pay_screen.dart';
 import '../../presentation/screens/notifications/notification_screen.dart';
 import '../../presentation/screens/dashboard/main_navigation_wrapper.dart';
+import '../../presentation/screens/loans/loans_screen.dart';
+import '../../presentation/screens/loans/loan_detail_screen.dart';
+import '../../presentation/screens/loans/loan_simulator_screen.dart';
+import '../../presentation/screens/loans/certificat_screen.dart';
+import '../../presentation/screens/loans/loan_request_screen.dart';
 
 class AppRouter {
   static const String root = '/';
@@ -28,6 +31,11 @@ class AppRouter {
   static const String pay = '/pay';
   static const String notifications = '/notifications';
   static const String profile = '/profile';
+  static const String loans = '/loans';
+  static const String loanDetail = '/loan-detail/:loan_id';
+  static const String loanSimulator = '/loan_simulator';
+  static const String loanRequest = '/loan_request';
+  static const String certificates = '/certificates';
 
   static final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
   static final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -92,6 +100,29 @@ class AppRouter {
             GoRoute(
               path: profile,
               builder: (context, state) => const ProfileScreen(),
+            ),
+            GoRoute(
+              path: loans,
+              builder: (context, state) => const LoansScreen(),
+            ),
+            GoRoute(
+              path: loanDetail,
+              builder: (context, state) {
+                final loanId = state.pathParameters['loan_id']!;
+                return LoanDetailScreen(loanId: loanId);
+              },
+            ),
+            GoRoute(
+              path: loanSimulator,
+              builder: (context, state) => const SimulatorScreen(),
+            ),
+            GoRoute(
+              path: loanRequest,
+              builder: (context, state) => const NewLoanRequestScreen(),
+            ),
+            GoRoute(
+              path: certificates,
+              builder: (context, state) => const CertificateScreen(),
             ),
             GoRoute(
               path: transfer,

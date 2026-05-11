@@ -1,51 +1,77 @@
 import 'package:equatable/equatable.dart';
 
-class CreditModel extends Equatable {
-  final String id;
-  final double capitalRestantDu;
-  final double taux;
-  final String statut; // e.g., 'ACTIF', 'SOLDE', 'EN_RETARD'
-  final String dateDeblocage;
-  final double montantInitial;
+class LoanModel extends Equatable {
+  final String loanId;
+  final double totalAmount;
+  final double remainingCapital;
+  final double interestRate;
+  final DateTime endDate;
+  final int statusCode;
+  final DateTime? nextInstallmentDueDate;
 
-  const CreditModel({
-    required this.id,
-    required this.capitalRestantDu,
-    required this.taux,
-    required this.statut,
-    required this.dateDeblocage,
-    required this.montantInitial,
+  const LoanModel({
+    required this.loanId,
+    required this.totalAmount,
+    required this.remainingCapital,
+    required this.interestRate,
+    required this.endDate,
+    required this.statusCode,
+    this.nextInstallmentDueDate,
   });
 
-  factory CreditModel.fromJson(Map<String, dynamic> json) {
-    return CreditModel(
-      id: json['id'] as String,
-      capitalRestantDu: (json['capitalRestantDu'] as num).toDouble(),
-      taux: (json['taux'] as num).toDouble(),
-      statut: json['statut'] as String,
-      dateDeblocage: json['dateDeblocage'] as String,
-      montantInitial: (json['montantInitial'] as num).toDouble(),
+  factory LoanModel.fromJson(Map<String, dynamic> json) {
+    return LoanModel(
+      loanId: json['loanId'] as String,
+      totalAmount: (json['totalAmount'] as num).toDouble(),
+      remainingCapital: (json['remainingCapital'] as num).toDouble(),
+      interestRate: (json['interestRate'] as num).toDouble(),
+      endDate: DateTime.parse(json['endDate'] as String),
+      statusCode: json['statusCode'] as int,
+      nextInstallmentDueDate: json['nextInstallmentDueDate'] != null
+          ? DateTime.parse(json['nextInstallmentDueDate'] as String)
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'capitalRestantDu': capitalRestantDu,
-      'taux': taux,
-      'statut': statut,
-      'dateDeblocage': dateDeblocage,
-      'montantInitial': montantInitial,
+      'loanId': loanId,
+      'totalAmount': totalAmount,
+      'remainingCapital': remainingCapital,
+      'interestRate': interestRate,
+      'endDate': endDate.toIso8601String(),
+      'statusCode': statusCode,
+      'nextInstallmentDueDate': nextInstallmentDueDate?.toIso8601String(),
     };
   }
 
+  // Améliorations Fonctionnelles
+  double get progressPercentage =>
+      totalAmount > 0 ? ((totalAmount - remainingCapital) / totalAmount) * 100 : 0;
+
+  String get statusLabel {
+    switch (statusCode) {
+      case 1:
+        return 'Actif';
+      case 2:
+        return 'En retard';
+      case 3:
+        return 'Clôturé';
+      default:
+        return 'Inconnu';
+    }
+  }
+
+  bool get isLate => statusCode == 2;
+
   @override
   List<Object?> get props => [
-        id,
-        capitalRestantDu,
-        taux,
-        statut,
-        dateDeblocage,
-        montantInitial,
+        loanId,
+        totalAmount,
+        remainingCapital,
+        interestRate,
+        endDate,
+        statusCode,
+        nextInstallmentDueDate,
       ];
 }

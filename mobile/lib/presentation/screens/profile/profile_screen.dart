@@ -4,9 +4,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/storage/secure_storage_service.dart';
 import '../../blocs/auth/auth_bloc.dart';
-import '../../blocs/auth/auth_event.dart';
-
-import '../../blocs/auth/auth_state.dart';
 
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';

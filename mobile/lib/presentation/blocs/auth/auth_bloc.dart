@@ -1,8 +1,12 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../data/datasources/mock/mock_data.dart';
 import '../../../domain/repositories/auth_repository.dart';
 import '../../../data/repositories/auth_repository_impl.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
+
+export 'auth_event.dart';
+export 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
@@ -17,6 +21,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final token = await _authRepository.getToken();
     final phone = await (_authRepository as AuthRepositoryImpl).secureStorage.getLastPhone();
     if (token != null) {
+      if (phone != null) MockData.currentUserPhone = phone;
       emit(AuthSuccess(token, phone: phone));
     } else {
       emit(Unauthenticated());
@@ -36,6 +41,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final token = await _authRepository.login(event.phone, event.pin);
       if (token != null) {
+        MockData.currentUserPhone = event.phone;
         emit(AuthSuccess(token, phone: event.phone));
       } else {
         emit(const AuthFailure("Erreur d'authentification"));

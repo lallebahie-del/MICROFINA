@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../data/models/extra_models.dart';
 import '../../blocs/transaction/transaction_bloc.dart';
-import '../../blocs/transaction/transaction_event.dart';
-import '../../blocs/transaction/transaction_state.dart';
 import '../../widgets/transaction_shimmer.dart';
 import '../../../core/utils/pdf_generator_service.dart';
 
@@ -201,9 +200,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                           );
                         }
 
-                        final tx = state.transactions[index];
-                        final isCredit = tx['type'] == 'CREDIT';
-                        final DateTime date = DateTime.parse(tx['date']);
+                        final EpargneTransactionModel tx = state.transactions[index];
+                        final isCredit = tx.type == 'CREDIT';
+                        final DateTime date = DateTime.parse(tx.date);
                         final String formattedDate = DateFormat('dd MMM yyyy à HH:mm', 'fr_FR').format(date);
 
                         return Container(
@@ -234,7 +233,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                               ),
                             ),
                             title: Text(
-                              tx['libelle'],
+                              tx.libelle,
                               style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppTheme.primaryBlue),
                             ),
                             subtitle: Padding(
@@ -245,7 +244,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                               ),
                             ),
                             trailing: Text(
-                              '${isCredit ? '+' : '-'} ${currencyFormat.format(tx['montant'])}',
+                              '${isCredit ? '+' : '-'} ${currencyFormat.format(tx.montant)}',
                               style: TextStyle(
                                 fontWeight: FontWeight.w900,
                                 color: isCredit ? AppTheme.successGreen : AppTheme.errorRed,

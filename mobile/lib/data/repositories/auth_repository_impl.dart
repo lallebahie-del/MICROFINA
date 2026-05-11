@@ -1,12 +1,14 @@
 import 'dart:async';
+import '../../core/network/dio_client.dart';
 import '../../core/storage/secure_storage_service.dart';
 import '../../domain/repositories/auth_repository.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
+  final DioClient _dioClient;
   final SecureStorageService _secureStorage;
   final _authStatusController = StreamController<bool>.broadcast();
 
-  AuthRepositoryImpl(this._secureStorage);
+  AuthRepositoryImpl(this._dioClient, this._secureStorage);
 
   SecureStorageService get secureStorage => _secureStorage;
 
@@ -15,22 +17,37 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<String?> login(String phone, String pin) async {
-    // Simulation d'un délai de 1.5 seconde
-    await Future.delayed(const Duration(milliseconds: 1500));
+    try {
+      final response = await _dioClient.post('/auth/login', data: {
+        'phone': phone,
+        'pin': pin,
+      });
 
-    // Simulation d'un succès (pour le mock, on accepte tout)
-    const String mockToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock_payload.mock_signature";
-    
-    await _secureStorage.saveToken(mockToken);
-    _authStatusController.add(true);
-    
-    return mockToken;
+      if (response.statusCode == 200) {
+        final String token = response.data['token'];
+        final String refreshToken = response.data['refreshToken'];
+
+        await _secureStorage.saveToken(token);
+        await _secureStorage.saveRefreshToken(refreshToken);
+        
+        _authStatusController.add(true);
+        return token;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 
   @override
   Future<void> logout() async {
-    await _secureStorage.deleteToken();
-    _authStatusController.add(false);
+    try {
+      await _dioClient.post('/auth/logout');
+    } finally {
+      await _secureStorage.deleteToken();
+      await _secureStorage.deleteRefreshToken();
+      _authStatusController.add(false);
+    }
   }
 
   @override

@@ -6,7 +6,6 @@ import 'package:lottie/lottie.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/datasources/mock/mock_data.dart';
 import '../../blocs/auth/auth_bloc.dart';
-import '../../blocs/auth/auth_state.dart';
 
 class PayScreen extends StatefulWidget {
   const PayScreen({super.key});
