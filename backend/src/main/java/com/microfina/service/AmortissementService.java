@@ -134,12 +134,15 @@ public class AmortissementService {
             throw new IllegalArgumentException(
                 "Le nombre d'échéances doit être supérieur à zéro.");
         }
-        if (!isIslamic(source) && source.getModeDeCalculInteret() == null) {
-            throw new IllegalArgumentException(
-                "Le mode de calcul d'intérêt est obligatoire pour la prévisualisation.");
-        }
         if (!isIslamic(source) && source.getTauxInteret() == null) {
             throw new IllegalArgumentException("Le taux d'intérêt est obligatoire pour la prévisualisation.");
+        }
+
+        // Resolve mode — default to DEGRESSIF when not set (most common for microfinance)
+        ModeDeCalculInteret modeEffectif = source.getModeDeCalculInteret();
+        if (!isIslamic(source) && modeEffectif == null) {
+            modeEffectif = new ModeDeCalculInteret();
+            modeEffectif.setModeCalcul(ModeCalculInteretConstant.DEGRESSIF);
         }
 
         Credits s = new Credits();
@@ -149,7 +152,7 @@ public class AmortissementService {
         s.setNombreEcheance(source.getNombreEcheance());
         s.setPeriodicite(source.getPeriodicite());
         s.setProduitCredit(source.getProduitCredit());
-        s.setModeDeCalculInteret(source.getModeDeCalculInteret());
+        s.setModeDeCalculInteret(modeEffectif);
         s.setTauxInteret(source.getTauxInteret());
         s.setTauxPenalite(source.getTauxPenalite());
         s.setTauxCommission(source.getTauxCommission());

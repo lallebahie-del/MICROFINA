@@ -97,9 +97,11 @@ public class BudgetService {
     public BudgetDTO.Response create(BudgetDTO.CreateRequest req) {
         Budget b = new Budget();
         b.setExerciceFiscal(req.exerciceFiscal());
-        b.setDateCreation(req.dateCreation());
+        b.setDateCreation(req.dateCreation() != null ? req.dateCreation() : LocalDate.now());
         b.setUtilisateur(req.utilisateur());
         b.setStatut(StatutBudget.BROUILLON);
+        if (req.montantTotalRecettes() != null) b.setMontantTotalRecettes(req.montantTotalRecettes());
+        if (req.montantTotalDepenses() != null) b.setMontantTotalDepenses(req.montantTotalDepenses());
 
         if (req.codeAgence() != null && !req.codeAgence().isBlank()) {
             b.setAgence(agenceRepository.getReferenceById(req.codeAgence()));

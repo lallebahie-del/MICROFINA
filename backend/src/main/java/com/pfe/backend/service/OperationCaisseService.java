@@ -103,7 +103,10 @@ public class OperationCaisseService {
     @Transactional
     public OperationCaisseDTO.Response create(OperationCaisseDTO.CreateRequest req) {
         OperationCaisse op = new OperationCaisse();
-        op.setNumPiece(req.numPiece());
+
+        // Auto-generate numPiece if not provided
+        op.setNumPiece(req.numPiece() != null && !req.numPiece().isBlank()
+                ? req.numPiece() : "OP-" + System.currentTimeMillis());
         op.setDateOperation(req.dateOperation());
         op.setMontant(req.montant());
 
@@ -124,8 +127,16 @@ public class OperationCaisseService {
             op.setAgence(agenceRepository.getReferenceById(req.codeAgence()));
         }
 
-        // FK comptabilité (obligatoire)
-        op.setComptabilite(comptabiliteRepository.getReferenceById(req.idComptabilite()));
+        // FK comptabilité — use provided id or auto-create a minimal entry
+        if (req.idComptabilite() != null) {
+            op.setComptabilite(comptabiliteRepository.getReferenceById(req.idComptabilite()));
+        } else {
+            com.microfina.entity.Comptabilite compta = new com.microfina.entity.Comptabilite();
+            compta.setDateOperation(req.dateOperation());
+            compta.setLibelle(req.motif());
+            compta = comptabiliteRepository.save(compta);
+            op.setComptabilite(compta);
+        }
 
         OperationCaisse saved = operationCaisseRepository.save(op);
         return OperationCaisseDTO.Response.from(saved);

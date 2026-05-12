@@ -2,16 +2,13 @@ package com.microfina.security;
 
 import com.microfina.entity.ActionAudit;
 import com.microfina.entity.JournalAudit;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
+import com.pfe.backend.repository.JournalAuditRepository;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -64,8 +61,11 @@ import java.time.LocalDateTime;
 @Component
 public class AuditAspect {
 
-    @PersistenceContext
-    private EntityManager em;
+    private final JournalAuditRepository auditRepo;
+
+    public AuditAspect(JournalAuditRepository auditRepo) {
+        this.auditRepo = auditRepo;
+    }
 
     // ──────────────────────────────────────────────────────────────────────────
     // Pointcuts — opérations d'écriture dans les services métier
@@ -81,7 +81,7 @@ public class AuditAspect {
      * @param joinPoint informations sur la méthode interceptée
      */
     @AfterReturning(
-        "execution(* com.microfina.service.*.*(..)) && (" +
+        "(execution(* com.microfina.service.*.*(..)) || execution(* com.pfe.backend.service.*.*(..))) && (" +
         "  execution(* create*(..))     ||" +
         "  execution(* creer*(..))      ||" +
         "  execution(* ajouter*(..))    ||" +
@@ -114,7 +114,7 @@ public class AuditAspect {
      * @param joinPoint informations sur la méthode interceptée
      */
     @AfterReturning(
-        "execution(* com.microfina.security.*.*(..)) && (" +
+        "(execution(* com.microfina.security.*.*(..)) || execution(* com.pfe.backend.controller.*.*(..))) && (" +
         "  execution(* login*(..))  ||" +
         "  execution(* logout*(..)) " +
         ")"
@@ -122,7 +122,18 @@ public class AuditAspect {
     public void auditerOperationSecurite(JoinPoint joinPoint) {
         String nomMethode = joinPoint.getSignature().getName();
         String nomClasse  = joinPoint.getTarget().getClass().getSimpleName();
-        enregistrerAudit(nomMethode, nomClasse);
+        // For login, extract username from request args if security context not yet set
+        String login = extraireLogin();
+        if ("anonyme".equals(login) || "anonymousUser".equals(login)) {
+            for (Object arg : joinPoint.getArgs()) {
+                try {
+                    java.lang.reflect.Method m = arg.getClass().getMethod("username");
+                    Object val = m.invoke(arg);
+                    if (val != null) { login = val.toString(); break; }
+                } catch (Exception ignored) {}
+            }
+        }
+        enregistrerAuditAvecLogin(nomMethode, nomClasse, login);
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -139,28 +150,21 @@ public class AuditAspect {
      * @param nomMethode nom de la méthode interceptée
      * @param nomClasse  nom simple de la classe cible
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void enregistrerAudit(String nomMethode, String nomClasse) {
+        enregistrerAuditAvecLogin(nomMethode, nomClasse, extraireLogin());
+    }
 
-        // Récupération du login depuis le contexte de sécurité
-        String loginUtilisateur = extraireLogin();
-
-        // Détermination de l'action par heuristique sur le nom de méthode
-        ActionAudit action = determinerAction(nomMethode);
-
-        // Construction de l'entrée d'audit
-        JournalAudit entree = new JournalAudit();
-        entree.setDateAction(LocalDateTime.now());
-        entree.setUtilisateur(loginUtilisateur);
-        entree.setAction(action);
-        entree.setEntite(nomClasse);
-        entree.setIdEntite(null);       // non accessible sans réflexion profonde sur l'objet retourné
-        entree.setAncienneValeur(null); // non disponible à ce niveau d'aspect
-        entree.setNouvelleValeur(null); // non disponible à ce niveau d'aspect
-        entree.setAdresseIp(null);      // nécessiterait l'injection de HttpServletRequest
-        entree.setUserAgent(null);      // nécessiterait l'injection de HttpServletRequest
-
-        em.persist(entree);
+    public void enregistrerAuditAvecLogin(String nomMethode, String nomClasse, String login) {
+        try {
+            JournalAudit entree = new JournalAudit();
+            entree.setDateAction(java.time.LocalDateTime.now());
+            entree.setUtilisateur(login);
+            entree.setAction(determinerAction(nomMethode));
+            entree.setEntite(nomClasse);
+            auditRepo.save(entree);
+        } catch (Exception e) {
+            // Ne jamais bloquer l'opération métier à cause de l'audit
+        }
     }
 
     // ──────────────────────────────────────────────────────────────────────────

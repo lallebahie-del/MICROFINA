@@ -270,9 +270,11 @@ public class MicrofinaUserDetailsService implements UserDetailsService {
                 "PRIV_WITHDRAW_EPARGNE",
                 "PRIV_CREATE_BUDGET",
                 "PRIV_VALIDATE_BUDGET",
+                "PRIV_MANAGE_BUDGET",
                 "PRIV_RECORD_MOVEMENT",
                 "PRIV_CLOSE_DAY",
                 "PRIV_MANAGE_USERS",
+                "PRIV_MANAGE_BANK",
                 "PRIV_VIEW_AUDIT"
             );
             case "COMITE"       -> List.of(

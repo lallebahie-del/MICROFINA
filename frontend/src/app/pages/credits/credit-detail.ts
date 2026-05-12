@@ -1,5 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule }              from '@angular/common';
+import { FormsModule }               from '@angular/forms';
 import { ActivatedRoute, Router }    from '@angular/router';
 import { CreditsService, Credit, CreditStatut } from '../../services/credits.service';
 import {
@@ -11,7 +12,7 @@ import {
 @Component({
   selector: 'app-credit-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './credit-detail.html'
 })
 export class CreditDetailComponent implements OnInit {
@@ -29,10 +30,16 @@ export class CreditDetailComponent implements OnInit {
   previewLoading = signal(false);
   previewError = signal<string | null>(null);
 
+  // Payment modal
+  showPaymentModal = signal(false);
+  paymentForm = { montant: 0, dateReglement: '', numPiece: '', modePaiement: 'ESPECES' };
+  paymentSaving = signal(false);
+  paymentError = signal<string | null>(null);
+
   constructor(
-    private route:   ActivatedRoute,
-    private router:  Router,
-    private service: CreditsService,
+    private route:       ActivatedRoute,
+    private router:      Router,
+    private service:     CreditsService,
     private paymentsSvc: CreditPaymentsService,
   ) {}
 
@@ -90,6 +97,45 @@ export class CreditDetailComponent implements OnInit {
         );
         this.previewLoading.set(false);
       },
+    });
+  }
+
+  openPaymentModal(): void {
+    const today = new Date().toISOString().slice(0, 10);
+    this.paymentForm = { montant: 0, dateReglement: today, numPiece: '', modePaiement: 'ESPECES' };
+    this.paymentError.set(null);
+    this.showPaymentModal.set(true);
+  }
+
+  closePaymentModal(): void {
+    this.showPaymentModal.set(false);
+  }
+
+  submitPayment(): void {
+    const c = this.credit();
+    if (!c?.idCredit || !this.paymentForm.montant) return;
+    this.paymentSaving.set(true);
+    this.paymentError.set(null);
+    this.paymentsSvc.encaisserPaiement(c.idCredit, {
+      montant:       this.paymentForm.montant,
+      dateReglement: this.paymentForm.dateReglement || undefined,
+      numPiece:      this.paymentForm.numPiece || undefined,
+      modePaiement:  this.paymentForm.modePaiement,
+      codeAgence:    c.agenceCode,
+    }).subscribe({
+      next: r => {
+        this.paymentSaving.set(false);
+        this.showPaymentModal.set(false);
+        this.success.set(`Paiement de ${r.montantTotal?.toLocaleString('fr-FR')} MRU enregistré.`);
+        setTimeout(() => this.success.set(null), 4000);
+        // Reload payments tab
+        this.payments.set(null);
+        this.loadPayments();
+      },
+      error: e => {
+        this.paymentSaving.set(false);
+        this.paymentError.set(e.error?.message ?? e.message ?? 'Erreur lors de l\'enregistrement.');
+      }
     });
   }
 

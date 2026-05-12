@@ -120,8 +120,16 @@ public class OperationBanqueApplicationService {
             op.setAgence(agenceRepository.getReferenceById(req.codeAgence()));
         }
 
-        // FK comptabilité (obligatoire)
-        op.setComptabilite(comptabiliteRepository.getReferenceById(req.idComptabilite()));
+        // FK comptabilité — use provided id or auto-create a minimal entry
+        if (req.idComptabilite() != null) {
+            op.setComptabilite(comptabiliteRepository.getReferenceById(req.idComptabilite()));
+        } else {
+            com.microfina.entity.Comptabilite compta = new com.microfina.entity.Comptabilite();
+            compta.setDateOperation(req.dateOperation());
+            compta.setLibelle(req.utilisateur());
+            compta = comptabiliteRepository.save(compta);
+            op.setComptabilite(compta);
+        }
 
         OperationBanque saved = operationBanqueRepository.save(op);
         return OperationBanqueDTO.Response.from(saved);

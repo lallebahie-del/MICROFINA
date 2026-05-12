@@ -1,7 +1,7 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CarnetsChequeService, CarnetCheque } from '../../services/carnets-cheque.service';
+import { CarnetsChequeService, CarnetCheque, CarnetChequeForm } from '../../services/carnets-cheque.service';
 import { AgencesService, Agence } from '../../services/agences.service';
 
 @Component({
@@ -24,9 +24,8 @@ export class CarnetsChequeListComponent implements OnInit {
     return this.all().filter(c => {
       if (fS && c.statut !== fS) return false;
       if (!q) return true;
-      return (c.numCarnet?.toLowerCase().includes(q))
-          || (c.numMembre?.toLowerCase().includes(q))
-          || (c.nomMembre?.toLowerCase().includes(q) ?? false);
+      return (c.numeroCarnet?.toLowerCase().includes(q))
+          || (c.numMembre?.toLowerCase().includes(q));
     });
   });
 
@@ -36,7 +35,7 @@ export class CarnetsChequeListComponent implements OnInit {
   success = signal<string | null>(null);
 
   showForm = signal(false);
-  form: Partial<CarnetCheque> = { nbFeuillets: 25 };
+  form: Partial<CarnetChequeForm> = { nbFeuillets: 25 };
 
   constructor(
     private svc: CarnetsChequeService,
@@ -51,7 +50,7 @@ export class CarnetsChequeListComponent implements OnInit {
   load(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.svc.getAll(this.agenceFilter() || undefined).subscribe({
+    this.svc.getAll().subscribe({
       next: data => { this.all.set(data); this.loading.set(false); },
       error: e   => { this.error.set('Erreur : ' + (e.error?.message ?? e.message)); this.loading.set(false); }
     });
@@ -61,12 +60,11 @@ export class CarnetsChequeListComponent implements OnInit {
     this.search.set('');
     this.agenceFilter.set('');
     this.filtreStatut.set('');
-    this.load();
   }
 
   openNew(): void {
     this.form = {
-      nbFeuillets: 25,
+      nbFeuillets:  25,
       dateEmission: new Date().toISOString().slice(0, 10)
     };
     this.showForm.set(true);
@@ -79,9 +77,8 @@ export class CarnetsChequeListComponent implements OnInit {
   }
 
   submit(): void {
-    if (!this.form.numCarnet || !this.form.numMembre || !this.form.agence
-        || !this.form.numeroPremierCheque || !this.form.numeroDernierCheque) {
-      this.error.set('Tous les champs marqués (*) sont obligatoires.');
+    if (!this.form.numCarnet || !this.form.numMembre) {
+      this.error.set('N° carnet et N° membre sont obligatoires.');
       return;
     }
     this.saving.set(true);
@@ -90,7 +87,7 @@ export class CarnetsChequeListComponent implements OnInit {
     this.svc.emettre(this.form).subscribe({
       next: () => {
         this.saving.set(false);
-        this.success.set('Carnet émis.');
+        this.success.set('Carnet émis avec statut DEMANDE.');
         this.showForm.set(false);
         this.load();
       },
@@ -102,17 +99,18 @@ export class CarnetsChequeListComponent implements OnInit {
   }
 
   bloquer(id: number, num: string): void {
-    if (!confirm(`Bloquer le carnet ${num} ?`)) return;
+    if (!confirm(`Mettre en opposition le carnet ${num} ?`)) return;
     this.svc.bloquer(id).subscribe({
-      next: () => { this.success.set('Carnet bloqué.'); this.load(); },
+      next: () => { this.success.set('Carnet mis en opposition.'); this.load(); },
       error: e => this.error.set('Erreur : ' + (e.error?.message ?? e.message))
     });
   }
 
   statutClass(s: string): string {
-    if (s === 'ACTIF' || s === 'EMIS')     return 'badge badge-success';
-    if (s === 'BLOQUE')                     return 'badge badge-warning';
-    if (s === 'ANNULE' || s === 'EPUISE')   return 'badge badge-danger';
+    if (s === 'REMIS')                      return 'badge badge-success';
+    if (s === 'DEMANDE' || s === 'IMPRIME') return 'badge badge-info';
+    if (s === 'OPPOSITION' || s === 'PERDU') return 'badge badge-warning';
+    if (s === 'EPUISE')                     return 'badge badge-danger';
     return 'badge badge-info';
   }
 }

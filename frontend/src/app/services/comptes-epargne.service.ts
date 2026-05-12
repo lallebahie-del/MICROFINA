@@ -23,7 +23,7 @@ export interface CompteEpargne {
   nomMembre?: string;
   solde: number;
   tauxInteret: number;
-  dateOuverture: string;
+  dateOuverture: string | null;
   statut: string;
   agence: string;
 }
@@ -52,7 +52,7 @@ export class ComptesEpargneService {
       numMembre: r.numMembre ?? '',
       solde: ouvert + depot,
       tauxInteret: Number(r.tauxInteret ?? 0),
-      dateOuverture: r.dateCreation ?? '—',
+      dateOuverture: r.dateCreation ?? null,
       statut: r.ferme === 'O' ? 'FERME' : r.bloque === 'O' ? 'BLOQUE' : 'ACTIF',
       agence: r.codeAgence ?? '',
     };
@@ -74,8 +74,16 @@ export class ComptesEpargneService {
   }
 
   ouvrir(compte: Partial<CompteEpargne>): Observable<CompteEpargne> {
+    const payload = {
+      numCompte:    compte.numCompte,
+      numMembre:    compte.numMembre,
+      codeAgence:   compte.agence,
+      montantOuvert: compte.solde ?? 0,
+      tauxInteret:  compte.tauxInteret,
+      dateCreation: compte.dateOuverture,
+    };
     return this.http
-      .post<CompteEpsApiRow>(this.base, compte)
+      .post<CompteEpsApiRow>(this.base, payload)
       .pipe(map(r => this.mapRow(r)));
   }
 

@@ -39,7 +39,7 @@ public final class OperationBanqueDTO {
                       String utilisateur,
                       Long   compteBanqueId,
                       String codeAgence,
-            @NotNull  Long   idComptabilite
+                      Long   idComptabilite
     ) { }
 
     // ── Update ────────────────────────────────────────────────────────────────

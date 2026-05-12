@@ -1,7 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { OperationsBanqueService, OperationBanque } from '../../services/operations-banque.service';
+import { OperationsBanqueService, OperationBanque, OperationBanqueForm } from '../../services/operations-banque.service';
 import { AgencesService, Agence } from '../../services/agences.service';
 import { BanqueService, Banque } from '../../services/banque.service';
 
@@ -26,7 +26,7 @@ export class OperationsBanqueListComponent implements OnInit {
   success = signal<string | null>(null);
 
   showForm = signal(false);
-  form: Partial<OperationBanque> = {
+  form: Partial<OperationBanqueForm> = {
     typeOperation: 'VIREMENT',
     devise: 'MRU',
     montant: 0
@@ -49,10 +49,10 @@ export class OperationsBanqueListComponent implements OnInit {
   load(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.svc.getAll(this.agenceFilter() || undefined, this.page()).subscribe({
-      next: (resp: any) => {
-        this.operations.set(resp.content ?? resp);
-        this.totalPages.set(resp.totalPages ?? 0);
+    this.svc.getAll(this.agenceFilter() || undefined).subscribe({
+      next: (list: OperationBanque[]) => {
+        this.operations.set(list);
+        this.totalPages.set(0);
         this.loading.set(false);
       },
       error: e => {
@@ -68,8 +68,8 @@ export class OperationsBanqueListComponent implements OnInit {
   openNew(): void {
     this.form = {
       typeOperation: 'VIREMENT',
-      devise: 'MRU',
-      montant: 0,
+      devise:        'MRU',
+      montant:       0,
       dateOperation: new Date().toISOString().slice(0, 10)
     };
     this.showForm.set(true);
@@ -82,7 +82,7 @@ export class OperationsBanqueListComponent implements OnInit {
   }
 
   submit(): void {
-    if (!this.form.typeOperation || !this.form.montant || !this.form.agence) {
+    if (!this.form.typeOperation || !this.form.montant || !this.form.agence || !this.form.dateOperation) {
       this.error.set('Type, montant et agence sont obligatoires.');
       return;
     }
@@ -116,10 +116,11 @@ export class OperationsBanqueListComponent implements OnInit {
     return 'badge badge-info';
   }
 
-  typeClass(t: string): string {
-    if (t === 'DEPOT' || t === 'VIREMENT') return 'badge badge-success';
-    if (t === 'RETRAIT' || t === 'PRELEVEMENT') return 'badge badge-danger';
-    if (t === 'CHEQUE') return 'badge badge-warning';
+  typeClass(utilisateur: string): string {
+    const u = (utilisateur || '').toUpperCase();
+    if (u.includes('VIREMENT') || u.includes('DEPOT')) return 'badge badge-success';
+    if (u.includes('RETRAIT') || u.includes('PRELEVEMENT')) return 'badge badge-danger';
+    if (u.includes('CHEQUE')) return 'badge badge-warning';
     return 'badge badge-info';
   }
 }

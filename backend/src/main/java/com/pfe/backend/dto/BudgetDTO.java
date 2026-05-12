@@ -32,9 +32,11 @@ public final class BudgetDTO {
      */
     public record CreateRequest(
             @NotNull Integer   exerciceFiscal,
-            @NotNull LocalDate dateCreation,
+                     LocalDate dateCreation,
                      String    codeAgence,
-                     String    utilisateur
+                     String    utilisateur,
+                     BigDecimal montantTotalRecettes,
+                     BigDecimal montantTotalDepenses
     ) { }
 
     // ── Update ────────────────────────────────────────────────────────────────

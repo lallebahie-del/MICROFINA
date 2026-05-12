@@ -3,6 +3,22 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+export interface RemboursementRequest {
+  montant: number;
+  dateReglement?: string;
+  numPiece?: string;
+  modePaiement?: string;
+  codeAgence?: string;
+}
+
+export interface RemboursementResponse {
+  idReglement: number;
+  idCredit: number;
+  dateReglement: string;
+  montantTotal: number;
+  statut: string;
+}
+
 export interface CreditPaymentsResponse {
   idCredit: number;
   dateCalcul: string;
@@ -80,6 +96,10 @@ export class CreditPaymentsService {
 
   getAmortissementPreview(idCredit: number): Observable<CreditPaymentsPreviewResponse> {
     return this.http.get<CreditPaymentsPreviewResponse>(`${this.base}/${idCredit}/amortissement/preview`);
+  }
+
+  encaisserPaiement(idCredit: number, req: RemboursementRequest): Observable<RemboursementResponse> {
+    return this.http.post<RemboursementResponse>(`${this.base}/${idCredit}/remboursements/caisse`, req);
   }
 }
 

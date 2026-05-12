@@ -2,6 +2,7 @@ package com.pfe.backend.service;
 
 import com.microfina.entity.Amortp;
 import com.microfina.entity.Credits;
+import com.microfina.entity.CreditStatut;
 import com.microfina.service.AmortissementService;
 import com.pfe.backend.dto.CreditPaymentsDTO;
 import com.pfe.backend.repository.AmortpRepository;
@@ -176,6 +177,39 @@ public class CreditPaymentsService {
         } catch (IllegalArgumentException | IllegalStateException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
         }
+    }
+
+    @Transactional
+    public CreditPaymentsDTO.Response genererEtSauvegarderAmortp(Long idCredit) {
+        Credits credit = creditsRepository.findWithAmortissementContextById(idCredit)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Crédit introuvable : " + idCredit));
+        if (credit.getStatut() != CreditStatut.DEBLOQUE) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Seul un crédit DEBLOQUE peut avoir son échéancier régénéré.");
+        }
+        List<Amortp> existing = amortpRepository.findByCredit_IdCreditOrderByNumEcheanceAsc(idCredit);
+        if (!existing.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "L'échéancier existe déjà (" + existing.size() + " lignes).");
+        }
+        if (credit.getMontantDebloquer() == null || credit.getMontantDebloquer().compareTo(ZERO) <= 0) {
+            BigDecimal montant = (credit.getMontantAccorde() != null
+                    && credit.getMontantAccorde().compareTo(ZERO) > 0)
+                    ? credit.getMontantAccorde() : credit.getMontantDemande();
+            credit.setMontantDebloquer(montant);
+            credit.setSoldeCapital(montant);
+            credit = creditsRepository.save(credit);
+        }
+        try {
+            List<Amortp> rows = amortissementService.genererTableauPreview(credit);
+            Credits savedCredit = credit;
+            rows.forEach(r -> r.setCredit(savedCredit));
+            amortpRepository.saveAll(rows);
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        }
+        return getAmortpSuivi(idCredit);
     }
 
     private static BigDecimal nz(BigDecimal v) {

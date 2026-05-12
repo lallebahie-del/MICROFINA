@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -35,6 +36,13 @@ public class CreditPaymentsController {
     public ResponseEntity<CreditPaymentsDTO.PreviewResponse> getAmortissementPreview(
             @PathVariable Long idCredit) {
         return ResponseEntity.ok(service.getAmortissementPreview(idCredit));
+    }
+
+    @Operation(summary = "Admin — génère et persiste l'échéancier Amortp pour un crédit DEBLOQUE sans échéances")
+    @PostMapping("/{idCredit}/amortp/generer")
+    @PreAuthorize("hasAuthority('PRIV_ADMIN')")
+    public ResponseEntity<CreditPaymentsDTO.Response> genererAmortp(@PathVariable Long idCredit) {
+        return ResponseEntity.ok(service.genererEtSauvegarderAmortp(idCredit));
     }
 }
 

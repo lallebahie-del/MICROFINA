@@ -6,7 +6,7 @@
   </div>
 
   <p class="sub-text" style="margin:0 0 16px">
-    Dernière mise à jour : <strong>{{ lastRefresh | date:'HH:mm:ss' }}</strong> — rafraîchissement automatique toutes les 10 s.
+    Dernière mise à jour : <strong>{{ lastRefresh() | date:'HH:mm:ss' }}</strong> — rafraîchissement automatique toutes les 10 s.
   </p>
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px">
@@ -16,10 +16,10 @@
       <h3 style="font-size:14px;font-weight:600;color:var(--text-dark);margin:0 0 12px;text-transform:uppercase;letter-spacing:0.3px">
         Application
       </h3>
-      @if (metrics) {
+      @if (metrics(); as m) {
         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f2f5">
           <span class="sub-text">Mémoire</span>
-          <strong>{{ metrics.memoryUsedMb }} / {{ metrics.memoryMaxMb }} Mo</strong>
+          <strong>{{ m.memoryUsedMb }} / {{ m.memoryMaxMb }} Mo</strong>
         </div>
         <div style="margin:8px 0;height:8px;background:#eef1f5;border-radius:4px;overflow:hidden">
           <div [style.width.%]="memoryPercent()"
@@ -27,13 +27,13 @@
                style="height:100%;transition:width 0.3s"></div>
         </div>
         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f2f5">
-          <span class="sub-text">Uptime</span><strong>{{ metrics.uptime }}</strong>
+          <span class="sub-text">Uptime</span><strong>{{ m.uptime }}</strong>
         </div>
         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f2f5">
-          <span class="sub-text">Threads actifs</span><strong>{{ metrics.activeThreads }}</strong>
+          <span class="sub-text">Threads actifs</span><strong>{{ m.activeThreads }}</strong>
         </div>
         <div style="display:flex;justify-content:space-between;padding:6px 0">
-          <span class="sub-text">Requêtes / min</span><strong>{{ metrics.requestsPerMinute }}</strong>
+          <span class="sub-text">Requêtes / min</span><strong>{{ m.requestsPerMinute }}</strong>
         </div>
       } @else {
         <p class="sub-text">Données indisponibles.</p>
@@ -45,16 +45,16 @@
       <h3 style="font-size:14px;font-weight:600;color:var(--text-dark);margin:0 0 12px;text-transform:uppercase;letter-spacing:0.3px">
         Base de données
       </h3>
-      @if (database) {
+      @if (database(); as db) {
         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f2f5">
           <span class="sub-text">Statut</span>
-          <span [class]="database.status === 'UP' ? 'badge badge-success' : 'badge badge-danger'">
-            {{ database.status }}
+          <span [class]="db.status === 'UP' ? 'badge badge-success' : 'badge badge-danger'">
+            {{ db.status }}
           </span>
         </div>
         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f2f5">
           <span class="sub-text">Connexions</span>
-          <strong>{{ database.activeConnections }} / {{ database.maxConnections }}</strong>
+          <strong>{{ db.activeConnections }} / {{ db.maxConnections }}</strong>
         </div>
         <div style="margin:8px 0;height:8px;background:#eef1f5;border-radius:4px;overflow:hidden">
           <div [style.width.%]="dbPercent()"
@@ -62,10 +62,10 @@
                style="height:100%;transition:width 0.3s"></div>
         </div>
         <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f2f5">
-          <span class="sub-text">Requêtes en attente</span><strong>{{ database.pendingQueries }}</strong>
+          <span class="sub-text">Requêtes en attente</span><strong>{{ db.pendingQueries }}</strong>
         </div>
         <div style="display:flex;justify-content:space-between;padding:6px 0">
-          <span class="sub-text">Taille BD</span><strong>{{ database.dbSizeMb }} Mo</strong>
+          <span class="sub-text">Taille BD</span><strong>{{ db.dbSizeMb }} Mo</strong>
         </div>
       } @else {
         <p class="sub-text">Données indisponibles.</p>
@@ -88,7 +88,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (j of jobs; track j.nomJob) {
+            @for (j of jobs(); track j.nomJob) {
               <tr>
                 <td class="mono">{{ j.nomJob }}</td>
                 <td>{{ j.dernierExecution ? (j.dernierExecution | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
@@ -100,7 +100,7 @@
                 <td>{{ j.nbTraites ?? '—' }}</td>
               </tr>
             }
-            @if (jobs.length === 0) {
+            @if (jobs().length === 0) {
               <tr><td colspan="4" class="empty-row">Aucun job exécuté.</td></tr>
             }
           </tbody>
@@ -113,9 +113,9 @@
       <h3 style="font-size:14px;font-weight:600;color:var(--text-dark);margin:0 0 12px;text-transform:uppercase;letter-spacing:0.3px">
         Sessions actives
       </h3>
-      @if (sessions) {
+      @if (sessions(); as sess) {
         <p class="sub-text" style="margin:0 0 12px">
-          <strong>{{ sessions.activeUsers }}</strong> utilisateur{{ sessions.activeUsers > 1 ? 's' : '' }} connecté{{ sessions.activeUsers > 1 ? 's' : '' }}.
+          <strong>{{ sess.activeUsers }}</strong> utilisateur{{ sess.activeUsers > 1 ? 's' : '' }} connecté{{ sess.activeUsers > 1 ? 's' : '' }}.
         </p>
         <div class="table-wrapper">
           <table class="data-table">
@@ -127,7 +127,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (s of sessions.sessions; track s.sessionId || s.login) {
+              @for (s of sess.sessions; track s.sessionId || s.login) {
                 <tr>
                   <td><strong>{{ s.login }}</strong></td>
                   <td>{{ s.lastActivity | date:'dd/MM/yyyy HH:mm:ss' }}</td>
@@ -138,7 +138,7 @@
                   </td>
                 </tr>
               }
-              @if (sessions.sessions.length === 0) {
+              @if (sess.sessions.length === 0) {
                 <tr><td colspan="3" class="empty-row">Aucune session active.</td></tr>
               }
             </tbody>

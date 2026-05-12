@@ -103,11 +103,10 @@
           <tr>
             <th>ID</th>
             <th>Date</th>
-            <th>Type</th>
+            <th>Type / Motif</th>
             <th class="num">Montant</th>
-            <th>Devise</th>
+            <th>Mode</th>
             <th>Agence</th>
-            <th>Libellé</th>
             <th>Statut</th>
           </tr>
         </thead>
@@ -116,11 +115,10 @@
             <tr>
               <td class="mono">#{{ op.id }}</td>
               <td>{{ op.dateOperation | date:'dd/MM/yyyy' }}</td>
-              <td><span [class]="typeClass(op.typeOperation)">{{ op.typeOperation }}</span></td>
+              <td><span [class]="typeClass(op.motif || '')">{{ op.motif || '—' }}</span></td>
               <td class="num">{{ op.montant | number:'1.2-2' }}</td>
-              <td class="mono">{{ op.devise }}</td>
-              <td class="mono">{{ op.agence }}</td>
-              <td>{{ op.libelle || '—' }}</td>
+              <td class="mono">{{ op.modePaiement }}</td>
+              <td class="mono">{{ op.codeAgence || '—' }}</td>
               <td><span [class]="statutClass(op.statut)">{{ op.statut }}</span></td>
             </tr>
           }

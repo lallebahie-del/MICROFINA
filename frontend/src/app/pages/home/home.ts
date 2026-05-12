@@ -36,31 +36,31 @@ export class HomeComponent implements OnInit {
   error   = signal<string | null>(null);
 
   // ── KPIs agrégés ────────────────────────────────────────────────────────
-  nbMembres        = computed<number>(() => sum(this.indicateurs(), i => i.nbMembres));
+  nbMembres        = computed<number>(() => sum(this.indicateurs(), i => i.nbMembresEmprunteurs));
   nbMembresActifs  = computed<number>(() => sum(this.indicateurs(), i => i.nbMembresActifs));
   nbCreditsActifs  = computed<number>(() => sum(this.indicateurs(), i => i.nbCreditsActifs));
-  encoursBrutTotal = computed<number>(() => sum(this.indicateurs(), i => i.encoursBrut));
-  montantDecaisseJour = computed<number>(() => sum(this.indicateurs(), i => i.montantDecaisse));
-  montantRemboJour    = computed<number>(() => sum(this.indicateurs(), i => i.montantRembourse));
-  encaissJour         = computed<number>(() => sum(this.indicateurs(), i => i.encaissementsJour));
+  encoursBrutTotal = computed<number>(() => sum(this.indicateurs(), i => i.montantEncours));
+  montantDecaisseJour = computed<number>(() => sum(this.indicateurs(), i => i.montantDebloqueTotal));
+  montantRemboJour    = computed<number>(() => sum(this.indicateurs(), i => i.montantRembourseTotal));
+  encaissJour         = computed<number>(() => sum(this.indicateurs(), i => i.nbReglements));
 
   par30Moyen = computed<number>(() => {
     const r = this.ratios();
     const enc = sum(r, x => x.encoursBrut);
     if (!enc) return 0;
-    return sum(r, x => (x.par30 ?? 0) * (x.encoursBrut ?? 0)) / enc;
+    return sum(r, x => (x.tauxPar30 ?? 0) * (x.encoursBrut ?? 0)) / enc;
   });
   par90Moyen = computed<number>(() => {
     const r = this.ratios();
     const enc = sum(r, x => x.encoursBrut);
     if (!enc) return 0;
-    return sum(r, x => (x.par90 ?? 0) * (x.encoursBrut ?? 0)) / enc;
+    return sum(r, x => (x.tauxPar90 ?? 0) * (x.encoursBrut ?? 0)) / enc;
   });
   tauxCouvertureMoyen = computed<number>(() => {
     const r = this.ratios();
     const enc = sum(r, x => x.encoursBrut);
     if (!enc) return 0;
-    return sum(r, x => (x.tauxCouverture ?? 0) * (x.encoursBrut ?? 0)) / enc;
+    return sum(r, x => (x.ratioCouvertureGaranties ?? 0) * (x.encoursBrut ?? 0)) / enc;
   });
 
   // ── Donut PAR ───────────────────────────────────────────────────────────
@@ -84,7 +84,7 @@ export class HomeComponent implements OnInit {
   // ── Bar : encours par agence (top 8) ───────────────────────────────────
   barEncours = computed<BarItem[]>(() =>
     [...this.indicateurs()]
-      .map(i => ({ label: i.nomAgence || i.codeAgence, value: i.encoursBrut ?? 0 }))
+      .map(i => ({ label: i.nomAgence || i.codeAgence, value: i.montantEncours ?? 0 }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 8)
   );

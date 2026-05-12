@@ -110,7 +110,7 @@
               <td><span [class]="statutClass(g.statut)">{{ g.statut || '—' }}</span></td>
               <td>
                 <div class="actions-cell">
-                  @if (g.statut === 'ACTIF' || g.statut === 'ACTIVE') {
+                  @if (g.statut === 'ACTIF') {
                     <button class="btn btn-warning btn-sm" (click)="liberer(g.idGarantie)">Libérer</button>
                   }
                 </div>

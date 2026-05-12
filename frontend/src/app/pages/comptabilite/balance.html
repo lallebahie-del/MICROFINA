@@ -43,7 +43,7 @@
           @for (b of balance(); track b.numCompte) {
             <tr>
               <td class="mono"><strong>{{ b.numCompte }}</strong></td>
-              <td>{{ b.intitule }}</td>
+              <td>{{ b.nomAgence }}</td>
               <td class="num">{{ b.totalDebit     | number:'1.2-2' }}</td>
               <td class="num">{{ b.totalCredit    | number:'1.2-2' }}</td>
               <td class="num">{{ b.soldeDebiteur  | number:'1.2-2' }}</td>

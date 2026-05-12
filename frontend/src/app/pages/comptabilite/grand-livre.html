@@ -51,7 +51,7 @@
           @for (l of lignes(); track $index) {
             <tr>
               <td>{{ l.dateEcriture | date:'dd/MM/yyyy' }}</td>
-              <td class="mono">{{ l.numPiece }}</td>
+              <td class="mono">{{ l.numPieceComptable }}</td>
               <td class="mono">{{ l.numCompte }}</td>
               <td>{{ l.libelle }}</td>
               <td class="num">{{ l.debit  | number:'1.2-2' }}</td>

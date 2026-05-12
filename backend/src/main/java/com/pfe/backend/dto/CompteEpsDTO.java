@@ -23,6 +23,18 @@ public class CompteEpsDTO {
         Integer duree
     ) {}
 
+    public record MouvementRequest(
+        @DecimalMin("0.01") BigDecimal montant,
+        @Size(max = 255) String libelle
+    ) {}
+
+    public record MouvementResponse(
+        String numCompte,
+        String type,
+        BigDecimal montant,
+        BigDecimal soldeApres
+    ) {}
+
     public record UpdateRequest(
         @Size(max = 255) String typeEpargne,
         @Size(max = 255) String remarque,

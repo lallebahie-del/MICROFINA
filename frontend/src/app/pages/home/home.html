@@ -252,12 +252,12 @@
           @for (i of indicateurs(); track i.codeAgence) {
             <tr>
               <td><strong>{{ i.nomAgence }}</strong> <span class="sub-text">{{ i.codeAgence }}</span></td>
-              <td class="num">{{ i.nbMembres }}</td>
+              <td class="num">{{ i.nbMembresEmprunteurs }}</td>
               <td class="num">{{ i.nbMembresActifs }}</td>
               <td class="num">{{ i.nbCreditsActifs }}</td>
-              <td class="num">{{ fmt(i.encoursBrut) }}</td>
-              <td class="num">{{ fmt(i.montantDecaisse) }}</td>
-              <td class="num">{{ fmt(i.montantRembourse) }}</td>
+              <td class="num">{{ fmt(i.montantEncours) }}</td>
+              <td class="num">{{ fmt(i.montantDebloqueTotal) }}</td>
+              <td class="num">{{ fmt(i.montantRembourseTotal) }}</td>
             </tr>
           }
           @if (indicateurs().length === 0 && !loading()) {

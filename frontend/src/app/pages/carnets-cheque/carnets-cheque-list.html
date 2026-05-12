@@ -19,20 +19,14 @@
            [ngModel]="search()" (ngModelChange)="search.set($event)"/>
 
     <select class="filter-select"
-            [ngModel]="agenceFilter()" (ngModelChange)="agenceFilter.set($event); load()">
-      <option value="">Toutes agences</option>
-      @for (a of agences(); track a.codeAgence) {
-        <option [value]="a.codeAgence">{{ a.codeAgence }} — {{ a.nomAgence }}</option>
-      }
-    </select>
-
-    <select class="filter-select"
             [ngModel]="filtreStatut()" (ngModelChange)="filtreStatut.set($event)">
       <option value="">Tous statuts</option>
-      <option value="ACTIF">Actifs</option>
-      <option value="BLOQUE">Bloqués</option>
-      <option value="ANNULE">Annulés</option>
-      <option value="EPUISE">Épuisés</option>
+      <option value="DEMANDE">Demande</option>
+      <option value="IMPRIME">Imprimé</option>
+      <option value="REMIS">Remis</option>
+      <option value="EPUISE">Épuisé</option>
+      <option value="PERDU">Perdu</option>
+      <option value="OPPOSITION">Opposition</option>
     </select>
 
     <button class="btn btn-outline btn-sm" (click)="resetFilters()">Réinitialiser</button>
@@ -58,37 +52,14 @@
           </div>
           <div class="form-group">
             <label>N° membre *</label>
-            <input [(ngModel)]="form.numMembre" name="numMembre"/>
-          </div>
-          <div class="form-group">
-            <label>Agence *</label>
-            <select [(ngModel)]="form.agence" name="agence">
-              <option [ngValue]="undefined">— Sélectionner —</option>
-              @for (a of agences(); track a.codeAgence) {
-                <option [value]="a.codeAgence">{{ a.codeAgence }} — {{ a.nomAgence }}</option>
-              }
-            </select>
-          </div>
-        </div>
-      </fieldset>
-
-      <fieldset class="form-section">
-        <legend>Plage de chèques</legend>
-        <div class="form-row">
-          <div class="form-group">
-            <label>1er chèque *</label>
-            <input [(ngModel)]="form.numeroPremierCheque" name="numeroPremierCheque"/>
-          </div>
-          <div class="form-group">
-            <label>Dernier chèque *</label>
-            <input [(ngModel)]="form.numeroDernierCheque" name="numeroDernierCheque"/>
+            <input [(ngModel)]="form.numMembre" name="numMembre" placeholder="Ex: M-001"/>
           </div>
           <div class="form-group" style="max-width:200px">
             <label>Nombre de feuillets</label>
             <input type="number" min="1" [(ngModel)]="form.nbFeuillets" name="nbFeuillets"/>
           </div>
           <div class="form-group" style="max-width:200px">
-            <label>Date émission</label>
+            <label>Date demande</label>
             <input type="date" [(ngModel)]="form.dateEmission" name="dateEmission"/>
           </div>
         </div>
@@ -112,11 +83,9 @@
           <tr>
             <th>N° carnet</th>
             <th>Membre</th>
-            <th>Agence</th>
-            <th class="mono">1er chèque</th>
-            <th class="mono">Dernier chèque</th>
             <th class="num">Feuillets</th>
-            <th>Émission</th>
+            <th>Date demande</th>
+            <th>Date remise</th>
             <th>Statut</th>
             <th>Actions</th>
           </tr>
@@ -124,25 +93,23 @@
         <tbody>
           @for (c of carnets(); track c.id) {
             <tr>
-              <td class="mono"><strong>{{ c.numCarnet }}</strong></td>
-              <td>{{ c.nomMembre || c.numMembre }}</td>
-              <td class="mono">{{ c.agence }}</td>
-              <td class="mono">{{ c.numeroPremierCheque }}</td>
-              <td class="mono">{{ c.numeroDernierCheque }}</td>
-              <td class="num">{{ c.nbFeuillets }}</td>
-              <td>{{ c.dateEmission | date:'dd/MM/yyyy' }}</td>
+              <td class="mono"><strong>{{ c.numeroCarnet }}</strong></td>
+              <td class="mono">{{ c.numMembre }}</td>
+              <td class="num">{{ c.nombreCheques ?? '—' }}</td>
+              <td>{{ c.dateDemande ? (c.dateDemande | date:'dd/MM/yyyy') : '—' }}</td>
+              <td>{{ c.dateRemise  ? (c.dateRemise  | date:'dd/MM/yyyy') : '—' }}</td>
               <td><span [class]="statutClass(c.statut)">{{ c.statut }}</span></td>
               <td>
                 <div class="actions-cell">
-                  @if (c.statut === 'ACTIF' || c.statut === 'EMIS') {
-                    <button class="btn btn-warning btn-sm" (click)="bloquer(c.id, c.numCarnet)">Bloquer</button>
+                  @if (c.statut !== 'OPPOSITION' && c.statut !== 'PERDU' && c.statut !== 'EPUISE') {
+                    <button class="btn btn-warning btn-sm" (click)="bloquer(c.id, c.numeroCarnet)">Opposition</button>
                   }
                 </div>
               </td>
             </tr>
           }
           @if (carnets().length === 0) {
-            <tr><td colspan="9" class="empty-row">Aucun carnet de chèques.</td></tr>
+            <tr><td colspan="7" class="empty-row">Aucun carnet de chèques.</td></tr>
           }
         </tbody>
       </table>

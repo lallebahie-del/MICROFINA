@@ -98,10 +98,10 @@ export class GarantiesListComponent implements OnInit {
 
   statutClass(s?: string): string {
     if (!s) return 'badge badge-info';
-    const u = s.toUpperCase();
-    if (u.includes('LIBER') || u.includes('MAINLEV')) return 'badge badge-success';
-    if (u.includes('ACTIVE') || u.includes('VALID'))  return 'badge badge-info';
-    if (u.includes('REALIS')) return 'badge badge-warning';
+    if (s === 'ACTIF')  return 'badge badge-info';
+    if (s === 'LIBERE') return 'badge badge-success';
+    if (s === 'SAISI')  return 'badge badge-warning';
+    if (s === 'EXPIRE') return 'badge badge-danger';
     return 'badge badge-primary';
   }
 }

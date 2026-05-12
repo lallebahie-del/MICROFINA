@@ -65,19 +65,18 @@ public class JobSchedulerService {
     @Transactional
     public void calculInterets() {
         executer(JOB_CALCUL_INTERETS, "SCHEDULER", () -> {
-            // Recalcul des intérêts échus non réglés
+            // Accumule les pénalités sur les échéances en retard
             int nb = jdbc.update("""
-                UPDATE reglement
-                SET MONTANT_INTERET_RETARD =
-                    CASE WHEN DATEDIFF(day, DATE_ECHEANCE, GETDATE()) > 0
-                         THEN MONTANT_INTERET_RETARD +
-                              (MONTANT_CAPITAL_RESTANT * (TAUX_INTERET_RETARD / 100.0)
-                               * DATEDIFF(day, DATE_ECHEANCE, GETDATE()) / 365.0)
-                         ELSE MONTANT_INTERET_RETARD
-                    END
-                WHERE STATUT IN ('EN_ATTENTE', 'EN_RETARD')
-                  AND DATE_ECHEANCE < CAST(GETDATE() AS DATE)
-                  AND DATEDIFF(day, DATE_ECHEANCE, GETDATE()) > 0
+                UPDATE a
+                SET a.PENALITE = a.PENALITE +
+                    (a.CAPITAL * (ISNULL(c.TAUX_PENALITE, 0) / 100.0)
+                     * DATEDIFF(day, a.DATE_ECHEANCE, GETDATE()) / 365.0)
+                FROM Amortp a
+                JOIN Credits c ON a.idcredit = c.IDCREDIT
+                WHERE a.STATUT_ECHEANCE IN ('EN_ATTENTE', 'EN_RETARD')
+                  AND a.DATE_ECHEANCE < CAST(GETDATE() AS DATE)
+                  AND DATEDIFF(day, a.DATE_ECHEANCE, GETDATE()) > 0
+                  AND c.TAUX_PENALITE > 0
                 """);
             return Map.of("nb", nb);
         });
@@ -93,20 +92,12 @@ public class JobSchedulerService {
     @Transactional
     public void recalculPar() {
         executer(JOB_RECALCUL_PAR, "SCHEDULER", () -> {
-            // Mise à jour des jours de retard et statut PAR sur les crédits actifs
+            // Mise à jour du statut des crédits en retard sur leur échéance finale
             int nb = jdbc.update("""
                 UPDATE Credits
-                SET JOURS_RETARD = CASE
+                SET STATUT = CASE
                     WHEN STATUT IN ('DEBLOQUE', 'EN_RETARD')
-                         AND DATE_ECHEANCE_FINALE < CAST(GETDATE() AS DATE)
-                    THEN DATEDIFF(day, DATE_ECHEANCE_FINALE, GETDATE())
-                    ELSE 0 END,
-                STATUT = CASE
-                    WHEN STATUT IN ('DEBLOQUE', 'EN_RETARD')
-                         AND DATEDIFF(day, DATE_ECHEANCE_FINALE, GETDATE()) > 90
-                    THEN 'EN_RETARD'
-                    WHEN STATUT IN ('DEBLOQUE', 'EN_RETARD')
-                         AND DATEDIFF(day, DATE_ECHEANCE_FINALE, GETDATE()) > 0
+                         AND DATE_ECHEANCE < CAST(GETDATE() AS DATE)
                     THEN 'EN_RETARD'
                     ELSE STATUT END
                 WHERE STATUT IN ('DEBLOQUE', 'EN_RETARD')

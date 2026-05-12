@@ -1,18 +1,29 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+/** Matches backend OperationBanqueDTO.Response */
 export interface OperationBanque {
   id: number;
+  dateOperation: string;
+  montant: number;
+  statut: string;
+  utilisateur?: string;
+  compteBanqueId?: number;
+  codeAgence?: string;
+  idComptabilite?: number;
+}
+
+/** Shape of the creation form in the UI */
+export interface OperationBanqueForm {
   typeOperation: string;
   montant: number;
-  devise: string;
+  devise?: string;
   dateOperation: string;
-  agence: string;
+  agence?: string;
   codeBanque?: string;
   referenceVirement?: string;
-  statut: string;
   libelle?: string;
 }
 
@@ -22,17 +33,36 @@ export class OperationsBanqueService {
 
   constructor(private http: HttpClient) {}
 
-  getAll(agence?: string, page = 0, size = 20): Observable<any> {
-    let params = new HttpParams().set('page', page).set('size', size);
-    if (agence) params = params.set('agence', agence);
-    return this.http.get<any>(this.base, { params });
+  getAll(agence?: string): Observable<OperationBanque[]> {
+    if (agence) {
+      return this.http.get<OperationBanque[]>(
+        `${this.base}/agence/${encodeURIComponent(agence)}`
+      );
+    }
+    return this.http.get<OperationBanque[]>(this.base);
   }
 
   getById(id: number): Observable<OperationBanque> {
     return this.http.get<OperationBanque>(`${this.base}/${id}`);
   }
 
-  create(op: Partial<OperationBanque>): Observable<OperationBanque> {
-    return this.http.post<OperationBanque>(this.base, op);
+  create(form: Partial<OperationBanqueForm>): Observable<OperationBanque> {
+    const libelleParts = [form.typeOperation, form.libelle, form.referenceVirement]
+      .filter(Boolean).join(' — ');
+    const payload = {
+      dateOperation: form.dateOperation,
+      montant:       form.montant,
+      utilisateur:   libelleParts || undefined,
+      codeAgence:    form.agence,
+    };
+    return this.http.post<OperationBanque>(this.base, payload);
+  }
+
+  valider(id: number): Observable<OperationBanque> {
+    return this.http.patch<OperationBanque>(`${this.base}/${id}/valider`, {});
+  }
+
+  annuler(id: number): Observable<OperationBanque> {
+    return this.http.patch<OperationBanque>(`${this.base}/${id}/annuler`, {});
   }
 }

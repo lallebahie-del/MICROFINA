@@ -116,11 +116,11 @@
             <tr>
               <td>{{ r.nomAgence }}</td>
               <td class="num">{{ formatMontant(r.encoursBrut) }}</td>
-              <td class="num" [class.alerte]="r.par30 > 0.05">{{ formatPct(r.par30) }}</td>
-              <td class="num" [class.alerte]="r.par90 > 0.03">{{ formatPct(r.par90) }}</td>
+              <td class="num" [class.alerte]="r.tauxPar30 > 0.05">{{ formatPct(r.tauxPar30) }}</td>
+              <td class="num" [class.alerte]="r.tauxPar90 > 0.03">{{ formatPct(r.tauxPar90) }}</td>
               <td class="num">{{ formatMontant(r.totalArrieres) }}</td>
               <td class="num">{{ formatMontant(r.totalGaranties) }}</td>
-              <td class="num">{{ r.tauxCouverture.toFixed(1) }}%</td>
+              <td class="num">{{ (r.ratioCouvertureGaranties || 0).toFixed(1) }}%</td>
             </tr>
           }
           @if (ratios().length === 0) {
@@ -151,12 +151,12 @@
           @for (i of indicateurs(); track i.codeAgence) {
             <tr>
               <td>{{ i.nomAgence }}</td>
-              <td class="num">{{ i.nbMembres }}</td>
+              <td class="num">{{ i.nbMembresEmprunteurs }}</td>
               <td class="num">{{ i.nbMembresActifs }}</td>
               <td class="num">{{ i.nbCreditsActifs }}</td>
-              <td class="num">{{ formatMontant(i.encoursBrut) }}</td>
-              <td class="num">{{ formatMontant(i.montantDecaisse) }}</td>
-              <td class="num">{{ formatMontant(i.montantRembourse) }}</td>
+              <td class="num">{{ formatMontant(i.montantEncours) }}</td>
+              <td class="num">{{ formatMontant(i.montantDebloqueTotal) }}</td>
+              <td class="num">{{ formatMontant(i.montantRembourseTotal) }}</td>
             </tr>
           }
           @if (indicateurs().length === 0) {
@@ -180,14 +180,14 @@
           </tr>
         </thead>
         <tbody>
-          @for (b of bilan(); track b.planComptable + b.agence) {
+          @for (b of bilan(); track $index) {
             <tr>
-              <td class="mono">{{ b.planComptable }}</td>
-              <td><span class="badge" [class]="b.categorie === 'ACTIF' ? 'badge-actif' : 'badge-passif'">{{ b.categorie }}</span></td>
-              <td>{{ b.agence }}</td>
-              <td class="num">{{ formatMontant(b.soldeDebiteur) }}</td>
-              <td class="num">{{ formatMontant(b.soldeCrediteur) }}</td>
-              <td class="num">{{ formatMontant(b.soldeNet) }}</td>
+              <td class="mono">{{ b.numCompte }}</td>
+              <td><span class="badge" [class]="b.rubrique === 'ACTIF' ? 'badge-actif' : 'badge-passif'">{{ b.rubrique }}</span></td>
+              <td>{{ b.nomAgence || b.codeAgence }}</td>
+              <td class="num">{{ formatMontant(b.montantActif ?? 0) }}</td>
+              <td class="num">{{ formatMontant(b.montantPassif ?? 0) }}</td>
+              <td class="num">{{ formatMontant(b.soldeNet ?? 0) }}</td>
             </tr>
           }
           @if (bilan().length === 0) {
@@ -213,13 +213,13 @@
           </tr>
         </thead>
         <tbody>
-          @for (b of balance(); track b.planComptable + b.agence) {
+          @for (b of balance(); track $index) {
             <tr>
-              <td class="mono">{{ b.planComptable }}</td>
-              <td>{{ b.nomAgence || b.agence }}</td>
-              <td class="num">{{ formatMontant(b.soldeDebiteur) }}</td>
-              <td class="num">{{ formatMontant(b.soldeCrediteur) }}</td>
-              <td class="num">{{ formatMontant(b.soldeNet) }}</td>
+              <td class="mono">{{ b.numCompte }}</td>
+              <td>{{ b.nomAgence || b.codeAgence }}</td>
+              <td class="num">{{ formatMontant(b.soldeDebiteur ?? 0) }}</td>
+              <td class="num">{{ formatMontant(b.soldeCrediteur ?? 0) }}</td>
+              <td class="num">{{ formatMontant(b.soldeNet ?? 0) }}</td>
             </tr>
           }
           @if (balance().length === 0) {
@@ -238,7 +238,7 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>N° Membre</th><th>Nom</th><th>Téléphone</th><th>Agence</th>
+            <th>N° Membre</th><th>Nom</th><th>Agence</th>
             <th class="num">Crédits actifs</th>
             <th class="num">Encours</th>
             <th class="num">Épargne</th>
@@ -249,12 +249,11 @@
           @for (c of clients(); track c.numMembre) {
             <tr>
               <td class="mono">{{ c.numMembre }}</td>
-              <td>{{ c.nomMembre }} {{ c.prenomMembre }}</td>
-              <td>{{ c.telephone }}</td>
+              <td>{{ c.nom }} {{ c.prenom }}</td>
               <td>{{ c.nomAgence }}</td>
               <td class="num">{{ c.nbCreditsActifs }}</td>
-              <td class="num">{{ formatMontant(c.encoursBrut) }}</td>
-              <td class="num">{{ formatMontant(c.soldeEpargne) }}</td>
+              <td class="num">{{ formatMontant(c.encoursCapital) }}</td>
+              <td class="num">{{ formatMontant(c.totalEpargne) }}</td>
               <td>
                 <span class="par-badge" [style.background]="couleurPar(c.categoriePar)">
                   {{ c.categoriePar || 'SAIN' }}
@@ -263,7 +262,7 @@
             </tr>
           }
           @if (clients().length === 0) {
-            <tr><td colspan="8" class="empty">Aucun résultat</td></tr>
+            <tr><td colspan="7" class="empty">Aucun résultat</td></tr>
           }
         </tbody>
       </table>

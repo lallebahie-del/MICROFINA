@@ -10,7 +10,7 @@ public class CarnetChequeDTO {
 
     public record CreateRequest(
         @NotBlank @Size(max = 50) String numeroCarnet,
-        @NotNull Long compteBanqueId,
+        Long compteBanqueId,
         @NotBlank String numMembre,
         LocalDate dateDemande,
         Integer nombreCheques

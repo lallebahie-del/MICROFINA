@@ -1,7 +1,21 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+
+function snakeToCamel(obj: unknown): unknown {
+  if (Array.isArray(obj)) return obj.map(snakeToCamel);
+  if (obj !== null && typeof obj === 'object') {
+    return Object.fromEntries(
+      Object.entries(obj as Record<string, unknown>).map(([k, v]) => [
+        k.replace(/_([a-z])/g, (_: string, c: string) => c.toUpperCase()),
+        snakeToCamel(v)
+      ])
+    );
+  }
+  return obj;
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -36,37 +50,37 @@ export interface RatiosBcm {
   nomAgence: string;
   encoursBrut: number;
   nbCreditsActifs: number;
-  capitaEnRetard30: number;
-  par30: number;
-  capitaEnRetard90: number;
-  par90: number;
+  capitalRisquePar30: number;
+  tauxPar30: number;
+  capitalRisquePar90: number;
+  tauxPar90: number;
   totalArrieres: number;
-  capitalRisque: number;
   totalGaranties: number;
-  tauxCouverture: number;
+  ratioCouvertureGaranties: number;
 }
 
 export interface Indicateur {
   codeAgence: string;
   nomAgence: string;
-  nbMembres: number;
+  nbMembresEmprunteurs: number;
   nbMembresActifs: number;
-  nbCreditsDisbursed: number;
+  nbCreditsTotal: number;
   nbCreditsActifs: number;
-  encoursBrut: number;
-  encaissementsJour: number;
-  montantDecaisse: number;
-  nbRemboursements: number;
-  montantRembourse: number;
+  montantEncours: number;
+  montantDebloqueTotal: number;
+  nbReglements: number;
+  montantRembourseTotal: number;
 }
 
 export interface LigneBalance {
-  planComptable: string;
-  agence: string;
-  nomAgence: string;
-  soldeDebiteur: number;
-  soldeCrediteur: number;
-  soldeNet: number;
+  numCompte?: string;
+  codeAgence?: string;
+  nomAgence?: string;
+  totalDebit?: number;
+  totalCredit?: number;
+  soldeDebiteur?: number;
+  soldeCrediteur?: number;
+  soldeNet?: number;
 }
 
 export interface LigneJournal {
@@ -81,29 +95,27 @@ export interface LigneJournal {
 }
 
 export interface LigneBilan {
-  planComptable: string;
-  classeCompte: string;
-  categorie: string;
-  agence: string;
-  soldeDebiteur: number;
-  soldeCrediteur: number;
-  soldeNet: number;
+  numCompte?: string;
+  classeCompte?: string;
+  rubrique?: string;
+  libelleRubrique?: string;
+  codeAgence?: string;
+  nomAgence?: string;
+  totalDebit?: number;
+  totalCredit?: number;
+  soldeNet?: number;
+  montantActif?: number;
+  montantPassif?: number;
 }
 
 export interface ListeClient {
   numMembre: string;
-  nomMembre: string;
-  prenomMembre: string;
-  sexe: string;
-  telephone: string;
-  adresse: string;
-  agence: string;
+  nom: string;
+  prenom: string;
   nomAgence: string;
-  nbCreditsTotaux: number;
   nbCreditsActifs: number;
-  encoursBrut: number;
-  soldeEpargne: number;
-  maxJoursRetard: number;
+  encoursCapital: number;
+  totalEpargne: number;
   categoriePar: string;
 }
 
@@ -130,11 +142,15 @@ export class ReportingService {
 
   getIndicateurs(agence = ''): Observable<Indicateur[]> {
     const params = agence ? new HttpParams().set('agence', agence) : undefined;
-    return this.http.get<Indicateur[]>(`${this.base}/indicateurs`, { params });
+    return this.http.get<unknown[]>(`${this.base}/indicateurs`, { params }).pipe(
+      map(arr => snakeToCamel(arr) as Indicateur[])
+    );
   }
 
   getBalance(): Observable<LigneBalance[]> {
-    return this.http.get<LigneBalance[]>(`${this.base}/balance-comptes`);
+    return this.http.get<unknown[]>(`${this.base}/balance-comptes`).pipe(
+      map(arr => snakeToCamel(arr) as LigneBalance[])
+    );
   }
 
   getJournal(agence = '', date = ''): Observable<LigneJournal[]> {

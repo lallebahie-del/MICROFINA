@@ -14,6 +14,7 @@ services:
       MSSQL_PID: "Developer"
     volumes:
       - sqlserver_data:/var/opt/mssql
+      - ./backend/backups:/var/opt/mssql/backup
     ports:
       - "1434:1433"
     healthcheck:

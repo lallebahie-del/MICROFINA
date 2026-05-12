@@ -77,7 +77,9 @@ public class CarnetChequeService {
     public CarnetChequeDTO.Response create(CarnetChequeDTO.CreateRequest req) {
         CarnetCheque carnet = new CarnetCheque();
         carnet.setNumeroCarnet(req.numeroCarnet());
-        carnet.setCompteBanque(compteBanqueRepository.getReferenceById(req.compteBanqueId()));
+        if (req.compteBanqueId() != null) {
+            carnet.setCompteBanque(compteBanqueRepository.getReferenceById(req.compteBanqueId()));
+        }
         carnet.setMembre(membresRepository.getReferenceById(req.numMembre()));
         carnet.setDateDemande(req.dateDemande());
         if (req.nombreCheques() != null) {

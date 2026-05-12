@@ -1,7 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { OperationsCaisseService, OperationCaisse } from '../../services/operations-caisse.service';
+import { OperationsCaisseService, OperationCaisse, OperationCaisseForm } from '../../services/operations-caisse.service';
 import { AgencesService, Agence } from '../../services/agences.service';
 
 @Component({
@@ -24,7 +24,7 @@ export class OperationsCaisseListComponent implements OnInit {
   success = signal<string | null>(null);
 
   showForm = signal(false);
-  form: Partial<OperationCaisse> = {
+  form: Partial<OperationCaisseForm> = {
     typeOperation: 'DEPOT',
     devise: 'MRU',
     montant: 0
@@ -45,10 +45,10 @@ export class OperationsCaisseListComponent implements OnInit {
   load(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.svc.getAll(this.agenceFilter() || undefined, this.page()).subscribe({
-      next: (resp: any) => {
-        this.operations.set(resp.content ?? resp);
-        this.totalPages.set(resp.totalPages ?? 0);
+    this.svc.getAll(this.agenceFilter() || undefined).subscribe({
+      next: (list: OperationCaisse[]) => {
+        this.operations.set(list);
+        this.totalPages.set(0);
         this.loading.set(false);
       },
       error: e => {
@@ -64,6 +64,7 @@ export class OperationsCaisseListComponent implements OnInit {
   openNew(): void {
     this.form = {
       typeOperation: 'DEPOT',
+      modePaiement: 'ESPECES',
       devise: 'MRU',
       montant: 0,
       dateOperation: new Date().toISOString().slice(0, 10)
@@ -84,6 +85,10 @@ export class OperationsCaisseListComponent implements OnInit {
     }
     if ((this.form.montant as number) <= 0) {
       this.error.set('Le montant doit être strictement positif.');
+      return;
+    }
+    if (!this.form.dateOperation) {
+      this.error.set('La date est obligatoire.');
       return;
     }
     this.saving.set(true);
@@ -112,9 +117,10 @@ export class OperationsCaisseListComponent implements OnInit {
     return 'badge badge-info';
   }
 
-  typeClass(t: string): string {
-    if (t === 'DEPOT' || t === 'VERSEMENT') return 'badge badge-success';
-    if (t === 'RETRAIT' || t === 'PAIEMENT') return 'badge badge-danger';
+  typeClass(motif: string): string {
+    const m = (motif || '').toUpperCase();
+    if (m.includes('DEPOT') || m.includes('VERSEMENT')) return 'badge badge-success';
+    if (m.includes('RETRAIT') || m.includes('PAIEMENT')) return 'badge badge-danger';
     return 'badge badge-info';
   }
 }

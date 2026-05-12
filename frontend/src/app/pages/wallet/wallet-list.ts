@@ -27,11 +27,11 @@ export class WalletListComponent implements OnInit {
   filtreStatut: WalletStatut | '' = '';
 
   // Modal initiation
-  showModal       = false;
-  modeModal: 'deblocage' | 'remboursement' = 'deblocage';
+  showModal   = signal(false);
+  modeModal   = signal<'deblocage' | 'remboursement'>('deblocage');
+  savingModal = signal(false);
+  modalError  = signal('');
   form = { idCredit: null as number | null, numeroTelephone: '', montant: null as number | null, motif: '' };
-  savingModal = false;
-  modalError  = '';
 
   readonly types:   WalletType[]   = ['DEBLOCAGE', 'REMBOURSEMENT', 'DEPOT_EPARGNE'];
   readonly statuts: WalletStatut[] = ['EN_ATTENTE', 'CONFIRME', 'REJETE', 'ANNULE', 'EXPIRE'];
@@ -57,50 +57,51 @@ export class WalletListComponent implements OnInit {
 
   // ── Modal ─────────────────────────────────────────────────────────────────
 
-  ouvrirDeblocage():     void { this.modeModal = 'deblocage';     this.resetForm(); this.showModal = true; }
-  ouvrirRemboursement(): void { this.modeModal = 'remboursement'; this.resetForm(); this.showModal = true; }
-  fermerModal():         void { this.showModal = false; this.modalError = ''; }
+  ouvrirDeblocage():     void { this.modeModal.set('deblocage');     this.resetForm(); this.showModal.set(true); }
+  ouvrirRemboursement(): void { this.modeModal.set('remboursement'); this.resetForm(); this.showModal.set(true); }
+  fermerModal():         void { this.showModal.set(false); this.modalError.set(''); }
 
   resetForm(): void {
     this.form = { idCredit: null, numeroTelephone: '', montant: null, motif: '' };
-    this.modalError = '';
+    this.modalError.set('');
   }
 
   soumettre(): void {
     if (!this.form.idCredit || !this.form.numeroTelephone) {
-      this.modalError = 'Crédit et téléphone obligatoires.'; return;
+      this.modalError.set('Crédit et téléphone obligatoires.'); return;
     }
-    if (this.modeModal === 'remboursement' && !this.form.montant) {
-      this.modalError = 'Le montant est obligatoire pour un remboursement.'; return;
+    if (this.modeModal() === 'remboursement' && !this.form.montant) {
+      this.modalError.set('Le montant est obligatoire pour un remboursement.'); return;
     }
 
-    this.savingModal = true;
-    this.modalError  = '';
+    this.savingModal.set(true);
+    this.modalError.set('');
 
-    const obs$ = this.modeModal === 'deblocage'
+    const tel = '+222' + this.form.numeroTelephone.replace(/^\+?222/, '');
+    const obs$ = this.modeModal() === 'deblocage'
       ? this.walletService.initierDeblocage({
           idCredit: this.form.idCredit!,
-          numeroTelephone: this.form.numeroTelephone,
+          numeroTelephone: tel,
           motif: this.form.motif || undefined
         } as DeblocageRequest)
       : this.walletService.initierRemboursement({
           idCredit: this.form.idCredit!,
-          numeroTelephone: this.form.numeroTelephone,
+          numeroTelephone: tel,
           montant: this.form.montant!,
           motif: this.form.motif || undefined
         } as RemboursementRequest);
 
     obs$.subscribe({
       next: () => {
-        this.savingModal = false;
-        this.showModal   = false;
+        this.savingModal.set(false);
+        this.showModal.set(false);
         this.success.set('Opération initiée avec succès.');
         this.load();
         setTimeout(() => this.success.set(null), 4000);
       },
       error: (e) => {
-        this.savingModal = false;
-        this.modalError  = e.error?.message ?? e.message;
+        this.savingModal.set(false);
+        this.modalError.set(e.error?.message ?? e.message);
       }
     });
   }
