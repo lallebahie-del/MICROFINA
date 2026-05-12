@@ -14,11 +14,7 @@ enum PremiumButtonType {
   error,
 }
 
-enum PremiumButtonSize {
-  small,
-  medium,
-  large,
-}
+enum PremiumButtonSize { small, medium, large }
 
 class PremiumButton extends StatelessWidget {
   final String text;
@@ -52,11 +48,11 @@ class PremiumButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     // Get colors based on type
     final colors = _getButtonColors(isDark);
     final dimensions = _getDimensions();
-    
+
     return SizedBox(
       width: isFullWidth ? double.infinity : customWidth,
       height: customHeight ?? dimensions.height,
@@ -103,7 +99,7 @@ class PremiumButton extends StatelessWidget {
         ],
       );
     }
-    
+
     return Text(
       text,
       style: dimensions.textStyle.copyWith(color: textColor),
@@ -133,7 +129,7 @@ class PremiumButton extends StatelessWidget {
           shadow: AppShadows.button,
           border: null,
         );
-      
+
       case PremiumButtonType.secondary:
         return _ButtonColors(
           backgroundColor: customColor ?? AppColors.secondary,
@@ -143,7 +139,7 @@ class PremiumButton extends StatelessWidget {
           shadow: AppShadows.premium,
           border: null,
         );
-      
+
       case PremiumButtonType.outline:
         return _ButtonColors(
           backgroundColor: Colors.transparent,
@@ -156,17 +152,19 @@ class PremiumButton extends StatelessWidget {
             width: AppSpacing.strokeNormal,
           ),
         );
-      
+
       case PremiumButtonType.ghost:
         return _ButtonColors(
           backgroundColor: Colors.transparent,
           textColor: customColor ?? AppColors.textPrimary,
           splashColor: (customColor ?? AppColors.textPrimary).withOpacity(0.1),
-          highlightColor: (customColor ?? AppColors.textPrimary).withOpacity(0.05),
+          highlightColor: (customColor ?? AppColors.textPrimary).withOpacity(
+            0.05,
+          ),
           shadow: null,
           border: null,
         );
-      
+
       case PremiumButtonType.success:
         return _ButtonColors(
           backgroundColor: AppColors.success,
@@ -176,7 +174,7 @@ class PremiumButton extends StatelessWidget {
           shadow: AppShadows.success,
           border: null,
         );
-      
+
       case PremiumButtonType.warning:
         return _ButtonColors(
           backgroundColor: AppColors.warning,
@@ -186,7 +184,7 @@ class PremiumButton extends StatelessWidget {
           shadow: AppShadows.warning,
           border: null,
         );
-      
+
       case PremiumButtonType.error:
         return _ButtonColors(
           backgroundColor: AppColors.error,
@@ -210,14 +208,14 @@ class PremiumButton extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         );
-      
+
       case PremiumButtonSize.medium:
         return _ButtonDimensions(
           height: AppSpacing.buttonHeight,
           radius: AppSpacing.radiusLarge,
           textStyle: AppTextStyles.buttonText,
         );
-      
+
       case PremiumButtonSize.large:
         return _ButtonDimensions(
           height: AppSpacing.buttonHeightLarge,

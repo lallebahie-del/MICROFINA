@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/theme/app_colors.dart';
@@ -6,6 +8,7 @@ class NumericKeypad extends StatefulWidget {
   final Function(String) onNumberPressed;
   final VoidCallback onDeletePressed;
   final bool shuffle;
+
   /// Couleur des chiffres (défaut : [AppColors.primary], aligné login / marque).
   final Color? digitColor;
 
@@ -32,7 +35,17 @@ class _NumericKeypadState extends State<NumericKeypad> {
 
   void _initializeNumbers() {
     _numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
-    // L'ordre est maintenant constant de 1 à 0
+    if (widget.shuffle) {
+      _numbers = List<String>.from(_numbers)..shuffle(Random());
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant NumericKeypad oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.shuffle != oldWidget.shuffle) {
+      _initializeNumbers();
+    }
   }
 
   @override
@@ -126,7 +139,11 @@ class _NumericKeypadState extends State<NumericKeypad> {
             border: Border.all(color: color.withValues(alpha: 0.18)),
           ),
           child: const Center(
-            child: Icon(Icons.backspace_rounded, color: AppColors.error, size: 24),
+            child: Icon(
+              Icons.backspace_rounded,
+              color: AppColors.error,
+              size: 24,
+            ),
           ),
         ),
       ),

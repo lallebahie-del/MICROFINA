@@ -21,10 +21,15 @@ class TransactionsScreen extends StatefulWidget {
 
 class _TransactionsScreenState extends State<TransactionsScreen> {
   final ScrollController _scrollController = ScrollController();
-  final currencyFormat = NumberFormat.currency(locale: 'fr_FR', symbol: 'FCFA', decimalDigits: 0);
+  final currencyFormat = NumberFormat.currency(
+    locale: 'fr_FR',
+    symbol: 'FCFA',
+    decimalDigits: 0,
+  );
   DateTimeRange? _selectedDateRange;
 
-  bool get _allAccounts => widget.accountId == MockData.transactionScopeAllAccounts;
+  bool get _allAccounts =>
+      widget.accountId == MockData.transactionScopeAllAccounts;
 
   @override
   void initState() {
@@ -40,8 +45,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.9) {
-      context.read<TransactionBloc>().add(LoadMoreTransactions(widget.accountId));
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent * 0.9) {
+      context.read<TransactionBloc>().add(
+        LoadMoreTransactions(widget.accountId),
+      );
     }
   }
 
@@ -75,14 +83,16 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         _selectedDateRange = picked;
       });
       if (!context.mounted) return;
-      context.read<TransactionBloc>().add(FilterTransactionsByDate(widget.accountId, picked));
+      context.read<TransactionBloc>().add(
+        FilterTransactionsByDate(widget.accountId, picked),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F5),
+      backgroundColor: AppColors.background,
       body: CustomScrollView(
         controller: _scrollController,
         slivers: [
@@ -92,12 +102,17 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             pinned: true,
             elevation: 0,
             backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
             actions: [
               IconButton(
                 onPressed: () {
                   final state = context.read<TransactionBloc>().state;
                   if (state is TransactionLoaded) {
-                    final accs = context.read<AccountBloc>().state.accounts.where((a) => a.id == widget.accountId);
+                    final accs = context
+                        .read<AccountBloc>()
+                        .state
+                        .accounts
+                        .where((a) => a.id == widget.accountId);
                     final name = _allAccounts
                         ? 'Tous les comptes'
                         : (accs.isEmpty ? null : accs.first.libelle);
@@ -108,12 +123,17 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     );
                   }
                 },
-                icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white),
+                icon: const Icon(
+                  Icons.picture_as_pdf_rounded,
+                  color: Colors.white,
+                ),
               ),
               IconButton(
                 onPressed: () => _selectDateRange(context),
                 icon: Icon(
-                  _selectedDateRange != null ? Icons.filter_alt_rounded : Icons.calendar_month_rounded,
+                  _selectedDateRange != null
+                      ? Icons.filter_alt_rounded
+                      : Icons.calendar_month_rounded,
                   color: Colors.white,
                 ),
               ),
@@ -123,21 +143,27 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                     setState(() {
                       _selectedDateRange = null;
                     });
-                    context.read<TransactionBloc>().add(LoadTransactions(widget.accountId));
+                    context.read<TransactionBloc>().add(
+                      LoadTransactions(widget.accountId),
+                    );
                   },
                   icon: const Icon(Icons.close_rounded, color: Colors.white),
                 ),
               const SizedBox(width: 8),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                _allAccounts ? 'Historique des opérations' : 'Historique du compte',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              title: const Text(
+                'Historique des opérations',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
               background: Container(
                 decoration: const BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [AppColors.primary, Color(0xFF1976D2)],
+                    colors: AppColors.primaryGradient,
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -145,7 +171,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               ),
             ),
           ),
-          
+
           SliverToBoxAdapter(
             child: Container(
               padding: const EdgeInsets.all(16),
@@ -155,7 +181,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   hintText: _allAccounts
                       ? 'Rechercher une opération (tous comptes)…'
                       : 'Rechercher une transaction…',
-                  prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    color: AppColors.primary,
+                  ),
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
@@ -167,31 +196,40 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               ),
             ),
           ),
-          
+
           if (_selectedDateRange != null)
             SliverToBoxAdapter(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 color: AppColors.primary.withOpacity(0.05),
                 child: Row(
                   children: [
-                    const Icon(Icons.date_range_rounded, size: 16, color: AppColors.primary),
+                    const Icon(
+                      Icons.date_range_rounded,
+                      size: 16,
+                      color: AppColors.primary,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'Du ${DateFormat('dd/MM/yyyy').format(_selectedDateRange!.start)} au ${DateFormat('dd/MM/yyyy').format(_selectedDateRange!.end)}',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
-          
+
           BlocBuilder<TransactionBloc, TransactionState>(
             builder: (context, state) {
               if (state is TransactionLoading) {
-                return const SliverFillRemaining(
-                  child: TransactionShimmer(),
-                );
+                return const SliverFillRemaining(child: TransactionShimmer());
               }
 
               if (state is TransactionLoaded) {
@@ -203,7 +241,11 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.receipt_long_outlined, size: 56, color: Colors.grey[400]),
+                            Icon(
+                              Icons.receipt_long_outlined,
+                              size: 56,
+                              color: Colors.grey[400],
+                            ),
                             const SizedBox(height: 16),
                             Text(
                               'Aucune opération enregistrée',
@@ -234,21 +276,33 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 return BlocBuilder<AccountBloc, AccountState>(
                   builder: (context, accountState) {
                     return SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 20,
+                      ),
                       sliver: SliverList(
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
                             if (index >= state.transactions.length) {
                               return const Padding(
                                 padding: EdgeInsets.symmetric(vertical: 20),
-                                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
                               );
                             }
 
-                            final EpargneTransactionModel tx = state.transactions[index];
+                            final EpargneTransactionModel tx =
+                                state.transactions[index];
                             final isCredit = tx.type == 'CREDIT';
                             final DateTime date = DateTime.parse(tx.date);
-                            final String formattedDate = DateFormat('dd MMM yyyy à HH:mm', 'fr_FR').format(date);
+                            final String formattedDate = DateFormat(
+                              'dd MMM yyyy à HH:mm',
+                              'fr_FR',
+                            ).format(date);
                             String? compteLabel;
                             if (_allAccounts) {
                               for (final a in accountState.accounts) {
@@ -283,29 +337,41 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                   child: Icon(
-                                    isCredit ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
-                                    color: isCredit ? AppColors.secondary : AppColors.error,
+                                    isCredit
+                                        ? Icons.arrow_downward_rounded
+                                        : Icons.arrow_upward_rounded,
+                                    color: isCredit
+                                        ? AppColors.secondary
+                                        : AppColors.error,
                                     size: 24,
                                   ),
                                 ),
                                 title: Text(
                                   tx.libelle,
-                                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.primary),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16,
+                                    color: AppColors.primary,
+                                  ),
                                 ),
                                 subtitle: Padding(
                                   padding: const EdgeInsets.only(top: 4),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       if (compteLabel != null)
                                         Padding(
-                                          padding: const EdgeInsets.only(bottom: 2),
+                                          padding: const EdgeInsets.only(
+                                            bottom: 2,
+                                          ),
                                           child: Text(
                                             compteLabel,
                                             style: TextStyle(
                                               fontSize: 11,
                                               fontWeight: FontWeight.w700,
-                                              color: AppColors.primary.withOpacity(0.55),
+                                              color: AppColors.primary
+                                                  .withOpacity(0.55),
                                             ),
                                           ),
                                         ),
@@ -313,7 +379,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                                         formattedDate,
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: AppColors.primary.withOpacity(0.4),
+                                          color: AppColors.primary.withOpacity(
+                                            0.4,
+                                          ),
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -324,7 +392,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                                   '${isCredit ? '+' : '-'} ${currencyFormat.format(tx.montant)}',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w900,
-                                    color: isCredit ? AppColors.secondary : AppColors.error,
+                                    color: isCredit
+                                        ? AppColors.secondary
+                                        : AppColors.error,
                                     fontSize: 16,
                                     letterSpacing: -0.5,
                                   ),

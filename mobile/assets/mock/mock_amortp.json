@@ -1,0 +1,56 @@
+[
+  {
+    "id": 1,
+    "loanId": "cre_882",
+    "dateEcheance": "2026-02-15",
+    "montantCapital": 1000000,
+    "montantInteret": 62500,
+    "montantTva": 11250,
+    "estPaye": true
+  },
+  {
+    "id": 2,
+    "loanId": "cre_882",
+    "dateEcheance": "2026-03-15",
+    "montantCapital": 1000000,
+    "montantInteret": 56250,
+    "montantTva": 10125,
+    "estPaye": true
+  },
+  {
+    "id": 3,
+    "loanId": "cre_882",
+    "dateEcheance": "2026-04-15",
+    "montantCapital": 1000000,
+    "montantInteret": 50000,
+    "montantTva": 9000,
+    "estPaye": false
+  },
+  {
+    "id": 4,
+    "loanId": "cre_882",
+    "dateEcheance": "2026-05-15",
+    "montantCapital": 1000000,
+    "montantInteret": 43750,
+    "montantTva": 7875,
+    "estPaye": false
+  },
+  {
+    "id": 5,
+    "loanId": "cre_882",
+    "dateEcheance": "2026-06-15",
+    "montantCapital": 1000000,
+    "montantInteret": 37500,
+    "montantTva": 6750,
+    "estPaye": false
+  },
+  {
+    "id": 6,
+    "loanId": "cre_882",
+    "dateEcheance": "2026-07-15",
+    "montantCapital": 1000000,
+    "montantInteret": 31250,
+    "montantTva": 5625,
+    "estPaye": false
+  }
+]

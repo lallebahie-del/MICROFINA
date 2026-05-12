@@ -2,6 +2,7 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import '../constants/app_geo.dart';
 import '../../data/models/extra_models.dart';
 
 class PdfGeneratorService {
@@ -11,7 +12,11 @@ class PdfGeneratorService {
     required List<EpargneTransactionModel> transactions,
   }) async {
     final pdf = pw.Document();
-    final currencyFormat = NumberFormat.currency(locale: 'fr_FR', symbol: 'FCFA', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      locale: 'fr_FR',
+      symbol: 'FCFA',
+      decimalDigits: 0,
+    );
 
     pdf.addPage(
       pw.MultiPage(
@@ -37,7 +42,11 @@ class PdfGeneratorService {
     required CertificatModel certificat,
   }) async {
     final pdf = pw.Document();
-    final currencyFormat = NumberFormat.currency(locale: 'fr_FR', symbol: 'FCFA', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      locale: 'fr_FR',
+      symbol: 'FCFA',
+      decimalDigits: 0,
+    );
 
     pdf.addPage(
       pw.Page(
@@ -50,31 +59,68 @@ class PdfGeneratorService {
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.center,
             children: [
-              pw.Text('microCredit', style: pw.TextStyle(fontSize: 28, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
+              pw.Text(
+                'microCredit',
+                style: pw.TextStyle(
+                  fontSize: 28,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.blue900,
+                ),
+              ),
               pw.SizedBox(height: 10),
-              pw.Text('CERTIFICAT DE DÉPÔT À TERME', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
+              pw.Text(
+                'CERTIFICAT DE DÉPÔT À TERME',
+                style: pw.TextStyle(
+                  fontSize: 20,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
               pw.SizedBox(height: 40),
               pw.Divider(color: PdfColors.grey400),
               pw.SizedBox(height: 40),
-              pw.Text('Il est certifié par la présente que', style: const pw.TextStyle(fontSize: 14)),
+              pw.Text(
+                'Il est certifié par la présente que',
+                style: const pw.TextStyle(fontSize: 14),
+              ),
               pw.SizedBox(height: 10),
-              pw.Text('Un client de microCredit', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold)),
+              pw.Text(
+                'Un client de microCredit',
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
               pw.SizedBox(height: 20),
-              pw.Text('a effectué un placement sous les conditions suivantes :', style: const pw.TextStyle(fontSize: 14)),
+              pw.Text(
+                'a effectué un placement sous les conditions suivantes :',
+                style: const pw.TextStyle(fontSize: 14),
+              ),
               pw.SizedBox(height: 40),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildCertItem('Numéro du Certificat', certificat.numeroCertificat),
-                  _buildCertItem('Date d\'échéance', DateFormat('dd/MM/yyyy').format(certificat.maturityDate)),
+                  _buildCertItem(
+                    'Numéro du Certificat',
+                    certificat.numeroCertificat,
+                  ),
+                  _buildCertItem(
+                    'Date d\'échéance',
+                    DateFormat('dd/MM/yyyy').format(certificat.maturityDate),
+                  ),
                 ],
               ),
               pw.SizedBox(height: 30),
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildCertItem('Montant Principal', currencyFormat.format(certificat.montantPlacement)),
-                  _buildCertItem('Taux d\'Intérêt', '${certificat.tauxInteret}%'),
+                  _buildCertItem(
+                    'Montant Principal',
+                    currencyFormat.format(certificat.montantPlacement),
+                  ),
+                  _buildCertItem(
+                    'Taux d\'Intérêt',
+                    '${certificat.tauxInteret}%',
+                  ),
                 ],
               ),
               pw.Spacer(),
@@ -83,15 +129,31 @@ class PdfGeneratorService {
                 children: [
                   pw.Column(
                     children: [
-                      pw.Text('Date d\'émission', style: const pw.TextStyle(fontSize: 10)),
-                      pw.Text(DateFormat('dd/MM/yyyy').format(DateTime.now()), style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                      pw.Text(
+                        'Date d\'émission',
+                        style: const pw.TextStyle(fontSize: 10),
+                      ),
+                      pw.Text(
+                        DateFormat('dd/MM/yyyy').format(DateTime.now()),
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                      ),
                     ],
                   ),
                   pw.Column(
                     children: [
-                      pw.Text('Cachet de l\'institution', style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text(
+                        'Cachet de l\'institution',
+                        style: const pw.TextStyle(fontSize: 10),
+                      ),
                       pw.SizedBox(height: 40),
-                      pw.Text('SIGNATURE AUTORISÉE', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
+                      pw.Text(
+                        'SIGNATURE AUTORISÉE',
+                        style: pw.TextStyle(
+                          fontSize: 10,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.blue900,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -112,9 +174,15 @@ class PdfGeneratorService {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Text(label, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
+        pw.Text(
+          label,
+          style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+        ),
         pw.SizedBox(height: 4),
-        pw.Text(value, style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+        pw.Text(
+          value,
+          style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+        ),
       ],
     );
   }
@@ -126,26 +194,51 @@ class PdfGeneratorService {
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.Text('microCredit', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
-            pw.Text('Votre banque, partout avec vous.', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+            pw.Text(
+              'microCredit',
+              style: pw.TextStyle(
+                fontSize: 24,
+                fontWeight: pw.FontWeight.bold,
+                color: PdfColors.blue900,
+              ),
+            ),
+            pw.Text(
+              'Votre banque, partout avec vous.',
+              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+            ),
           ],
         ),
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.end,
           children: [
-            pw.Text('RELEVÉ DE COMPTE', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
-            pw.Text('Compte: $accountName', style: const pw.TextStyle(fontSize: 12)),
-            pw.Text('ID: $accountId', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
-            pw.Text('Généré le: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}', style: const pw.TextStyle(fontSize: 10)),
+            pw.Text(
+              'RELEVÉ DE COMPTE',
+              style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.Text(
+              'Compte: $accountName',
+              style: const pw.TextStyle(fontSize: 12),
+            ),
+            pw.Text(
+              'ID: $accountId',
+              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
+            ),
+            pw.Text(
+              'Généré le: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}',
+              style: const pw.TextStyle(fontSize: 10),
+            ),
           ],
         ),
       ],
     );
   }
 
-  static pw.Widget _buildTransactionsTable(List<EpargneTransactionModel> transactions, NumberFormat format) {
+  static pw.Widget _buildTransactionsTable(
+    List<EpargneTransactionModel> transactions,
+    NumberFormat format,
+  ) {
     final headers = ['Date', 'Libellé', 'Type', 'Montant'];
-    
+
     return pw.TableHelper.fromTextArray(
       headers: headers,
       data: transactions.map((tx) {
@@ -157,7 +250,10 @@ class PdfGeneratorService {
           format.format(tx.montant),
         ];
       }).toList(),
-      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+      headerStyle: pw.TextStyle(
+        fontWeight: pw.FontWeight.bold,
+        color: PdfColors.white,
+      ),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.blue900),
       cellHeight: 30,
       cellAlignments: {
@@ -174,8 +270,14 @@ class PdfGeneratorService {
       children: [
         pw.Divider(color: PdfColors.grey300),
         pw.SizedBox(height: 10),
-        pw.Text('Merci de votre confiance.', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
-        pw.Text('microCredit - Siège social: Avenue Cheikh Anta Diop, Dakar, Sénégal', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500)),
+        pw.Text(
+          'Merci de votre confiance.',
+          style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+        ),
+        pw.Text(
+          'microCredit - Siège social: ${AppGeo.headquartersAddress}',
+          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500),
+        ),
       ],
     );
   }

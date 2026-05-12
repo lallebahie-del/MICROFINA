@@ -15,11 +15,7 @@ enum PremiumInputType {
   multiline,
 }
 
-enum PremiumInputSize {
-  small,
-  medium,
-  large,
-}
+enum PremiumInputSize { small, medium, large }
 
 class PremiumInput extends StatefulWidget {
   final String? label;
@@ -50,12 +46,15 @@ class PremiumInput extends StatefulWidget {
   final PremiumInputSize size;
   final Color? fillColor;
   final Color? borderColor;
+
   /// Bordure au focus / saisie (prioritaire sur [borderColor] quand le champ est actif).
   final Color? focusedBorderColor;
+
   /// Met en avant la bordure sans focus réel (ex. tap + unfocus pour masquer le clavier).
   final bool emphasizeBorder;
   final bool showClearButton;
   final TextInputAction? textInputAction;
+
   /// Pas de clavier logiciel : saisie réservée au pavé numérique (ex. code PIN).
   final bool pinPadInput;
 
@@ -110,12 +109,13 @@ class _PremiumInputState extends State<PremiumInput> {
   @override
   void initState() {
     super.initState();
-    _controller = widget.controller ?? TextEditingController(text: widget.initialValue);
+    _controller =
+        widget.controller ?? TextEditingController(text: widget.initialValue);
     _focusNode = widget.focusNode ?? FocusNode();
     _obscureText = widget.obscureText;
     _hasFocus = false;
     _hasText = _controller.text.isNotEmpty;
-    
+
     _controller.addListener(_onTextChanged);
     _focusNode.addListener(_onFocusChanged);
   }
@@ -172,10 +172,11 @@ class _PremiumInputState extends State<PremiumInput> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     final inputStyle = _getInputStyle();
     final dimensions = _getDimensions();
-    final showFieldError = widget.errorText != null && widget.errorText!.trim().isNotEmpty;
+    final showFieldError =
+        widget.errorText != null && widget.errorText!.trim().isNotEmpty;
     final bool activeBorder = _hasFocus || widget.emphasizeBorder;
 
     return Column(
@@ -185,17 +186,12 @@ class _PremiumInputState extends State<PremiumInput> {
         if (widget.label != null) ...[
           Row(
             children: [
-              Text(
-                widget.label!,
-                style: inputStyle.labelStyle,
-              ),
+              Text(widget.label!, style: inputStyle.labelStyle),
               if (widget.required) ...[
                 const SizedBox(width: AppSpacing.xs),
                 Text(
                   '*',
-                  style: inputStyle.labelStyle.copyWith(
-                    color: AppColors.error,
-                  ),
+                  style: inputStyle.labelStyle.copyWith(color: AppColors.error),
                 ),
               ],
             ],
@@ -208,7 +204,9 @@ class _PremiumInputState extends State<PremiumInput> {
             borderRadius: BorderRadius.circular(dimensions.radius),
             border: Border.all(
               color: inputStyle.borderColor,
-              width: showFieldError || activeBorder ? 2 : AppSpacing.strokeNormal,
+              width: showFieldError || activeBorder
+                  ? 2
+                  : AppSpacing.strokeNormal,
             ),
             boxShadow: inputStyle.shadow,
           ),
@@ -221,10 +219,13 @@ class _PremiumInputState extends State<PremiumInput> {
             maxLines: widget.maxLines,
             minLines: widget.minLines,
             maxLength: widget.maxLength,
-            keyboardType: widget.pinPadInput ? TextInputType.none : _getKeyboardType(),
+            keyboardType: widget.pinPadInput
+                ? TextInputType.none
+                : _getKeyboardType(),
             enableInteractiveSelection: !widget.pinPadInput,
             contextMenuBuilder: widget.pinPadInput
-                ? (BuildContext ctx, EditableTextState state) => const SizedBox.shrink()
+                ? (BuildContext ctx, EditableTextState state) =>
+                      const SizedBox.shrink()
                 : null,
             inputFormatters: widget.inputFormatters ?? _getInputFormatters(),
             onChanged: widget.onChanged,
@@ -234,12 +235,12 @@ class _PremiumInputState extends State<PremiumInput> {
             decoration: InputDecoration(
               hintText: widget.hint,
               hintStyle: inputStyle.hintStyle,
-              prefixIcon: widget.prefixIcon != null 
-                ? Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: widget.prefixIcon,
-                  )
-                : null,
+              prefixIcon: widget.prefixIcon != null
+                  ? Padding(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: widget.prefixIcon,
+                    )
+                  : null,
               suffixIcon: _buildSuffixIcon(inputStyle),
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
@@ -289,10 +290,7 @@ class _PremiumInputState extends State<PremiumInput> {
               ),
               const SizedBox(width: AppSpacing.xs),
               Expanded(
-                child: Text(
-                  widget.helperText!,
-                  style: inputStyle.helperStyle,
-                ),
+                child: Text(widget.helperText!, style: inputStyle.helperStyle),
               ),
             ],
           ),
@@ -321,10 +319,7 @@ class _PremiumInputState extends State<PremiumInput> {
           ),
           onPressed: _clearText,
           splashRadius: 20,
-          constraints: const BoxConstraints(
-            minWidth: 32,
-            minHeight: 32,
-          ),
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
         ),
       );
     }
@@ -333,16 +328,15 @@ class _PremiumInputState extends State<PremiumInput> {
       icons.add(
         IconButton(
           icon: Icon(
-            _obscureText ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+            _obscureText
+                ? Icons.visibility_off_rounded
+                : Icons.visibility_rounded,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
             size: 20,
           ),
           onPressed: _toggleObscureText,
           splashRadius: 20,
-          constraints: const BoxConstraints(
-            minWidth: 32,
-            minHeight: 32,
-          ),
+          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
         ),
       );
     }
@@ -351,17 +345,15 @@ class _PremiumInputState extends State<PremiumInput> {
 
     return Padding(
       padding: const EdgeInsets.only(right: AppSpacing.sm),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: icons,
-      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: icons),
     );
   }
 
   _InputStyle _getInputStyle() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final hasError = widget.errorText != null && widget.errorText!.trim().isNotEmpty;
+    final hasError =
+        widget.errorText != null && widget.errorText!.trim().isNotEmpty;
     final isEnabled = widget.enabled;
 
     Color borderColor;
@@ -370,18 +362,26 @@ class _PremiumInputState extends State<PremiumInput> {
 
     if (hasError) {
       borderColor = AppColors.error;
-      fillColor = isDark ? AppColors.error.withOpacity(0.1) : AppColors.errorLight;
+      fillColor = isDark
+          ? AppColors.error.withOpacity(0.1)
+          : AppColors.errorLight;
       shadow = AppShadows.error;
     } else if (_hasFocus || widget.emphasizeBorder) {
-      borderColor = widget.focusedBorderColor ?? widget.borderColor ?? AppColors.secondary;
-      fillColor = widget.fillColor ??
-        (isDark ? AppColors.darkSurfaceVariant : AppColors.surface);
+      borderColor =
+          widget.focusedBorderColor ??
+          widget.borderColor ??
+          AppColors.secondary;
+      fillColor =
+          widget.fillColor ??
+          (isDark ? AppColors.darkSurfaceVariant : AppColors.surface);
       shadow = AppShadows.glow;
     } else {
-      borderColor = widget.borderColor ?? 
-        (isDark ? AppColors.darkBorder : AppColors.border);
-      fillColor = widget.fillColor ?? 
-        (isDark ? AppColors.darkSurfaceVariant : AppColors.surface);
+      borderColor =
+          widget.borderColor ??
+          (isDark ? AppColors.darkBorder : AppColors.border);
+      fillColor =
+          widget.fillColor ??
+          (isDark ? AppColors.darkSurfaceVariant : AppColors.surface);
       shadow = null;
     }
 
@@ -395,21 +395,17 @@ class _PremiumInputState extends State<PremiumInput> {
       borderColor: borderColor,
       shadow: shadow,
       textStyle: AppTextStyles.inputText.copyWith(
-        color: isEnabled 
-          ? theme.colorScheme.onSurface 
-          : theme.colorScheme.onSurface.withOpacity(0.5),
+        color: isEnabled
+            ? theme.colorScheme.onSurface
+            : theme.colorScheme.onSurface.withOpacity(0.5),
       ),
       hintStyle: AppTextStyles.inputHint.copyWith(
         color: theme.colorScheme.onSurfaceVariant,
       ),
       labelStyle: AppTextStyles.inputLabel.copyWith(
-        color: hasError 
-          ? AppColors.error 
-          : theme.colorScheme.onSurface,
+        color: hasError ? AppColors.error : theme.colorScheme.onSurface,
       ),
-      errorStyle: AppTextStyles.errorText.copyWith(
-        color: AppColors.error,
-      ),
+      errorStyle: AppTextStyles.errorText.copyWith(color: AppColors.error),
       helperStyle: AppTextStyles.bodySmall.copyWith(
         color: theme.colorScheme.onSurfaceVariant,
       ),
@@ -426,7 +422,7 @@ class _PremiumInputState extends State<PremiumInput> {
             vertical: AppSpacing.sm,
           ),
         );
-      
+
       case PremiumInputSize.medium:
         return _InputDimensions(
           radius: AppSpacing.radiusLarge,
@@ -435,7 +431,7 @@ class _PremiumInputState extends State<PremiumInput> {
             vertical: AppSpacing.inputPadding,
           ),
         );
-      
+
       case PremiumInputSize.large:
         return _InputDimensions(
           radius: AppSpacing.radiusXLarge,
@@ -449,7 +445,7 @@ class _PremiumInputState extends State<PremiumInput> {
 
   TextInputType _getKeyboardType() {
     if (widget.keyboardType != null) return widget.keyboardType!;
-    
+
     switch (widget.type) {
       case PremiumInputType.email:
         return TextInputType.emailAddress;
@@ -468,17 +464,15 @@ class _PremiumInputState extends State<PremiumInput> {
 
   List<TextInputFormatter>? _getInputFormatters() {
     if (widget.inputFormatters != null) return widget.inputFormatters!;
-    
+
     switch (widget.type) {
       case PremiumInputType.phone:
         return [
           FilteringTextInputFormatter.digitsOnly,
-          LengthLimitingTextInputFormatter(15),
+          LengthLimitingTextInputFormatter(8),
         ];
       case PremiumInputType.number:
-        return [
-          FilteringTextInputFormatter.digitsOnly,
-        ];
+        return [FilteringTextInputFormatter.digitsOnly];
       default:
         return null;
     }
@@ -511,8 +505,5 @@ class _InputDimensions {
   final double radius;
   final EdgeInsets contentPadding;
 
-  _InputDimensions({
-    required this.radius,
-    required this.contentPadding,
-  });
+  _InputDimensions({required this.radius, required this.contentPadding});
 }

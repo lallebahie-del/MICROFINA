@@ -28,26 +28,11 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
   int _currentIndex = 0;
 
   final List<PremiumNavItem> _navItems = [
-    const PremiumNavItem(
-      icon: Icons.home_rounded,
-      label: 'Accueil',
-    ),
-    const PremiumNavItem(
-      icon: Icons.account_balance_rounded,
-      label: 'Comptes',
-    ),
-    const PremiumNavItem(
-      icon: Icons.send_rounded,
-      label: 'Transfert',
-    ),
-    const PremiumNavItem(
-      icon: Icons.history_rounded,
-      label: 'Historique',
-    ),
-    const PremiumNavItem(
-      icon: Icons.person_rounded,
-      label: 'Profil',
-    ),
+    const PremiumNavItem(icon: Icons.home_rounded, label: 'Accueil'),
+    const PremiumNavItem(icon: Icons.account_balance_rounded, label: 'Comptes'),
+    const PremiumNavItem(icon: Icons.send_rounded, label: 'Transfert'),
+    const PremiumNavItem(icon: Icons.history_rounded, label: 'Historique'),
+    const PremiumNavItem(icon: Icons.person_rounded, label: 'Profil'),
   ];
 
   @override
@@ -80,16 +65,19 @@ class _MainNavigationWrapperState extends State<MainNavigationWrapper> {
 
   void _updateCurrentIndex(String location) {
     int newIndex = 0;
-    
+
     if (location.contains('/dashboard') || location == '/') {
       newIndex = 0;
     } else if (location.contains(AppRouter.accounts)) {
       newIndex = 1;
-    } else if (location.contains('/transfer') || location.contains('/scan') || location.contains('/pay')) {
+    } else if (location.contains('/transfer') ||
+        location.contains('/scan') ||
+        location.contains('/pay')) {
       newIndex = 2;
     } else if (location.contains(AppRouter.transactions)) {
       newIndex = 3;
-    } else if (location.contains('/profile')) {
+    } else if (location.contains('/profile') ||
+        location.contains(AppRouter.alerts)) {
       newIndex = 4;
     }
 
@@ -192,11 +180,7 @@ class QuickActionFab extends StatelessWidget {
           child: Container(
             width: 56,
             height: 56,
-            child: Icon(
-              icon,
-              color: AppColors.textOnPrimary,
-              size: 24,
-            ),
+            child: Icon(icon, color: AppColors.textOnPrimary, size: 24),
           ),
         ),
       ),

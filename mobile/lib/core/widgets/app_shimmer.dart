@@ -16,18 +16,16 @@ class AppShimmer extends StatelessWidget {
     this.shape = BoxShape.rectangle,
   });
 
-  const AppShimmer.circle({
-    super.key,
-    required double size,
-  })  : width = size,
-        height = size,
-        borderRadius = null,
-        shape = BoxShape.circle;
+  const AppShimmer.circle({super.key, required double size})
+    : width = size,
+      height = size,
+      borderRadius = null,
+      shape = BoxShape.circle;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Shimmer.fromColors(
       baseColor: isDark ? Colors.grey[800]! : Colors.grey[300]!,
       highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
@@ -36,7 +34,9 @@ class AppShimmer extends StatelessWidget {
         height: height,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: borderRadius ?? (shape == BoxShape.rectangle ? BorderRadius.circular(12) : null),
+          borderRadius:
+              borderRadius ??
+              (shape == BoxShape.rectangle ? BorderRadius.circular(12) : null),
           shape: shape,
         ),
       ),

@@ -40,7 +40,10 @@ class _ScanScreenState extends State<ScanScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scanner QR Code', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Scanner QR Code',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -67,15 +70,17 @@ class _ScanScreenState extends State<ScanScreen> {
                         final List<Barcode> barcodes = capture.barcodes;
                         for (final barcode in barcodes) {
                           debugPrint('Barcode found! ${barcode.rawValue}');
-                          
+
                           // Si c'est un lien de paiement simulé ou n'importe quel code
                           _controller.stop(); // Arrêter le scan pour traiter
-                          
+
                           showDialog(
                             context: context,
                             builder: (context) => AlertDialog(
                               title: const Text('QR Code détecté'),
-                              content: Text('Voulez-vous initier un paiement pour :\n${barcode.rawValue}'),
+                              content: Text(
+                                'Voulez-vous initier un paiement pour :\n${barcode.rawValue}',
+                              ),
                               actions: [
                                 TextButton(
                                   onPressed: () {
@@ -110,9 +115,16 @@ class _ScanScreenState extends State<ScanScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.camera_alt_rounded, size: 60, color: Colors.grey),
+                          Icon(
+                            Icons.camera_alt_rounded,
+                            size: 60,
+                            color: Colors.grey,
+                          ),
                           SizedBox(height: 16),
-                          Text('Permission caméra requise', style: TextStyle(color: Colors.grey)),
+                          Text(
+                            'Permission caméra requise',
+                            style: TextStyle(color: Colors.grey),
+                          ),
                         ],
                       ),
                     ),
@@ -139,7 +151,11 @@ class _ScanScreenState extends State<ScanScreen> {
                     children: [
                       const Text(
                         'Scannez un code pour payer',
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.primary),
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Flexible(
@@ -148,7 +164,10 @@ class _ScanScreenState extends State<ScanScreen> {
                           child: Text(
                             'Placez le QR code dans le cadre pour lancer le paiement automatique.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ),
@@ -160,14 +179,19 @@ class _ScanScreenState extends State<ScanScreen> {
                           onPressed: () => context.pop(),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                           ),
                           child: const FittedBox(
                             fit: BoxFit.scaleDown,
                             child: Text(
                               'RETOUR AU DASHBOARD',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
                               maxLines: 1,
                             ),
                           ),

@@ -7,12 +7,16 @@ class GarantieModel extends Equatable {
   final double valeur;
   final String description;
 
+  /// Statut métier (GARANTIES) : ex. Validée, En cours de constitution, Libérée.
+  final String statut;
+
   const GarantieModel({
     required this.id,
     required this.loanId,
     required this.type,
     required this.valeur,
     required this.description,
+    this.statut = 'Validée',
   });
 
   factory GarantieModel.fromJson(Map<String, dynamic> json) {
@@ -22,11 +26,12 @@ class GarantieModel extends Equatable {
       type: json['type'] as String,
       valeur: (json['valeur'] as num).toDouble(),
       description: json['description'] as String,
+      statut: json['statut'] as String? ?? 'Validée',
     );
   }
 
   @override
-  List<Object?> get props => [id, loanId, type, valeur, description];
+  List<Object?> get props => [id, loanId, type, valeur, description, statut];
 }
 
 class CertificatModel extends Equatable {
@@ -55,8 +60,13 @@ class CertificatModel extends Equatable {
       numeroCertificat: json['numeroCertificat'] as String,
       montantPlacement: (json['montantPlacement'] as num).toDouble(),
       tauxInteret: (json['tauxInteret'] as num).toDouble(),
-      startDate: DateTime.parse(json['startDate'] ?? DateTime.now().subtract(const Duration(days: 30)).toIso8601String()),
-      maturityDate: DateTime.parse(json['dateEcheance'] ?? json['maturityDate']),
+      startDate: DateTime.parse(
+        json['startDate'] ??
+            DateTime.now().subtract(const Duration(days: 30)).toIso8601String(),
+      ),
+      maturityDate: DateTime.parse(
+        json['dateEcheance'] ?? json['maturityDate'],
+      ),
     );
   }
 
@@ -81,7 +91,15 @@ class CertificatModel extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, accountId, numeroCertificat, montantPlacement, tauxInteret, startDate, maturityDate];
+  List<Object?> get props => [
+    id,
+    accountId,
+    numeroCertificat,
+    montantPlacement,
+    tauxInteret,
+    startDate,
+    maturityDate,
+  ];
 }
 
 class EpargneTransactionModel extends Equatable {

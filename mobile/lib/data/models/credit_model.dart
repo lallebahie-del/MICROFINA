@@ -46,8 +46,9 @@ class LoanModel extends Equatable {
   }
 
   // Améliorations Fonctionnelles
-  double get progressPercentage =>
-      totalAmount > 0 ? ((totalAmount - remainingCapital) / totalAmount) * 100 : 0;
+  double get progressPercentage => totalAmount > 0
+      ? ((totalAmount - remainingCapital) / totalAmount) * 100
+      : 0;
 
   String get statusLabel {
     switch (statusCode) {
@@ -66,12 +67,12 @@ class LoanModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        loanId,
-        totalAmount,
-        remainingCapital,
-        interestRate,
-        endDate,
-        statusCode,
-        nextInstallmentDueDate,
-      ];
+    loanId,
+    totalAmount,
+    remainingCapital,
+    interestRate,
+    endDate,
+    statusCode,
+    nextInstallmentDueDate,
+  ];
 }

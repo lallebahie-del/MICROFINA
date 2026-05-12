@@ -42,7 +42,9 @@ class PremiumPieChart extends StatelessWidget {
                   if (event.isInterestedForInteractions &&
                       pieTouchResponse != null &&
                       pieTouchResponse.touchedSection != null) {
-                    onTap?.call(pieTouchResponse.touchedSection!.touchedSectionIndex);
+                    onTap?.call(
+                      pieTouchResponse.touchedSection!.touchedSectionIndex,
+                    );
                   }
                 },
               ),
@@ -52,13 +54,16 @@ class PremiumPieChart extends StatelessWidget {
               sections: data.asMap().entries.map((entry) {
                 final index = entry.key;
                 final item = entry.value;
-                final isTouched = index == (data.length - 1); // Default touched state
-                
+                final isTouched =
+                    index == (data.length - 1); // Default touched state
+
                 return PieChartSectionData(
                   value: item.value,
                   color: item.color,
                   title: '',
-                  radius: isTouched ? (radius ?? 200) * 0.15 : (radius ?? 200) * 0.12,
+                  radius: isTouched
+                      ? (radius ?? 200) * 0.15
+                      : (radius ?? 200) * 0.12,
                   badgeWidget: _buildBadge(
                     context,
                     currencyFormat.format(item.value),
@@ -238,8 +243,12 @@ class PremiumLineChart extends StatelessWidget {
                   : const FlGridData(show: false),
               titlesData: FlTitlesData(
                 show: true,
-                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
@@ -397,10 +406,16 @@ class PremiumBarChart extends StatelessWidget {
                   : const FlGridData(show: false),
               titlesData: FlTitlesData(
                 show: true,
-                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
                 bottomTitles: isHorizontal
-                    ? const AxisTitles(sideTitles: SideTitles(showTitles: false))
+                    ? const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      )
                     : AxisTitles(
                         sideTitles: SideTitles(
                           showTitles: true,
@@ -467,7 +482,7 @@ class PremiumBarChart extends StatelessWidget {
               barGroups: data.asMap().entries.map((entry) {
                 final index = entry.key;
                 final item = entry.value;
-                
+
                 return BarChartGroupData(
                   x: index,
                   barRods: [
@@ -489,8 +504,12 @@ class PremiumBarChart extends StatelessWidget {
                           item.color ?? AppColors.secondary,
                           (item.color ?? AppColors.secondary).withOpacity(0.8),
                         ],
-                        begin: isHorizontal ? Alignment.centerLeft : Alignment.bottomCenter,
-                        end: isHorizontal ? Alignment.centerRight : Alignment.topCenter,
+                        begin: isHorizontal
+                            ? Alignment.centerLeft
+                            : Alignment.bottomCenter,
+                        end: isHorizontal
+                            ? Alignment.centerRight
+                            : Alignment.topCenter,
                       ),
                     ),
                   ],
@@ -520,18 +539,12 @@ class PremiumLineSeries {
   final List<FlSpot> spots;
   final Color? color;
 
-  PremiumLineSeries({
-    required this.spots,
-    this.color,
-  });
+  PremiumLineSeries({required this.spots, this.color});
 }
 
 class PremiumBarSeries {
   final double value;
   final Color? color;
 
-  PremiumBarSeries({
-    required this.value,
-    this.color,
-  });
+  PremiumBarSeries({required this.value, this.color});
 }

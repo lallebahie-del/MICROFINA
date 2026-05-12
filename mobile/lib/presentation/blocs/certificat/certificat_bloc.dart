@@ -50,13 +50,26 @@ class CertificatBloc extends Bloc<CertificatEvent, CertificatState> {
     on<FetchCertificats>(_onFetchCertificats);
   }
 
-  Future<void> _onFetchCertificats(FetchCertificats event, Emitter<CertificatState> emit) async {
+  Future<void> _onFetchCertificats(
+    FetchCertificats event,
+    Emitter<CertificatState> emit,
+  ) async {
     emit(state.copyWith(status: CertificatStatus.loading));
     try {
       final certificats = await _certificatRepository.getCertificats();
-      emit(state.copyWith(status: CertificatStatus.success, certificats: certificats));
+      emit(
+        state.copyWith(
+          status: CertificatStatus.success,
+          certificats: certificats,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(status: CertificatStatus.failure, errorMessage: e.toString()));
+      emit(
+        state.copyWith(
+          status: CertificatStatus.failure,
+          errorMessage: e.toString(),
+        ),
+      );
     }
   }
 }

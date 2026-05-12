@@ -6,6 +6,8 @@ class AgenceModel extends Equatable {
   final String nom;
   final String ville;
   final String adresse;
+  final double latitude;
+  final double longitude;
 
   const AgenceModel({
     required this.id,
@@ -13,6 +15,8 @@ class AgenceModel extends Equatable {
     required this.nom,
     required this.ville,
     required this.adresse,
+    required this.latitude,
+    required this.longitude,
   });
 
   factory AgenceModel.fromJson(Map<String, dynamic> json) {
@@ -22,6 +26,8 @@ class AgenceModel extends Equatable {
       nom: json['nom'] as String,
       ville: json['ville'] as String,
       adresse: json['adresse'] as String,
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
     );
   }
 
@@ -32,9 +38,19 @@ class AgenceModel extends Equatable {
       'nom': nom,
       'ville': ville,
       'adresse': adresse,
+      'latitude': latitude,
+      'longitude': longitude,
     };
   }
 
   @override
-  List<Object?> get props => [id, code, nom, ville, adresse];
+  List<Object?> get props => [
+    id,
+    code,
+    nom,
+    ville,
+    adresse,
+    latitude,
+    longitude,
+  ];
 }

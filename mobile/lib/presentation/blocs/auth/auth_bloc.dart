@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/auth/session_invalidation_broadcaster.dart';
 import '../../../data/datasources/mock/mock_data.dart';
 import '../../../data/repositories/auth_repository_impl.dart';
 import '../../../domain/models/login_outcome.dart';
@@ -22,16 +25,40 @@ String _loginFailureMessage(LoginFailureKind kind) {
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
+  final SessionInvalidationBroadcaster _sessionInvalidation;
+  late final StreamSubscription<void> _invalidationSub;
 
-  AuthBloc(this._authRepository) : super(AuthInitial()) {
+  AuthBloc(this._authRepository, this._sessionInvalidation)
+    : super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);
     on<LoginRequested>(_onLoginRequested);
     on<LogoutRequested>(_onLogoutRequested);
+    on<RemoteSessionInvalidated>(_onRemoteSessionInvalidated);
+
+    _invalidationSub = _sessionInvalidation.stream.listen((_) {
+      if (!isClosed) add(RemoteSessionInvalidated());
+    });
+  }
+
+  @override
+  Future<void> close() async {
+    await _invalidationSub.cancel();
+    return super.close();
+  }
+
+  Future<void> _onRemoteSessionInvalidated(
+    RemoteSessionInvalidated event,
+    Emitter<AuthState> emit,
+  ) async {
+    if (!isClosed && state is! Unauthenticated && state is! AuthInitial) {
+      emit(Unauthenticated());
+    }
   }
 
   Future<void> _onAppStarted(AppStarted event, Emitter<AuthState> emit) async {
     final token = await _authRepository.getToken();
-    final phone = await (_authRepository as AuthRepositoryImpl).secureStorage.getLastPhone();
+    final phone = await (_authRepository as AuthRepositoryImpl).secureStorage
+        .getLastPhone();
     if (token != null) {
       if (phone != null) MockData.currentUserPhone = phone;
       emit(AuthSuccess(token, phone: phone));
@@ -40,7 +67,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _onLoginRequested(LoginRequested event, Emitter<AuthState> emit) async {
+  Future<void> _onLoginRequested(
+    LoginRequested event,
+    Emitter<AuthState> emit,
+  ) async {
     // Logique du PIN de Panique
     if (event.pin == '9999') {
       await _authRepository.logout();
@@ -64,7 +94,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  Future<void> _onLogoutRequested(LogoutRequested event, Emitter<AuthState> emit) async {
+  Future<void> _onLogoutRequested(
+    LogoutRequested event,
+    Emitter<AuthState> emit,
+  ) async {
     try {
       await _authRepository.logout();
     } catch (_) {

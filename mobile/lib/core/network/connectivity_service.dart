@@ -5,12 +5,15 @@ enum ConnectivityStatus { online, offline }
 
 class ConnectivityService {
   final Connectivity _connectivity = Connectivity();
-  final StreamController<ConnectivityStatus> _controller = StreamController<ConnectivityStatus>.broadcast();
+  final StreamController<ConnectivityStatus> _controller =
+      StreamController<ConnectivityStatus>.broadcast();
 
   Stream<ConnectivityStatus> get stream => _controller.stream;
 
   ConnectivityService() {
-    _connectivity.onConnectivityChanged.listen((List<ConnectivityResult> results) {
+    _connectivity.onConnectivityChanged.listen((
+      List<ConnectivityResult> results,
+    ) {
       _controller.add(_getStatusFromResult(results));
     });
   }

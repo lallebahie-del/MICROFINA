@@ -65,7 +65,9 @@ class SecureStorageService {
     try {
       await _storage.delete(key: _refreshTokenKey);
     } on PlatformException catch (e) {
-      debugPrint('Erreur lors de la suppression du refresh token: ${e.message}');
+      debugPrint(
+        'Erreur lors de la suppression du refresh token: ${e.message}',
+      );
     }
   }
 
@@ -73,7 +75,9 @@ class SecureStorageService {
     try {
       await _storage.write(key: _userKey, value: userData);
     } on PlatformException catch (e) {
-      debugPrint('Erreur lors de la sauvegarde des données utilisateur: ${e.message}');
+      debugPrint(
+        'Erreur lors de la sauvegarde des données utilisateur: ${e.message}',
+      );
     }
   }
 
@@ -81,7 +85,9 @@ class SecureStorageService {
     try {
       return await _storage.read(key: _userKey);
     } on PlatformException catch (e) {
-      debugPrint('Erreur lors de la lecture des données utilisateur: ${e.message}');
+      debugPrint(
+        'Erreur lors de la lecture des données utilisateur: ${e.message}',
+      );
       return null;
     }
   }
@@ -129,7 +135,10 @@ class SecureStorageService {
   }) async {
     // Sauvegarder le nom spécifique au téléphone
     await _storage.write(key: 'user_name_$phone', value: name);
-    await _storage.write(key: 'biometric_enabled_$phone', value: biometricEnabled.toString());
+    await _storage.write(
+      key: 'biometric_enabled_$phone',
+      value: biometricEnabled.toString(),
+    );
 
     // Mettre à jour la liste des comptes enregistrés
     List<String> accounts = await getRegisteredPhones();
@@ -157,6 +166,39 @@ class SecureStorageService {
     return await _storage.read(key: 'user_photo_$phone');
   }
 
+  Future<void> saveUserEmail(String phone, String email) async {
+    await _storage.write(key: 'user_email_$phone', value: email);
+  }
+
+  Future<String?> getUserEmail(String phone) async {
+    return await _storage.read(key: 'user_email_$phone');
+  }
+
+  Future<void> saveUserContactPhone(String phone, String contactPhone) async {
+    await _storage.write(key: 'user_contact_phone_$phone', value: contactPhone);
+  }
+
+  Future<String?> getUserContactPhone(String phone) async {
+    return await _storage.read(key: 'user_contact_phone_$phone');
+  }
+
+  Future<void> saveUserAddress(String phone, String address) async {
+    await _storage.write(key: 'user_address_$phone', value: address);
+  }
+
+  Future<String?> getUserAddress(String phone) async {
+    return await _storage.read(key: 'user_address_$phone');
+  }
+
+  Future<void> setSmsAlertsEnabled(String phone, bool enabled) async {
+    await _storage.write(key: 'optsms_$phone', value: enabled.toString());
+  }
+
+  Future<bool> getSmsAlertsEnabled(String phone) async {
+    final value = await _storage.read(key: 'optsms_$phone');
+    return value == null || value == 'true';
+  }
+
   Future<bool> isBiometricEnabled(String phone) async {
     final value = await _storage.read(key: 'biometric_enabled_$phone');
     return value == null || value == 'true';
@@ -165,7 +207,7 @@ class SecureStorageService {
   Future<void> removeAccount(String phone) async {
     await _storage.delete(key: 'user_name_$phone');
     await _storage.delete(key: 'biometric_enabled_$phone');
-    
+
     List<String> accounts = await getRegisteredPhones();
     accounts.remove(phone);
     await _storage.write(key: _accountsListKey, value: accounts.join(','));

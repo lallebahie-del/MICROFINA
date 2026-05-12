@@ -15,13 +15,16 @@ import '../../presentation/screens/scan/scan_screen.dart';
 import '../../presentation/screens/pay/pay_screen.dart';
 import '../../presentation/screens/notifications/notification_screen.dart';
 import '../../presentation/screens/dashboard/main_navigation_wrapper.dart';
+import '../../presentation/screens/profile/alerts_screen.dart';
 import '../../presentation/screens/loans/loans_screen.dart';
 import '../../presentation/screens/loans/loan_detail_screen.dart';
 import '../../presentation/screens/loans/loan_simulator_screen.dart';
 import '../../presentation/screens/loans/certificat_screen.dart';
 import '../../presentation/screens/loans/loan_request_screen.dart';
 import '../../presentation/screens/accounts/accounts_screen.dart';
+import '../../presentation/screens/agencies/agencies_screen.dart';
 import '../../data/datasources/mock/mock_data.dart';
+import '../widgets/sensitive_screen_guard.dart';
 
 class AppRouter {
   static const String root = '/';
@@ -35,14 +38,34 @@ class AppRouter {
   static const String pay = '/pay';
   static const String notifications = '/notifications';
   static const String profile = '/profile';
+  static const String alerts = '/alerts';
+  static const String agencies = '/agences';
+  static const String agencyDetail = '/agences/:agenceId';
   static const String loans = '/loans';
   static const String loanDetail = '/loan-detail/:loan_id';
   static const String loanSimulator = '/loan_simulator';
   static const String loanRequest = '/loan_request';
   static const String certificates = '/certificates';
 
-  static final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
-  static final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
+  static String loanDetailPath(String loanId) => '/loan-detail/$loanId';
+  static String agencyPath(String agenceId) => '/agences/$agenceId';
+
+  static String? _pendingDeepLinkLocation;
+
+  static void setPendingDeepLinkLocation(String location) {
+    _pendingDeepLinkLocation = location;
+  }
+
+  static String? consumePendingDeepLinkLocation() {
+    final location = _pendingDeepLinkLocation;
+    _pendingDeepLinkLocation = null;
+    return location;
+  }
+
+  static final GlobalKey<NavigatorState> _rootNavigatorKey =
+      GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> _shellNavigatorKey =
+      GlobalKey<NavigatorState>();
 
   static GoRouter createRouter(AuthBloc authBloc) {
     return GoRouter(
@@ -64,7 +87,9 @@ class AppRouter {
         }
 
         if (authState is AuthSuccess) {
-          if (isLoggingIn || isRegistering) return dashboard;
+          if (isLoggingIn || isRegistering) {
+            return consumePendingDeepLinkLocation() ?? dashboard;
+          }
           return null;
         }
 
@@ -73,18 +98,22 @@ class AppRouter {
       routes: [
         GoRoute(
           path: login,
-          builder: (context, state) => const LoginScreen(),
+          builder: (context, state) =>
+              const SensitiveScreenGuard(child: LoginScreen()),
         ),
         GoRoute(
           path: register,
-          builder: (context, state) => const RegisterScreen(),
+          builder: (context, state) =>
+              const SensitiveScreenGuard(child: RegisterScreen()),
         ),
-        
+
         // ShellRoute pour la navigation persistante
         ShellRoute(
           navigatorKey: _shellNavigatorKey,
           builder: (context, state, child) {
-            return MainNavigationWrapper(child: child);
+            return SensitiveScreenGuard(
+              child: MainNavigationWrapper(child: child),
+            );
           },
           routes: [
             GoRoute(
@@ -117,7 +146,8 @@ class AppRouter {
               builder: (context, state) {
                 final accountId = state.pathParameters['accountId']!;
                 return BlocProvider(
-                  create: (context) => sl<TransactionBloc>()..add(LoadTransactions(accountId)),
+                  create: (context) =>
+                      sl<TransactionBloc>()..add(LoadTransactions(accountId)),
                   child: TransactionsScreen(accountId: accountId),
                 );
               },
@@ -125,6 +155,21 @@ class AppRouter {
             GoRoute(
               path: profile,
               builder: (context, state) => const ProfileScreen(),
+            ),
+            GoRoute(
+              path: alerts,
+              builder: (context, state) => const AlertsScreen(),
+            ),
+            GoRoute(
+              path: agencies,
+              builder: (context, state) => const AgenciesScreen(),
+            ),
+            GoRoute(
+              path: agencyDetail,
+              builder: (context, state) {
+                final agenceId = state.pathParameters['agenceId'];
+                return AgenciesScreen(initialAgenceId: agenceId);
+              },
             ),
             GoRoute(
               path: loans,
@@ -157,10 +202,7 @@ class AppRouter {
               path: scan,
               builder: (context, state) => const ScanScreen(),
             ),
-            GoRoute(
-              path: pay,
-              builder: (context, state) => const PayScreen(),
-            ),
+            GoRoute(path: pay, builder: (context, state) => const PayScreen()),
             GoRoute(
               path: notifications,
               builder: (context, state) => const NotificationScreen(),
@@ -175,8 +217,8 @@ class AppRouter {
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     _subscription = stream.asBroadcastStream().listen(
-          (dynamic _) => notifyListeners(),
-        );
+      (dynamic _) => notifyListeners(),
+    );
   }
 
   late final StreamSubscription<dynamic> _subscription;

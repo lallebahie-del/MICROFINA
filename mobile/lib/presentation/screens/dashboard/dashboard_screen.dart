@@ -5,9 +5,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:lottie/lottie.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../data/datasources/mock/mock_data.dart';
@@ -18,7 +16,6 @@ import '../../blocs/account/account_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/storage/secure_storage_service.dart';
 
-import 'package:shimmer/shimmer.dart';
 import '../../../core/network/connectivity_service.dart';
 import '../../../core/widgets/app_shimmer.dart';
 
@@ -33,7 +30,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final _secureStorage = SecureStorageService(const FlutterSecureStorage());
   String? _userName;
   String? _photoPath;
-  bool _isLoading = true;
   bool _isBalanceVisible = true;
   ConnectivityStatus _connectivityStatus = ConnectivityStatus.online;
   int? _touchedIndex;
@@ -60,9 +56,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _loadUserData() async {
     // Simuler un chargement pour montrer le Skeleton
     await Future.delayed(const Duration(seconds: 2));
-    
+
     if (!mounted) return;
-    
+
     final authBloc = context.read<AuthBloc>();
     final authState = authBloc.state;
     if (authState is AuthSuccess && authState.phone != null) {
@@ -72,26 +68,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() {
           _userName = name;
           _photoPath = photo;
-          _isLoading = false;
         });
       }
     }
   }
 
-  void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$feature bientôt disponible'),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(locale: 'fr_FR', symbol: 'FCFA', decimalDigits: 0);
-    
+    final currencyFormat = NumberFormat.currency(
+      locale: 'fr_FR',
+      symbol: 'FCFA',
+      decimalDigits: 0,
+    );
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: BlocBuilder<AccountBloc, AccountState>(
@@ -108,7 +97,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             soldeBloque += acc.blockedBalance;
           }
           final double soldeTotal = soldeDisponible + soldeBloque;
-          final hasUnreadNotifications = MockData.getNotifications().any((n) => n['isRead'] == false);
+          final hasUnreadNotifications = MockData.getNotifications().any(
+            (n) => n['isRead'] == false,
+          );
 
           return Column(
             children: [
@@ -120,7 +111,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: const Text(
                     'MODE HORS-LIGNE - DONNÉES LOCALES',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
+                    ),
                   ),
                 ),
               Expanded(
@@ -154,72 +150,93 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 32,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               // Quick Actions Grid
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
                                     'Actions Rapides',
-                                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.primary),
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w900,
+                                      color: AppColors.primary,
+                                    ),
                                   ),
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.05), 
+                                      color: AppColors.primary.withOpacity(
+                                        0.05,
+                                      ),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: const Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 14),
+                                    child: const Icon(
+                                      Icons.auto_awesome_rounded,
+                                      color: AppColors.primary,
+                                      size: 14,
+                                    ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 24),
-                              AnimationLimiter(
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: AnimationConfiguration.toStaggeredList(
-                                    duration: const Duration(milliseconds: 375),
-                                    childAnimationBuilder: (widget) => SlideAnimation(
-                                      horizontalOffset: 50.0,
-                                      child: FadeInAnimation(child: widget),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _buildPremiumQuickAction(
+                                      Icons.send_rounded,
+                                      'Envoi',
+                                      onTap: () async {
+                                        await context.push(AppRouter.transfer);
+                                        if (mounted) {
+                                          setState(() {});
+                                        }
+                                      },
                                     ),
-                                    children: [
-                                      _buildPremiumQuickAction(
-                                        Icons.send_rounded, 
-                                        'Envoi', 
-                                        onTap: () async {
-                                          await context.push(AppRouter.transfer);
-                                          if (mounted) {
-                                            setState(() {});
-                                          }
-                                        },
-                                      ),
-                                      _buildPremiumQuickAction(
-                                        Icons.qr_code_scanner_rounded, 
-                                        'Scan', 
-                                        onTap: () => context.push(AppRouter.scan),
-                                      ),
-                                      _buildPremiumQuickAction(
-                                        Icons.account_balance_wallet_rounded, 
-                                        'Pay', 
-                                        onTap: () async {
-                                          await context.push(AppRouter.pay);
-                                          if (mounted) {
-                                            setState(() {});
-                                          }
-                                        },
-                                      ),
-                                      _buildPremiumQuickAction(
-                                        Icons.payments_rounded, 
-                                        'Prêts', 
-                                        onTap: () => context.push(AppRouter.loans),
-                                      ),
-                                    ],
                                   ),
-                                ),
+                                  Expanded(
+                                    child: _buildPremiumQuickAction(
+                                      Icons.qr_code_scanner_rounded,
+                                      'Scan',
+                                      onTap: () => context.push(AppRouter.scan),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: _buildPremiumQuickAction(
+                                      Icons.account_balance_wallet_rounded,
+                                      'Pay',
+                                      onTap: () async {
+                                        await context.push(AppRouter.pay);
+                                        if (mounted) {
+                                          setState(() {});
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: _buildPremiumQuickAction(
+                                      Icons.payments_rounded,
+                                      'Prêts',
+                                      onTap: () =>
+                                          context.push(AppRouter.loans),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: _buildPremiumQuickAction(
+                                      Icons.location_on_rounded,
+                                      'Agences',
+                                      onTap: () =>
+                                          context.push(AppRouter.agencies),
+                                    ),
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 40),
                               // Analyse Section
@@ -237,15 +254,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         Container(
                                           padding: const EdgeInsets.all(8),
                                           decoration: BoxDecoration(
-                                            color: AppColors.primary.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(12),
+                                            color: AppColors.primary
+                                                .withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
                                           ),
-                                          child: const Icon(Icons.pie_chart_rounded, color: AppColors.primary, size: 20),
+                                          child: const Icon(
+                                            Icons.pie_chart_rounded,
+                                            color: AppColors.primary,
+                                            size: 20,
+                                          ),
                                         ),
                                         const SizedBox(width: 12),
                                         const Text(
                                           'Répartition des avoirs',
-                                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800, fontSize: 16),
+                                          style: TextStyle(
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 16,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -258,17 +286,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           PieChart(
                                             PieChartData(
                                               pieTouchData: PieTouchData(
-                                                touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                                                  setState(() {
-                                                    if (!event.isInterestedForInteractions ||
-                                                        pieTouchResponse == null ||
-                                                        pieTouchResponse.touchedSection == null) {
-                                                      _touchedIndex = -1;
-                                                      return;
-                                                    }
-                                                    _touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
-                                                  });
-                                                },
+                                                touchCallback:
+                                                    (
+                                                      FlTouchEvent event,
+                                                      pieTouchResponse,
+                                                    ) {
+                                                      setState(() {
+                                                        if (!event
+                                                                .isInterestedForInteractions ||
+                                                            pieTouchResponse ==
+                                                                null ||
+                                                            pieTouchResponse
+                                                                    .touchedSection ==
+                                                                null) {
+                                                          _touchedIndex = -1;
+                                                          return;
+                                                        }
+                                                        _touchedIndex =
+                                                            pieTouchResponse
+                                                                .touchedSection!
+                                                                .touchedSectionIndex;
+                                                      });
+                                                    },
                                               ),
                                               sectionsSpace: 6,
                                               centerSpaceRadius: 60,
@@ -278,17 +317,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                   value: soldeDisponible,
                                                   color: AppColors.primary,
                                                   title: '',
-                                                  radius: _touchedIndex == 0 ? 30 : 25,
-                                                  badgeWidget: _touchedIndex == 0 ? _buildBadge(currencyFormat.format(soldeDisponible), AppColors.primary) : null,
-                                                  badgePositionPercentageOffset: 1.3,
+                                                  radius: _touchedIndex == 0
+                                                      ? 30
+                                                      : 25,
+                                                  badgeWidget:
+                                                      _touchedIndex == 0
+                                                      ? _buildBadge(
+                                                          currencyFormat.format(
+                                                            soldeDisponible,
+                                                          ),
+                                                          AppColors.primary,
+                                                        )
+                                                      : null,
+                                                  badgePositionPercentageOffset:
+                                                      1.3,
                                                 ),
                                                 PieChartSectionData(
                                                   value: soldeBloque,
                                                   color: AppColors.success,
                                                   title: '',
-                                                  radius: _touchedIndex == 1 ? 25 : 20,
-                                                  badgeWidget: _touchedIndex == 1 ? _buildBadge(currencyFormat.format(soldeBloque), AppColors.success) : null,
-                                                  badgePositionPercentageOffset: 1.3,
+                                                  radius: _touchedIndex == 1
+                                                      ? 25
+                                                      : 20,
+                                                  badgeWidget:
+                                                      _touchedIndex == 1
+                                                      ? _buildBadge(
+                                                          currencyFormat.format(
+                                                            soldeBloque,
+                                                          ),
+                                                          AppColors.success,
+                                                        )
+                                                      : null,
+                                                  badgePositionPercentageOffset:
+                                                      1.3,
                                                 ),
                                               ],
                                             ),
@@ -299,14 +360,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                               Text(
                                                 'TOTAL',
                                                 style: TextStyle(
-                                                  color: AppColors.primary.withOpacity(0.5),
+                                                  color: AppColors.primary
+                                                      .withOpacity(0.5),
                                                   fontSize: 10,
                                                   fontWeight: FontWeight.bold,
                                                   letterSpacing: 1,
                                                 ),
                                               ),
                                               Text(
-                                                _isBalanceVisible ? currencyFormat.format(soldeTotal) : '••••••',
+                                                _isBalanceVisible
+                                                    ? currencyFormat.format(
+                                                        soldeTotal,
+                                                      )
+                                                    : '••••••',
                                                 style: const TextStyle(
                                                   color: AppColors.primary,
                                                   fontSize: 14,
@@ -320,11 +386,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     ),
                                     const SizedBox(height: 20),
                                     Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
-                                        _buildLegendItem(AppColors.primary, 'Disponible', isDark: false),
+                                        _buildLegendItem(
+                                          AppColors.primary,
+                                          'Disponible',
+                                          isDark: false,
+                                        ),
                                         const SizedBox(width: 24),
-                                        _buildLegendItem(AppColors.success, 'Bloqué', isDark: false),
+                                        _buildLegendItem(
+                                          AppColors.success,
+                                          'Bloqué',
+                                          isDark: false,
+                                        ),
                                       ],
                                     ),
                                   ],
@@ -332,26 +407,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                               const SizedBox(height: 40),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
                                     'Mes Comptes',
-                                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.primary),
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w900,
+                                      color: AppColors.primary,
+                                    ),
                                   ),
                                   Row(
                                     children: [
                                       TextButton(
-                                        onPressed: () => context.push(AppRouter.accounts),
-                                        child: const Text('VOIR TOUT', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, letterSpacing: 1)),
+                                        onPressed: () =>
+                                            context.push(AppRouter.accounts),
+                                        child: const Text(
+                                          'VOIR TOUT',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 11,
+                                            letterSpacing: 1,
+                                          ),
+                                        ),
                                       ),
                                       const SizedBox(width: 4),
                                       Container(
                                         padding: const EdgeInsets.all(6),
                                         decoration: BoxDecoration(
-                                          color: AppColors.primary.withOpacity(0.05),
+                                          color: AppColors.primary.withOpacity(
+                                            0.05,
+                                          ),
                                           shape: BoxShape.circle,
                                         ),
-                                        child: const Icon(Icons.account_balance_rounded, color: AppColors.primary, size: 12),
+                                        child: const Icon(
+                                          Icons.account_balance_rounded,
+                                          color: AppColors.primary,
+                                          size: 12,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -363,38 +457,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   shrinkWrap: true,
                                   padding: EdgeInsets.zero,
                                   physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: userAccounts.length > 3 ? 3 : userAccounts.length,
+                                  itemCount: userAccounts.length > 3
+                                      ? 3
+                                      : userAccounts.length,
                                   itemBuilder: (context, index) {
                                     final account = userAccounts[index];
-                                    final Color accountColor = account.accountTypeColor != null 
-                                        ? Color(int.parse(account.accountTypeColor!.replaceFirst('#', '0xFF')))
+                                    final Color accountColor =
+                                        account.accountTypeColor != null
+                                        ? Color(
+                                            int.parse(
+                                              account.accountTypeColor!
+                                                  .replaceFirst('#', '0xFF'),
+                                            ),
+                                          )
                                         : AppColors.secondary;
 
                                     return AnimationConfiguration.staggeredList(
                                       position: index,
-                                      duration: const Duration(milliseconds: 375),
+                                      duration: const Duration(
+                                        milliseconds: 375,
+                                      ),
                                       child: SlideAnimation(
                                         verticalOffset: 50.0,
                                         child: FadeInAnimation(
                                           child: Container(
-                                            margin: const EdgeInsets.only(bottom: 12),
+                                            margin: const EdgeInsets.only(
+                                              bottom: 12,
+                                            ),
                                             decoration: BoxDecoration(
                                               color: Colors.white,
-                                              borderRadius: BorderRadius.circular(16),
-                                              border: Border.all(color: Colors.grey.withOpacity(0.05)),
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              border: Border.all(
+                                                color: Colors.grey.withOpacity(
+                                                  0.05,
+                                                ),
+                                              ),
                                               boxShadow: [
                                                 BoxShadow(
-                                                  color: Colors.black.withOpacity(0.02),
+                                                  color: Colors.black
+                                                      .withOpacity(0.02),
                                                   blurRadius: 10,
                                                   offset: const Offset(0, 4),
                                                 ),
                                               ],
                                             ),
                                             child: InkWell(
-                                              onTap: () => context.push('${AppRouter.transactions}/${account.id}'),
-                                              borderRadius: BorderRadius.circular(16),
+                                              onTap: () => context.push(
+                                                '${AppRouter.transactions}/${account.id}',
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
                                               child: Padding(
-                                                padding: const EdgeInsets.all(16),
+                                                padding: const EdgeInsets.all(
+                                                  16,
+                                                ),
                                                 child: Row(
                                                   children: [
                                                     Container(
@@ -402,40 +519,74 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                       height: 40,
                                                       decoration: BoxDecoration(
                                                         color: accountColor,
-                                                        borderRadius: BorderRadius.circular(2),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              2,
+                                                            ),
                                                       ),
                                                     ),
                                                     const SizedBox(width: 16),
                                                     Expanded(
                                                       child: Column(
-                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
                                                         children: [
                                                           Text(
                                                             account.libelle,
-                                                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.primary),
+                                                            style:
+                                                                const TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w600,
+                                                                  fontSize: 14,
+                                                                  color: AppColors
+                                                                      .primary,
+                                                                ),
                                                           ),
-                                                          const SizedBox(height: 2),
+                                                          const SizedBox(
+                                                            height: 2,
+                                                          ),
                                                           Text(
-                                                            account.numeroCompte,
-                                                            style: TextStyle(color: Colors.grey[500], fontSize: 12, fontWeight: FontWeight.w500),
+                                                            account
+                                                                .numeroCompte,
+                                                            style: TextStyle(
+                                                              color: Colors
+                                                                  .grey[500],
+                                                              fontSize: 12,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
                                                           ),
                                                         ],
                                                       ),
                                                     ),
                                                     Flexible(
                                                       child: Column(
-                                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .end,
                                                         children: [
                                                           FittedBox(
-                                                            fit: BoxFit.scaleDown,
-                                                            alignment: Alignment.centerRight,
+                                                            fit: BoxFit
+                                                                .scaleDown,
+                                                            alignment: Alignment
+                                                                .centerRight,
                                                             child: Text(
                                                               _isBalanceVisible
-                                                                  ? currencyFormat.format(account.availableBalance)
+                                                                  ? currencyFormat
+                                                                        .format(
+                                                                          account
+                                                                              .availableBalance,
+                                                                        )
                                                                   : '••••••',
                                                               style: const TextStyle(
-                                                                fontWeight: FontWeight.w700,
-                                                                color: AppColors.primary,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700,
+                                                                color: AppColors
+                                                                    .primary,
                                                                 fontSize: 15,
                                                               ),
                                                               maxLines: 1,
@@ -443,15 +594,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                           ),
                                                           Text(
                                                             'Solde disponible',
-                                                            style: TextStyle(fontSize: 10, color: Colors.grey[400], fontWeight: FontWeight.w500),
+                                                            style: TextStyle(
+                                                              fontSize: 10,
+                                                              color: Colors
+                                                                  .grey[400],
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
                                                             maxLines: 1,
-                                                            overflow: TextOverflow.ellipsis,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
                                                           ),
                                                         ],
                                                       ),
                                                     ),
                                                     const SizedBox(width: 8),
-                                                    Icon(Icons.chevron_right_rounded, color: Colors.grey[300], size: 20),
+                                                    Icon(
+                                                      Icons
+                                                          .chevron_right_rounded,
+                                                      color: Colors.grey[300],
+                                                      size: 20,
+                                                    ),
                                                   ],
                                                 ),
                                               ),
@@ -490,15 +655,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withOpacity(0.2), width: 1),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.2),
+                    width: 1,
+                  ),
                 ),
                 child: CircleAvatar(
                   radius: 22,
                   backgroundColor: AppColors.darkSurface,
-                  backgroundImage: _photoPath != null ? FileImage(File(_photoPath!)) : null,
-                  child: _photoPath == null 
-                    ? const Icon(Icons.person_rounded, color: Colors.white, size: 22)
-                    : null,
+                  backgroundImage: _photoPath != null
+                      ? FileImage(File(_photoPath!))
+                      : null,
+                  child: _photoPath == null
+                      ? const Icon(
+                          Icons.person_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        )
+                      : null,
                 ),
               ),
             ),
@@ -510,10 +684,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Text(
                       'Bonjour,',
-                      style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 13, fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.5),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const SizedBox(width: 4),
-                    const Icon(Icons.waving_hand_rounded, color: Colors.amber, size: 14),
+                    const Icon(
+                      Icons.waving_hand_rounded,
+                      color: Colors.amber,
+                      size: 14,
+                    ),
                   ],
                 ),
                 Text(
@@ -574,7 +756,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        _isBalanceVisible ? currencyFormat.format(soldeTotal) : '•••••••• FCFA',
+                        _isBalanceVisible
+                            ? currencyFormat.format(soldeTotal)
+                            : '•••••••• FCFA',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 32,
@@ -587,9 +771,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(width: 12),
                   IconButton(
-                    onPressed: () => setState(() => _isBalanceVisible = !_isBalanceVisible),
+                    onPressed: () =>
+                        setState(() => _isBalanceVisible = !_isBalanceVisible),
                     icon: Icon(
-                      _isBalanceVisible ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                      _isBalanceVisible
+                          ? Icons.visibility_off_rounded
+                          : Icons.visibility_rounded,
                       color: Colors.white.withOpacity(0.4),
                       size: 18,
                     ),
@@ -602,18 +789,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 12),
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          color: AppColors.success,
+                          size: 12,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           'Compte vérifié',
-                          style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 10, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
                     ),
@@ -653,16 +851,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildPremiumQuickAction(IconData icon, String label, {VoidCallback? onTap}) {
+  Widget _buildPremiumQuickAction(
+    IconData icon,
+    String label, {
+    VoidCallback? onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(color: AppColors.primary.withOpacity(0.05)),
               boxShadow: [
                 BoxShadow(
@@ -672,16 +874,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
-            child: Icon(icon, color: AppColors.primary, size: 26),
+            child: Icon(icon, color: AppColors.primary, size: 22),
           ),
-          const SizedBox(height: 10),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: AppColors.primary,
-              letterSpacing: 0.1,
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                  letterSpacing: 0.1,
+                ),
+              ),
             ),
           ),
         ],
@@ -689,7 +898,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildHeaderIconButton({required IconData icon, required VoidCallback onTap, bool hasBadge = false}) {
+  Widget _buildHeaderIconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    bool hasBadge = false,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -724,9 +937,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildLegendItem(Color color, String label, {bool isDark = true}) {
     return Row(
       children: [
-        Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
         const SizedBox(width: 8),
-        Text(label, style: TextStyle(color: isDark ? Colors.white70 : AppColors.primary.withOpacity(0.6), fontSize: 12, fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: TextStyle(
+            color: isDark ? Colors.white70 : AppColors.primary.withOpacity(0.6),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }
@@ -752,17 +976,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 40),
-          AppShimmer(width: double.infinity, height: 200, borderRadius: BorderRadius.circular(24)),
+          AppShimmer(
+            width: double.infinity,
+            height: 200,
+            borderRadius: BorderRadius.circular(24),
+          ),
           const SizedBox(height: 40),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(4, (index) => const AppShimmer(height: 80, width: 70)),
+            children: List.generate(
+              4,
+              (index) => const AppShimmer(height: 80, width: 70),
+            ),
           ),
           const SizedBox(height: 40),
-          ...List.generate(3, (index) => const Padding(
-            padding: EdgeInsets.only(bottom: 12),
-            child: AppShimmer(height: 80, width: double.infinity),
-          )),
+          ...List.generate(
+            3,
+            (index) => const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: AppShimmer(height: 80, width: double.infinity),
+            ),
+          ),
         ],
       ),
     );

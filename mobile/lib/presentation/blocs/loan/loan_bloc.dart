@@ -11,19 +11,38 @@ export 'loan_state.dart';
 
 class LoanBloc extends Bloc<LoanEvent, LoanState> {
   final LoanRepository _loanRepository;
+  bool _awaitingInstallmentPaymentRefresh = false;
 
   LoanBloc(this._loanRepository) : super(const LoanState()) {
     on<FetchLoans>(_onFetchLoans);
     on<FetchLoanDetails>(_onFetchLoanDetails);
     on<SubmitLoanRequest>(_onSubmitLoanRequest);
     on<PayInstallment>(_onPayInstallment);
+    on<ClearInstallmentPaymentPulse>(_onClearInstallmentPaymentPulse);
   }
 
-  Future<void> _onPayInstallment(PayInstallment event, Emitter<LoanState> emit) async {
-    emit(state.copyWith(status: LoanStatus.loading));
+  void _onClearInstallmentPaymentPulse(
+    ClearInstallmentPaymentPulse event,
+    Emitter<LoanState> emit,
+  ) {
+    emit(state.copyWith(installmentPaymentSuccessPulse: false));
+  }
+
+  Future<void> _onPayInstallment(
+    PayInstallment event,
+    Emitter<LoanState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        status: LoanStatus.loading,
+        installmentPaymentSuccessPulse: false,
+      ),
+    );
     try {
-      final installment = state.amortizationSchedule.firstWhere((i) => i.id == event.installmentId);
-      
+      final installment = state.amortizationSchedule.firstWhere(
+        (i) => i.id == event.installmentId,
+      );
+
       final bool success = await _loanRepository.payInstallment(
         loanId: event.loanId,
         amount: installment.montantTotal,
@@ -31,21 +50,29 @@ class LoanBloc extends Bloc<LoanEvent, LoanState> {
       );
 
       if (!success) {
-        emit(state.copyWith(
-          status: LoanStatus.failure,
-          errorMessage: "Erreur lors du règlement de l'échéance.",
-        ));
+        emit(
+          state.copyWith(
+            status: LoanStatus.failure,
+            errorMessage:
+                "Solde insuffisant ou erreur lors du règlement de l'échéance.",
+          ),
+        );
         return;
       }
-      
-      // Refresh details after payment
+
+      _awaitingInstallmentPaymentRefresh = true;
       add(FetchLoanDetails(event.loanId));
     } catch (e) {
-      emit(state.copyWith(status: LoanStatus.failure, errorMessage: e.toString()));
+      emit(
+        state.copyWith(status: LoanStatus.failure, errorMessage: e.toString()),
+      );
     }
   }
 
-  Future<void> _onSubmitLoanRequest(SubmitLoanRequest event, Emitter<LoanState> emit) async {
+  Future<void> _onSubmitLoanRequest(
+    SubmitLoanRequest event,
+    Emitter<LoanState> emit,
+  ) async {
     emit(state.copyWith(status: LoanStatus.loading));
     try {
       final success = await _loanRepository.requestLoan(
@@ -57,10 +84,17 @@ class LoanBloc extends Bloc<LoanEvent, LoanState> {
       if (success) {
         emit(state.copyWith(status: LoanStatus.success));
       } else {
-        emit(state.copyWith(status: LoanStatus.failure, errorMessage: "Échec de la demande de prêt"));
+        emit(
+          state.copyWith(
+            status: LoanStatus.failure,
+            errorMessage: "Échec de la demande de prêt",
+          ),
+        );
       }
     } catch (e) {
-      emit(state.copyWith(status: LoanStatus.failure, errorMessage: e.toString()));
+      emit(
+        state.copyWith(status: LoanStatus.failure, errorMessage: e.toString()),
+      );
     }
   }
 
@@ -68,21 +102,25 @@ class LoanBloc extends Bloc<LoanEvent, LoanState> {
     emit(state.copyWith(status: LoanStatus.loading));
     try {
       final loans = await _loanRepository.getLoans();
-      
-      emit(state.copyWith(
-        status: LoanStatus.success,
-        loans: loans,
-      ));
+
+      emit(state.copyWith(status: LoanStatus.success, loans: loans));
     } catch (e) {
-      emit(state.copyWith(
-        status: LoanStatus.failure,
-        errorMessage: e.toString(),
-      ));
+      emit(
+        state.copyWith(status: LoanStatus.failure, errorMessage: e.toString()),
+      );
     }
   }
 
-  Future<void> _onFetchLoanDetails(FetchLoanDetails event, Emitter<LoanState> emit) async {
-    emit(state.copyWith(status: LoanStatus.loading));
+  Future<void> _onFetchLoanDetails(
+    FetchLoanDetails event,
+    Emitter<LoanState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        status: LoanStatus.loading,
+        installmentPaymentSuccessPulse: false,
+      ),
+    );
     try {
       final results = await Future.wait([
         _loanRepository.getLoanDetails(event.loanId),
@@ -90,18 +128,24 @@ class LoanBloc extends Bloc<LoanEvent, LoanState> {
         _loanRepository.getGuarantees(event.loanId),
       ]);
 
-      emit(state.copyWith(
-        status: LoanStatus.success,
-        selectedLoan: results[0] as LoanModel,
-        amortizationSchedule: results[1] as List<AmortpModel>,
-        guarantees: results[2] as List<GarantieModel>,
-      ));
+      final showPaymentPulse = _awaitingInstallmentPaymentRefresh;
+      if (_awaitingInstallmentPaymentRefresh) {
+        _awaitingInstallmentPaymentRefresh = false;
+      }
+
+      emit(
+        state.copyWith(
+          status: LoanStatus.success,
+          selectedLoan: results[0] as LoanModel,
+          amortizationSchedule: results[1] as List<AmortpModel>,
+          guarantees: results[2] as List<GarantieModel>,
+          installmentPaymentSuccessPulse: showPaymentPulse,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(
-        status: LoanStatus.failure,
-        errorMessage: e.toString(),
-      ));
+      emit(
+        state.copyWith(status: LoanStatus.failure, errorMessage: e.toString()),
+      );
     }
   }
 }
-

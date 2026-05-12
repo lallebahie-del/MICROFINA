@@ -61,39 +61,59 @@ class LoanSimulatorState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [amount, durationMonths, annualRate, monthlyPayment, totalInterest, totalRepayment];
+  List<Object?> get props => [
+    amount,
+    durationMonths,
+    annualRate,
+    monthlyPayment,
+    totalInterest,
+    totalRepayment,
+  ];
 }
 
 // Bloc
 class LoanSimulatorBloc extends Bloc<LoanSimulatorEvent, LoanSimulatorState> {
   LoanSimulatorBloc() : super(const LoanSimulatorState()) {
     on<UpdateSimulation>(_onUpdateSimulation);
-    
+
     // Simulation initiale
-    add(const UpdateSimulation(amount: 1000000, durationMonths: 12, annualRate: 12.0));
+    add(
+      const UpdateSimulation(
+        amount: 1000000,
+        durationMonths: 12,
+        annualRate: 12.0,
+      ),
+    );
   }
 
-  void _onUpdateSimulation(UpdateSimulation event, Emitter<LoanSimulatorState> emit) {
+  void _onUpdateSimulation(
+    UpdateSimulation event,
+    Emitter<LoanSimulatorState> emit,
+  ) {
     final double monthlyRate = (event.annualRate / 100) / 12;
     final int n = event.durationMonths;
-    
+
     double monthlyPayment;
     if (monthlyRate == 0) {
       monthlyPayment = event.amount / n;
     } else {
-      monthlyPayment = (event.amount * monthlyRate * pow(1 + monthlyRate, n)) / (pow(1 + monthlyRate, n) - 1);
+      monthlyPayment =
+          (event.amount * monthlyRate * pow(1 + monthlyRate, n)) /
+          (pow(1 + monthlyRate, n) - 1);
     }
-    
+
     final double totalRepayment = monthlyPayment * n;
     final double totalInterest = totalRepayment - event.amount;
 
-    emit(state.copyWith(
-      amount: event.amount,
-      durationMonths: event.durationMonths,
-      annualRate: event.annualRate,
-      monthlyPayment: monthlyPayment,
-      totalInterest: totalInterest,
-      totalRepayment: totalRepayment,
-    ));
+    emit(
+      state.copyWith(
+        amount: event.amount,
+        durationMonths: event.durationMonths,
+        annualRate: event.annualRate,
+        monthlyPayment: monthlyPayment,
+        totalInterest: totalInterest,
+        totalRepayment: totalRepayment,
+      ),
+    );
   }
 }

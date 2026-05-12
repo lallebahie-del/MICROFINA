@@ -7,6 +7,7 @@ abstract class AccountEvent extends Equatable {
 }
 
 class FetchAccounts extends AccountEvent {}
+
 class SelectAccount extends AccountEvent {
   final String accountId;
   const SelectAccount(this.accountId);

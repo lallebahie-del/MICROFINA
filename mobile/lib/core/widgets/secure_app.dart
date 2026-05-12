@@ -1,22 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:secure_application/secure_application.dart';
+import '../di/service_locator.dart';
 import '../storage/secure_storage_service.dart';
 
 class SecureApp extends StatefulWidget {
   final Widget child;
 
-  const SecureApp({
-    super.key,
-    required this.child,
-  });
+  const SecureApp({super.key, required this.child});
 
   @override
   State<SecureApp> createState() => _SecureAppState();
 }
 
 class _SecureAppState extends State<SecureApp> {
-  final _secureStorage = SecureStorageService(const FlutterSecureStorage());
+  late final SecureStorageService _secureStorage = sl<SecureStorageService>();
   bool _isSecureMode = true;
 
   @override

@@ -24,8 +24,8 @@ class AuthModel extends Equatable {
       refreshToken: json['refreshToken'] as String,
       expiresAt: DateTime.parse(json['expiresAt'] as String),
       isBiometricEnabled: json['isBiometricEnabled'] as bool? ?? false,
-      lastLoginDate: json['lastLoginDate'] != null 
-          ? DateTime.parse(json['lastLoginDate'] as String) 
+      lastLoginDate: json['lastLoginDate'] != null
+          ? DateTime.parse(json['lastLoginDate'] as String)
           : null,
     );
   }
@@ -43,13 +43,13 @@ class AuthModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        phoneNumber,
-        accessToken,
-        refreshToken,
-        expiresAt,
-        isBiometricEnabled,
-        lastLoginDate,
-      ];
+    phoneNumber,
+    accessToken,
+    refreshToken,
+    expiresAt,
+    isBiometricEnabled,
+    lastLoginDate,
+  ];
 
   AuthModel copyWith({
     String? phoneNumber,

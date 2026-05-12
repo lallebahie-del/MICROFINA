@@ -14,12 +14,19 @@ class AccountsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(locale: 'fr_FR', symbol: 'FCFA', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      locale: 'fr_FR',
+      symbol: 'FCFA',
+      decimalDigits: 0,
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Mes comptes', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: const Text(
+          'Mes comptes',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -37,10 +44,14 @@ class AccountsScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(state.errorMessage ?? 'Erreur', textAlign: TextAlign.center),
+                    Text(
+                      state.errorMessage ?? 'Erreur',
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 16),
                     FilledButton(
-                      onPressed: () => context.read<AccountBloc>().add(FetchAccounts()),
+                      onPressed: () =>
+                          context.read<AccountBloc>().add(FetchAccounts()),
                       child: const Text('RÉESSAYER'),
                     ),
                   ],
@@ -57,12 +68,20 @@ class AccountsScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.account_balance_wallet_outlined, size: 56, color: Colors.grey[400]),
+                    Icon(
+                      Icons.account_balance_wallet_outlined,
+                      size: 56,
+                      color: Colors.grey[400],
+                    ),
                     const SizedBox(height: 16),
-                    Text('Aucun compte pour le moment.', style: TextStyle(color: Colors.grey[600])),
+                    Text(
+                      'Aucun compte pour le moment.',
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
                     const SizedBox(height: 16),
                     FilledButton(
-                      onPressed: () => context.read<AccountBloc>().add(FetchAccounts()),
+                      onPressed: () =>
+                          context.read<AccountBloc>().add(FetchAccounts()),
                       child: const Text('ACTUALISER'),
                     ),
                   ],
@@ -83,7 +102,8 @@ class AccountsScreen extends StatelessWidget {
                 return _AccountListTile(
                   account: account,
                   currencyFormat: currencyFormat,
-                  onTap: () => context.push('${AppRouter.accounts}/${account.id}'),
+                  onTap: () =>
+                      context.push('${AppRouter.accounts}/${account.id}'),
                 );
               },
             ),
@@ -154,7 +174,10 @@ class _AccountListTile extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           account.numeroCompte,
-                          style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -195,12 +218,19 @@ class AccountDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(locale: 'fr_FR', symbol: 'FCFA', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      locale: 'fr_FR',
+      symbol: 'FCFA',
+      decimalDigits: 0,
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Compte', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: const Text(
+          'Compte',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -236,7 +266,11 @@ class AccountDetailScreen extends StatelessWidget {
           }
 
           final Color accountColor = account.accountTypeColor != null
-              ? Color(int.parse(account.accountTypeColor!.replaceFirst('#', '0xFF')))
+              ? Color(
+                  int.parse(
+                    account.accountTypeColor!.replaceFirst('#', '0xFF'),
+                  ),
+                )
               : AppColors.secondary;
 
           return ListView(
@@ -263,27 +297,44 @@ class AccountDetailScreen extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       account.numeroCompte,
-                      style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13),
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.85),
+                        fontSize: 13,
+                      ),
                     ),
                     const SizedBox(height: 20),
                     Text(
                       'Solde disponible',
-                      style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 11, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       currencyFormat.format(account.availableBalance),
-                      style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'Bloqué : ${currencyFormat.format(account.blockedBalance)}',
-                      style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 12),
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.75),
+                        fontSize: 12,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Type : ${account.accountType} · ${account.devise}',
-                      style: TextStyle(color: Colors.white.withOpacity(0.65), fontSize: 11),
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.65),
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),
@@ -294,7 +345,8 @@ class AccountDetailScreen extends StatelessWidget {
                 color: accountColor,
                 title: 'Mouvements du compte',
                 subtitle: 'Historique des transactions sur ce compte',
-                onTap: () => context.push('${AppRouter.transactions}/$accountId'),
+                onTap: () =>
+                    context.push('${AppRouter.transactions}/$accountId'),
               ),
               const SizedBox(height: 12),
               _ActionTile(
@@ -365,9 +417,18 @@ class _ActionTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primary)),
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primary,
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                      Text(
+                        subtitle,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
                     ],
                   ),
                 ),

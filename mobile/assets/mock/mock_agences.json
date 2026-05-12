@@ -1,0 +1,20 @@
+[
+  {
+    "id": "ag_001",
+    "code": "HQ001",
+    "nom": "Agence principale — Nouakchott",
+    "ville": "Nouakchott",
+    "adresse": "Tevragh Zeina, avenue Gamal Abdel Nasser",
+    "latitude": 18.0735,
+    "longitude": -15.9582
+  },
+  {
+    "id": "ag_002",
+    "code": "NK002",
+    "nom": "Agence Ksar",
+    "ville": "Nouakchott",
+    "adresse": "Ksar, près du marché central",
+    "latitude": 18.09,
+    "longitude": -15.978
+  }
+]

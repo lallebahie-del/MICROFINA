@@ -5,7 +5,10 @@ class LocalCacheService {
   static const String _loansBox = 'loans_box';
   static const String _certificatsBox = 'certificats_box';
 
-  Future<void> cacheListData(String boxName, List<Map<String, dynamic>> data) async {
+  Future<void> cacheListData(
+    String boxName,
+    List<Map<String, dynamic>> data,
+  ) async {
     final box = await Hive.openBox(boxName);
     await box.clear();
     await box.addAll(data);
@@ -17,12 +20,18 @@ class LocalCacheService {
   }
 
   // Specific helpers
-  Future<void> cacheAccounts(List<Map<String, dynamic>> accounts) => cacheListData(_accountsBox, accounts);
-  Future<List<Map<String, dynamic>>> getCachedAccounts() => getCachedListData(_accountsBox);
+  Future<void> cacheAccounts(List<Map<String, dynamic>> accounts) =>
+      cacheListData(_accountsBox, accounts);
+  Future<List<Map<String, dynamic>>> getCachedAccounts() =>
+      getCachedListData(_accountsBox);
 
-  Future<void> cacheLoans(List<Map<String, dynamic>> loans) => cacheListData(_loansBox, loans);
-  Future<List<Map<String, dynamic>>> getCachedLoans() => getCachedListData(_loansBox);
+  Future<void> cacheLoans(List<Map<String, dynamic>> loans) =>
+      cacheListData(_loansBox, loans);
+  Future<List<Map<String, dynamic>>> getCachedLoans() =>
+      getCachedListData(_loansBox);
 
-  Future<void> cacheCertificats(List<Map<String, dynamic>> certificats) => cacheListData(_certificatsBox, certificats);
-  Future<List<Map<String, dynamic>>> getCachedCertificats() => getCachedListData(_certificatsBox);
+  Future<void> cacheCertificats(List<Map<String, dynamic>> certificats) =>
+      cacheListData(_certificatsBox, certificats);
+  Future<List<Map<String, dynamic>>> getCachedCertificats() =>
+      getCachedListData(_certificatsBox);
 }

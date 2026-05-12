@@ -30,7 +30,10 @@ class PerformanceOptimizer {
   }
 
   // Preload images for better performance
-  static Future<void> preloadImages(BuildContext context, List<String> imagePaths) async {
+  static Future<void> preloadImages(
+    BuildContext context,
+    List<String> imagePaths,
+  ) async {
     for (final path in imagePaths) {
       try {
         await precacheImage(AssetImage(path), context);
@@ -112,9 +115,7 @@ class PerformanceOptimizer {
 
   // Optimize rebuilds with const widgets
   static Widget constWrapper(Widget child) {
-    return RepaintBoundary(
-      child: child,
-    );
+    return RepaintBoundary(child: child);
   }
 }
 
@@ -123,10 +124,8 @@ class OptimizedScrollController extends ChangeNotifier {
   final VoidCallback? onScrollEnd;
   Timer? _scrollEndTimer;
 
-  OptimizedScrollController({
-    ScrollController? controller,
-    this.onScrollEnd,
-  }) : _controller = controller ?? ScrollController() {
+  OptimizedScrollController({ScrollController? controller, this.onScrollEnd})
+    : _controller = controller ?? ScrollController() {
     _controller.addListener(_onScroll);
   }
 
@@ -167,14 +166,11 @@ class PerformanceAwareBuilder extends StatefulWidget {
   final Widget Function(BuildContext context, bool isLowPerformance) builder;
   final Widget? child;
 
-  const PerformanceAwareBuilder({
-    super.key,
-    required this.builder,
-    this.child,
-  });
+  const PerformanceAwareBuilder({super.key, required this.builder, this.child});
 
   @override
-  State<PerformanceAwareBuilder> createState() => _PerformanceAwareBuilderState();
+  State<PerformanceAwareBuilder> createState() =>
+      _PerformanceAwareBuilderState();
 }
 
 class _PerformanceAwareBuilderState extends State<PerformanceAwareBuilder> {
@@ -249,7 +245,7 @@ class _LazyLoadBuilderState extends State<LazyLoadBuilder> {
 
     final triggerOffset = widget.triggerOffset ?? 200.0;
     final position = _scrollController.position;
-    
+
     if (position.pixels >= position.maxScrollExtent - triggerOffset) {
       setState(() {
         _isLoaded = true;
@@ -262,7 +258,7 @@ class _LazyLoadBuilderState extends State<LazyLoadBuilder> {
     if (_isLoaded) {
       return widget.builder(context);
     }
-    
+
     return widget.placeholder ?? const SizedBox();
   }
 }

@@ -22,10 +22,10 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<LoginOutcome> login(String phone, String pin) async {
     try {
-      final response = await _dioClient.post('/auth/login', data: {
-        'phone': phone,
-        'pin': pin,
-      });
+      final response = await _dioClient.post(
+        '/auth/login',
+        data: {'phone': phone, 'pin': pin},
+      );
 
       if (response.statusCode == 200 && response.data is Map) {
         final data = response.data as Map;

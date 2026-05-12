@@ -40,7 +40,11 @@ Future<void> showLogoutConfirmDialog(BuildContext parentContext) {
                     ),
                   ],
                 ),
-                child: const Icon(Icons.logout_rounded, color: AppColors.error, size: 30),
+                child: const Icon(
+                  Icons.logout_rounded,
+                  color: AppColors.error,
+                  size: 30,
+                ),
               ),
               const SizedBox(height: 20),
               const Text(
@@ -71,13 +75,19 @@ Future<void> showLogoutConfirmDialog(BuildContext parentContext) {
                       onPressed: () => Navigator.of(dialogContext).pop(),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primary,
-                        side: const BorderSide(color: AppColors.border, width: 1.5),
+                        side: const BorderSide(
+                          color: AppColors.border,
+                          width: 1.5,
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      child: const Text('Annuler', style: TextStyle(fontWeight: FontWeight.w800)),
+                      child: const Text(
+                        'Annuler',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -96,7 +106,10 @@ Future<void> showLogoutConfirmDialog(BuildContext parentContext) {
                           borderRadius: BorderRadius.circular(16),
                         ),
                       ),
-                      child: const Text('Me déconnecter', style: TextStyle(fontWeight: FontWeight.w800)),
+                      child: const Text(
+                        'Me déconnecter',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
                     ),
                   ),
                 ],

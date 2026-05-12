@@ -1,6 +1,9 @@
+import 'dart:async';
+
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'core/router/app_router.dart';
@@ -18,12 +21,14 @@ import 'core/utils/bloc_observer.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'presentation/blocs/account/account_bloc.dart';
+import 'data/datasources/mock/mock_data.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
-  
+
   await initializeDateFormatting('fr_FR', null);
+  await MockData.hydrateReferenceTablesFromAssetsIfPresent();
   setupLocator();
   Bloc.observer = SimpleBlocObserver();
   runApp(const MyApp());
@@ -39,12 +44,62 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   late final GoRouter _router;
   late final AuthBloc _authBloc;
+  late final AppLinks _appLinks;
+  StreamSubscription<Uri>? _deepLinkSubscription;
 
   @override
   void initState() {
     super.initState();
     _authBloc = sl<AuthBloc>();
     _router = AppRouter.createRouter(_authBloc);
+    _appLinks = AppLinks();
+    unawaited(_initDeepLinks());
+  }
+
+  Future<void> _initDeepLinks() async {
+    final initialLink = await _appLinks.getInitialLink();
+    if (initialLink != null) {
+      _handleDeepLink(initialLink);
+    }
+
+    _deepLinkSubscription = _appLinks.uriLinkStream.listen(_handleDeepLink);
+  }
+
+  void _handleDeepLink(Uri uri) {
+    final location = _locationFromDeepLink(uri);
+    if (location == null) return;
+
+    if (_authBloc.state is AuthSuccess) {
+      _router.go(location);
+    } else {
+      AppRouter.setPendingDeepLinkLocation(location);
+      _router.go(AppRouter.login);
+    }
+  }
+
+  String? _locationFromDeepLink(Uri uri) {
+    if (uri.scheme != 'microcredit') return null;
+
+    if (uri.host == 'agence' && uri.pathSegments.isNotEmpty) {
+      return AppRouter.agencyPath(uri.pathSegments.first);
+    }
+
+    if (uri.host == 'agences' && uri.pathSegments.isNotEmpty) {
+      return AppRouter.agencyPath(uri.pathSegments.first);
+    }
+
+    if ((uri.host == 'pret' || uri.host == 'loan') &&
+        uri.pathSegments.isNotEmpty) {
+      return AppRouter.loanDetailPath(uri.pathSegments.first);
+    }
+
+    return null;
+  }
+
+  @override
+  void dispose() {
+    _deepLinkSubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -52,22 +107,29 @@ class _MyAppState extends State<MyApp> {
     return MultiBlocProvider(
       providers: [
         BlocProvider.value(value: _authBloc),
-        BlocProvider(create: (context) => sl<AccountBloc>()..add(FetchAccounts())),
+        BlocProvider(
+          create: (context) => sl<AccountBloc>()..add(FetchAccounts()),
+        ),
         BlocProvider(create: (context) => sl<LoanBloc>()),
         BlocProvider(create: (context) => sl<TransferBloc>()),
         BlocProvider(create: (context) => sl<LoanSimulatorBloc>()),
         BlocProvider(create: (context) => sl<CertificatBloc>()),
       ],
-        child: RepositoryProvider(
+      child: RepositoryProvider(
         create: (context) => sl<ConnectivityService>(),
         child: MaterialApp.router(
           title: 'Micro Credit',
           debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme.copyWith(
-            textTheme: GoogleFonts.interTextTheme(Theme.of(context).textTheme),
-          ),
+          theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: ThemeMode.system,
+          locale: const Locale('fr', 'FR'),
+          supportedLocales: const [Locale('fr', 'FR'), Locale('en')],
+          localizationsDelegates: [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           routerConfig: _router,
           builder: (context, child) {
             return BlocListener<AuthBloc, AuthState>(

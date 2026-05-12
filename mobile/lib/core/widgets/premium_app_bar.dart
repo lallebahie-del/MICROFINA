@@ -5,13 +5,7 @@ import '../theme/app_spacing.dart';
 import '../theme/app_shadows.dart';
 import '../theme/app_text_styles.dart';
 
-enum PremiumAppBarType {
-  standard,
-  transparent,
-  glass,
-  gradient,
-  floating,
-}
+enum PremiumAppBarType { standard, transparent, glass, gradient, floating }
 
 class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? title;
@@ -57,18 +51,20 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     final appBarStyle = _getAppBarStyle(context, isDark);
-    
+
     Widget appBar = AppBar(
-      title: titleWidget ?? 
-        (title != null ? Text(title!, style: appBarStyle.titleStyle) : null),
+      title:
+          titleWidget ??
+          (title != null ? Text(title!, style: appBarStyle.titleStyle) : null),
       actions: _buildActions(context, appBarStyle),
       leading: leading ?? _buildLeading(context, appBarStyle),
       automaticallyImplyLeading: automaticallyImplyLeading,
       centerTitle: centerTitle,
       bottom: bottom,
-      elevation: elevation ?? (type == PremiumAppBarType.transparent ? 0 : null),
+      elevation:
+          elevation ?? (type == PremiumAppBarType.transparent ? 0 : null),
       backgroundColor: appBarStyle.backgroundColor,
       foregroundColor: appBarStyle.foregroundColor,
       flexibleSpace: flexibleSpace,
@@ -98,7 +94,7 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   Widget? _buildLeading(BuildContext context, _AppBarStyle appBarStyle) {
     if (!showBackButton) return null;
-    
+
     final navigator = Navigator.of(context);
     final canPop = navigator.canPop();
 
@@ -111,11 +107,13 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
         borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
       ),
       child: InkWell(
-        onTap: onBackPressed ?? () {
-          if (canPop) {
-            navigator.pop();
-          }
-        },
+        onTap:
+            onBackPressed ??
+            () {
+              if (canPop) {
+                navigator.pop();
+              }
+            },
         borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.sm),
@@ -153,7 +151,7 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   _AppBarStyle _getAppBarStyle(BuildContext context, bool isDark) {
     final theme = Theme.of(context);
-    
+
     switch (type) {
       case PremiumAppBarType.standard:
         return _AppBarStyle(
@@ -168,7 +166,7 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
           systemOverlayStyle: SystemUiOverlayStyle.dark,
           shape: null,
         );
-      
+
       case PremiumAppBarType.transparent:
         return _AppBarStyle(
           backgroundColor: backgroundColor ?? Colors.transparent,
@@ -182,7 +180,7 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
           systemOverlayStyle: SystemUiOverlayStyle.dark,
           shape: null,
         );
-      
+
       case PremiumAppBarType.glass:
         return _AppBarStyle(
           backgroundColor: AppColors.glass,
@@ -196,7 +194,7 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
           systemOverlayStyle: SystemUiOverlayStyle.dark,
           shape: null,
         );
-      
+
       case PremiumAppBarType.gradient:
         return _AppBarStyle(
           backgroundColor: backgroundColor ?? AppColors.primary,
@@ -210,11 +208,12 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
           systemOverlayStyle: SystemUiOverlayStyle.light,
           shape: null,
         );
-      
+
       case PremiumAppBarType.floating:
         return _AppBarStyle(
-          backgroundColor: backgroundColor ?? 
-            (isDark ? AppColors.darkSurface : AppColors.surface),
+          backgroundColor:
+              backgroundColor ??
+              (isDark ? AppColors.darkSurface : AppColors.surface),
           foregroundColor: foregroundColor ?? theme.colorScheme.onSurface,
           titleStyle: AppTextStyles.headlineSmall.copyWith(
             color: foregroundColor ?? theme.colorScheme.onSurface,
@@ -222,9 +221,9 @@ class PremiumAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
           iconColor: foregroundColor ?? theme.colorScheme.onSurface,
           iconBackgroundColor: Colors.transparent,
-          systemOverlayStyle: isDark 
-            ? SystemUiOverlayStyle.light 
-            : SystemUiOverlayStyle.dark,
+          systemOverlayStyle: isDark
+              ? SystemUiOverlayStyle.light
+              : SystemUiOverlayStyle.dark,
           shape: null,
         );
     }
@@ -313,11 +312,7 @@ class _NotificationIconButton extends StatelessWidget {
           ),
           child: Stack(
             children: [
-              Icon(
-                icon,
-                color: iconColor,
-                size: 24,
-              ),
+              Icon(icon, color: iconColor, size: 24),
               if (showBadge && count > 0)
                 Positioned(
                   right: 0,
@@ -327,11 +322,10 @@ class _NotificationIconButton extends StatelessWidget {
                     height: 16,
                     decoration: BoxDecoration(
                       color: AppColors.error,
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
-                      border: Border.all(
-                        color: iconBackgroundColor,
-                        width: 2,
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.radiusFull,
                       ),
+                      border: Border.all(color: iconBackgroundColor, width: 2),
                     ),
                     child: Center(
                       child: Text(

@@ -20,3 +20,6 @@ class LoginRequested extends AuthEvent {
 class LogoutRequested extends AuthEvent {}
 
 class AppStarted extends AuthEvent {}
+
+/// Session révoquée côté réseau (ex. refresh token refusé) : forcer l’UI hors connexion.
+class RemoteSessionInvalidated extends AuthEvent {}

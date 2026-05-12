@@ -4,13 +4,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 
-enum PremiumLoadingType {
-  spinner,
-  dots,
-  pulse,
-  shimmer,
-  lottie,
-}
+enum PremiumLoadingType { spinner, dots, pulse, shimmer, lottie }
 
 class PremiumLoading extends StatelessWidget {
   final PremiumLoadingType type;
@@ -110,17 +104,11 @@ class PremiumLoading extends StatelessWidget {
   }
 
   Widget _buildPulse(Color color, double size) {
-    return _PulsingCircle(
-      color: color,
-      size: size,
-    );
+    return _PulsingCircle(color: color, size: size);
   }
 
   Widget _buildShimmer(Color color, double size) {
-    return _ShimmerLoading(
-      color: color,
-      size: size,
-    );
+    return _ShimmerLoading(color: color, size: size);
   }
 
   Widget _buildLottie(double size) {
@@ -165,10 +153,7 @@ class _AnimatedDotState extends State<_AnimatedDot>
     _animation = Tween<double>(
       begin: 0.3,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     Future.delayed(widget.delay, () {
       if (mounted) {
@@ -205,10 +190,7 @@ class _PulsingCircle extends StatefulWidget {
   final Color color;
   final double size;
 
-  const _PulsingCircle({
-    required this.color,
-    required this.size,
-  });
+  const _PulsingCircle({required this.color, required this.size});
 
   @override
   State<_PulsingCircle> createState() => _PulsingCircleState();
@@ -230,10 +212,7 @@ class _PulsingCircleState extends State<_PulsingCircle>
     _animation = Tween<double>(
       begin: 0.8,
       end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     _controller.repeat(reverse: true);
   }
@@ -255,10 +234,7 @@ class _PulsingCircleState extends State<_PulsingCircle>
           decoration: BoxDecoration(
             color: widget.color.withOpacity(0.3),
             shape: BoxShape.circle,
-            border: Border.all(
-              color: widget.color,
-              width: 2,
-            ),
+            border: Border.all(color: widget.color, width: 2),
           ),
         );
       },
@@ -270,10 +246,7 @@ class _ShimmerLoading extends StatefulWidget {
   final Color color;
   final double size;
 
-  const _ShimmerLoading({
-    required this.color,
-    required this.size,
-  });
+  const _ShimmerLoading({required this.color, required this.size});
 
   @override
   State<_ShimmerLoading> createState() => _ShimmerLoadingState();
@@ -295,10 +268,7 @@ class _ShimmerLoadingState extends State<_ShimmerLoading>
     _animation = Tween<double>(
       begin: -1.0,
       end: 2.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     _controller.repeat();
   }
@@ -327,11 +297,7 @@ class _ShimmerLoadingState extends State<_ShimmerLoading>
                 widget.color.withOpacity(0.8),
                 widget.color.withOpacity(0.1),
               ],
-              stops: [
-                0.0,
-                _animation.value.clamp(0.0, 1.0),
-                1.0,
-              ],
+              stops: [0.0, _animation.value.clamp(0.0, 1.0), 1.0],
             ),
           ),
         );
@@ -358,7 +324,8 @@ class PremiumSkeleton extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        borderRadius: borderRadius ?? BorderRadius.circular(AppSpacing.radiusSmall),
+        borderRadius:
+            borderRadius ?? BorderRadius.circular(AppSpacing.radiusSmall),
         gradient: LinearGradient(
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
@@ -411,13 +378,17 @@ class PremiumSkeletonCard extends StatelessWidget {
                     PremiumSkeleton(
                       width: double.infinity,
                       height: 16,
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusXSmall),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.radiusXSmall,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     PremiumSkeleton(
                       width: 100,
                       height: 12,
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusXSmall),
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.radiusXSmall,
+                      ),
                     ),
                   ],
                 ),

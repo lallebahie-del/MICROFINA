@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:local_auth/local_auth.dart';
+import '../../../core/auth/biometric_auth_service.dart';
+import '../../../core/di/service_locator.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/storage/secure_storage_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/utils/phone_number_policy.dart';
 import '../../../core/widgets/premium_button.dart';
 import '../../../core/widgets/premium_input.dart';
 import '../../blocs/auth/auth_bloc.dart';
@@ -24,9 +25,10 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
   final _pinController = TextEditingController();
-  final _localAuth = LocalAuthentication();
-  final _secureStorage = SecureStorageService(const FlutterSecureStorage());
+  final BiometricAuthService _biometric = sl<BiometricAuthService>();
+  final SecureStorageService _secureStorage = sl<SecureStorageService>();
   bool _isPinMode = false;
+  int _pinKeypadEpoch = 0;
   bool _isFormValid = false;
   String? _phoneError;
   String? _pinError;
@@ -47,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final phone = await _secureStorage.getLastPhone();
     final lastLogin = await _secureStorage.getLastLoginDate();
     final phones = await _secureStorage.getRegisteredPhones();
-    
+
     String? name;
     if (phone != null) {
       name = await _secureStorage.getUserName(phone);
@@ -62,6 +64,7 @@ class _LoginScreenState extends State<LoginScreen> {
           _userName = name;
           _phoneController.text = phone;
           _isPinMode = true;
+          _pinKeypadEpoch++;
         }
       });
     }
@@ -74,6 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
       _userName = name;
       _phoneController.text = phone;
       _isPinMode = true;
+      _pinKeypadEpoch++;
     });
   }
 
@@ -121,7 +125,8 @@ class _LoginScreenState extends State<LoginScreen> {
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: _registeredPhones.length,
-                separatorBuilder: (context, _) => const SizedBox(height: AppSpacing.xs),
+                separatorBuilder: (context, _) =>
+                    const SizedBox(height: AppSpacing.xs),
                 itemBuilder: (context, index) {
                   final phone = _registeredPhones[index];
                   return FutureBuilder<String?>(
@@ -131,14 +136,19 @@ class _LoginScreenState extends State<LoginScreen> {
                       return Material(
                         color: selected
                             ? AppColors.primary.withValues(alpha: 0.1)
-                            : sheetTheme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
-                        borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
+                            : sheetTheme.colorScheme.surfaceContainerHighest
+                                  .withValues(alpha: 0.35),
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusLarge,
+                        ),
                         child: InkWell(
                           onTap: () {
                             Navigator.pop(context);
                             _selectAccount(phone);
                           },
-                          borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.radiusLarge,
+                          ),
                           child: Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: AppSpacing.md,
@@ -148,33 +158,48 @@ class _LoginScreenState extends State<LoginScreen> {
                               children: [
                                 CircleAvatar(
                                   radius: 22,
-                                  backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                                  child: const Icon(Icons.person_rounded, color: AppColors.primary),
+                                  backgroundColor: AppColors.primary.withValues(
+                                    alpha: 0.12,
+                                  ),
+                                  child: const Icon(
+                                    Icons.person_rounded,
+                                    color: AppColors.primary,
+                                  ),
                                 ),
                                 const SizedBox(width: AppSpacing.md),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         snapshot.data ?? phone,
-                                        style: AppTextStyles.titleSmall.copyWith(
-                                          color: sheetTheme.colorScheme.onSurface,
-                                          fontWeight: FontWeight.w700,
-                                        ),
+                                        style: AppTextStyles.titleSmall
+                                            .copyWith(
+                                              color: sheetTheme
+                                                  .colorScheme
+                                                  .onSurface,
+                                              fontWeight: FontWeight.w700,
+                                            ),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
                                         phone,
                                         style: AppTextStyles.bodySmall.copyWith(
-                                          color: sheetTheme.colorScheme.onSurfaceVariant,
+                                          color: sheetTheme
+                                              .colorScheme
+                                              .onSurfaceVariant,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
                                 if (selected)
-                                  const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 26),
+                                  const Icon(
+                                    Icons.check_circle_rounded,
+                                    color: AppColors.success,
+                                    size: 26,
+                                  ),
                               ],
                             ),
                           ),
@@ -200,13 +225,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _validate() {
     setState(() {
-      if (_phoneController.text.trim().isNotEmpty) {
+      final raw = _phoneController.text.trim();
+      if (raw.isNotEmpty) {
+        _phoneError = PhoneNumberPolicy.isValid(raw)
+            ? null
+            : PhoneNumberPolicy.validationMessage;
+      } else {
         _phoneError = null;
       }
       if (_pinController.text.length >= 4) {
         _pinError = null;
       }
-      _isFormValid = _phoneController.text.trim().isNotEmpty && _pinController.text.length >= 4;
+      _isFormValid =
+          raw.isNotEmpty &&
+          PhoneNumberPolicy.isValid(raw) &&
+          _pinController.text.length >= 4;
     });
   }
 
@@ -215,11 +248,16 @@ class _LoginScreenState extends State<LoginScreen> {
       _phoneError = null;
       _pinError = null;
     });
-    final phone = _phoneController.text.trim();
-    if (phone.isEmpty) {
+    final phoneRaw = _phoneController.text.trim();
+    if (phoneRaw.isEmpty) {
       setState(() => _phoneError = 'Veuillez saisir votre numéro de téléphone');
       return;
     }
+    if (!PhoneNumberPolicy.isValid(phoneRaw)) {
+      setState(() => _phoneError = PhoneNumberPolicy.validationMessage);
+      return;
+    }
+    final phone = PhoneNumberPolicy.normalize(phoneRaw);
     if (_pinController.text.length < 4) {
       setState(() => _pinError = 'Le code PIN doit comporter 4 chiffres');
       return;
@@ -230,32 +268,25 @@ class _LoginScreenState extends State<LoginScreen> {
     await _secureStorage.saveLastLoginDate(DateTime.now());
     if (mounted) {
       context.read<AuthBloc>().add(
-            LoginRequested(
-              phone: phone,
-              pin: _pinController.text,
-            ),
-          );
+        LoginRequested(phone: phone, pin: _pinController.text),
+      );
     }
   }
 
   Future<void> _authenticateBiometrically() async {
     try {
-      final canCheck = await _localAuth.canCheckBiometrics;
-      final isSupported = await _localAuth.isDeviceSupported();
-
-      if (canCheck && isSupported) {
-        final didAuthenticate = await _localAuth.authenticate(
-          localizedReason: 'Authentifiez-vous pour accéder à votre espace microCredit',
-          options: const AuthenticationOptions(
-            biometricOnly: true,
-            stickyAuth: true,
-          ),
+      if (await _biometric.isDeviceReadyForBiometrics()) {
+        final didAuthenticate = await _biometric.authenticate(
+          localizedReason:
+              'Authentifiez-vous pour accéder à votre espace microCredit',
+          biometricOnly: true,
+          stickyAuth: true,
         );
 
         if (didAuthenticate && mounted) {
           // Simulation succès biométrie
           await _secureStorage.saveToken("eyJhbGciOi...biometric_mock_token");
-          
+
           if (mounted) {
             context.read<AuthBloc>().add(AppStarted());
             context.go(AppRouter.dashboard);
@@ -264,15 +295,19 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('La biométrie n\'est pas configurée sur cet appareil')),
+            const SnackBar(
+              content: Text(
+                'La biométrie n\'est pas configurée sur cet appareil',
+              ),
+            ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur biométrie: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erreur biométrie: $e')));
       }
     }
   }
@@ -347,8 +382,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       CircleAvatar(
                         radius: 22,
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                        child: const Icon(Icons.person_rounded, color: AppColors.primary),
+                        backgroundColor: AppColors.primary.withValues(
+                          alpha: 0.12,
+                        ),
+                        child: const Icon(
+                          Icons.person_rounded,
+                          color: AppColors.primary,
+                        ),
                       ),
                       const SizedBox(width: AppSpacing.md),
                       Expanded(
@@ -356,17 +396,25 @@ class _LoginScreenState extends State<LoginScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _userName != null ? 'Heureux de vous revoir,' : 'Bon retour,',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
+                              _userName != null
+                                  ? 'Heureux de vous revoir,'
+                                  : 'Bon retour,',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
                             ),
                             Text(
                               _userName ?? _lastPhone!,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
+                                  ),
                             ),
                           ],
                         ),
@@ -375,14 +423,19 @@ class _LoginScreenState extends State<LoginScreen> {
                         IconButton(
                           tooltip: 'Changer de compte',
                           onPressed: _showAccountSelector,
-                          icon: const Icon(Icons.swap_horiz_rounded, color: AppColors.primary),
+                          icon: const Icon(
+                            Icons.swap_horiz_rounded,
+                            color: AppColors.primary,
+                          ),
                         ),
                     ],
                   ),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton(
-                      style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                      ),
                       onPressed: () => setState(() {
                         _lastPhone = null;
                         _userName = null;
@@ -410,7 +463,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 if (_lastPhone == null)
                   PremiumInput(
                     label: 'Téléphone',
-                    hint: 'Entrez votre numéro de téléphone',
+                    hint: '8 chiffres — commence par 2, 3 ou 4',
                     controller: _phoneController,
                     type: PremiumInputType.phone,
                     errorText: _phoneError,
@@ -425,7 +478,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       setState(() => _isPinMode = false);
                     },
                   ),
-                if (_lastPhone == null) const SizedBox(height: AppSpacing.inputSpacing),
+                if (_lastPhone == null)
+                  const SizedBox(height: AppSpacing.inputSpacing),
                 PremiumInput(
                   label: 'Code PIN',
                   hint: '4 chiffres — pavé numérique',
@@ -452,7 +506,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   onTap: () {
                     FocusManager.instance.primaryFocus?.unfocus();
-                    setState(() => _isPinMode = true);
+                    setState(() {
+                      _isPinMode = true;
+                      _pinKeypadEpoch++;
+                    });
                   },
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -468,7 +525,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           size: PremiumButtonSize.large,
                           isFullWidth: true,
                           isLoading: loading,
-                          onPressed: (!loading && _isFormValid) ? _onLoginPressed : null,
+                          onPressed: (!loading && _isFormValid)
+                              ? _onLoginPressed
+                              : null,
                         ),
                         const SizedBox(height: AppSpacing.md),
                         Row(
@@ -477,11 +536,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             Text(
                               'Pas encore de compte ?',
                               style: AppTextStyles.bodySmall.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                             ),
                             TextButton(
-                              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+                              ),
                               onPressed: () => context.push(AppRouter.register),
                               child: const Text('Créer un compte'),
                             ),
@@ -502,7 +565,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   NumericKeypad(
-                    shuffle: false,
+                    key: ValueKey(_pinKeypadEpoch),
+                    shuffle: true,
                     onNumberPressed: (val) {
                       if (_pinController.text.length < 4) {
                         _pinController.text += val;
@@ -510,8 +574,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                     onDeletePressed: () {
                       if (_pinController.text.isNotEmpty) {
-                        _pinController.text =
-                            _pinController.text.substring(0, _pinController.text.length - 1);
+                        _pinController.text = _pinController.text.substring(
+                          0,
+                          _pinController.text.length - 1,
+                        );
                       }
                     },
                   ),
@@ -519,7 +585,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: AppSpacing.lg),
                 _LoginFooter(
                   lastLogin: _lastLoginDate,
-                  onSurfaceVariant: Theme.of(context).colorScheme.onSurfaceVariant,
+                  onSurfaceVariant: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant,
                   accentColor: AppColors.primary,
                 ),
               ],
@@ -554,18 +622,17 @@ class _LoginFooter extends StatelessWidget {
           Text(
             dateLine,
             textAlign: TextAlign.center,
-            style: AppTextStyles.labelSmall.copyWith(color: onSurfaceVariant, height: 1.2),
+            style: AppTextStyles.labelSmall.copyWith(
+              color: onSurfaceVariant,
+              height: 1.2,
+            ),
           ),
           const SizedBox(height: AppSpacing.xs),
         ],
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.shield_outlined,
-              size: 16,
-              color: accentColor,
-            ),
+            Icon(Icons.shield_outlined, size: 16, color: accentColor),
             const SizedBox(width: AppSpacing.sm),
             Flexible(
               child: Text(

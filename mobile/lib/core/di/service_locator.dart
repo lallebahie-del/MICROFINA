@@ -1,6 +1,8 @@
 import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../auth/biometric_auth_service.dart';
+import '../auth/session_invalidation_broadcaster.dart';
 import '../utils/pdf_generator_service.dart';
 import '../storage/secure_storage_service.dart';
 import '../storage/local_cache_service.dart';
@@ -32,21 +34,33 @@ void setupLocator() {
   sl.registerLazySingleton(() => Dio());
 
   // Services
+  sl.registerLazySingleton(() => SessionInvalidationBroadcaster());
+  sl.registerLazySingleton(() => BiometricAuthService());
   sl.registerLazySingleton(() => PdfGeneratorService());
   sl.registerLazySingleton(() => SecureStorageService(sl()));
   sl.registerLazySingleton(() => LocalCacheService());
   sl.registerLazySingleton(() => ConnectivityService());
-  sl.registerLazySingleton(() => DioClient(sl(), sl()));
-  
+  sl.registerLazySingleton(() => DioClient(sl(), sl(), sl()));
+
   // Repositories
-  sl.registerLazySingleton<AuthRepository>(() => AuthRepositoryImpl(sl(), sl()));
-  sl.registerLazySingleton<AccountRepository>(() => AccountRepositoryImpl(sl(), sl(), sl()));
-  sl.registerLazySingleton<LoanRepository>(() => LoanRepositoryImpl(sl(), sl(), sl()));
-  sl.registerLazySingleton<TransactionRepository>(() => TransactionRepositoryImpl(sl()));
-  sl.registerLazySingleton<CertificatRepository>(() => CertificatRepositoryImpl(sl(), sl(), sl()));
+  sl.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(sl(), sl()),
+  );
+  sl.registerLazySingleton<AccountRepository>(
+    () => AccountRepositoryImpl(sl(), sl(), sl()),
+  );
+  sl.registerLazySingleton<LoanRepository>(
+    () => LoanRepositoryImpl(sl(), sl(), sl()),
+  );
+  sl.registerLazySingleton<TransactionRepository>(
+    () => TransactionRepositoryImpl(sl()),
+  );
+  sl.registerLazySingleton<CertificatRepository>(
+    () => CertificatRepositoryImpl(sl(), sl(), sl()),
+  );
 
   // Blocs — AuthBloc doit rester une instance unique (router + Provider + déconnexion).
-  sl.registerLazySingleton(() => AuthBloc(sl())..add(AppStarted()));
+  sl.registerLazySingleton(() => AuthBloc(sl(), sl())..add(AppStarted()));
   sl.registerFactory(() => AccountBloc(sl()));
   sl.registerFactory(() => LoanBloc(sl()));
   sl.registerFactory(() => TransferBloc(sl()));

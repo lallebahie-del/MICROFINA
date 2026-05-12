@@ -11,10 +11,7 @@ class TransferState extends Equatable {
     this.errorMessage,
   });
 
-  TransferState copyWith({
-    TransferStatus? status,
-    String? errorMessage,
-  }) {
+  TransferState copyWith({TransferStatus? status, String? errorMessage}) {
     return TransferState(
       status: status ?? this.status,
       errorMessage: errorMessage ?? this.errorMessage,

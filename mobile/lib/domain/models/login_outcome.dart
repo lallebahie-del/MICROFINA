@@ -8,11 +8,7 @@ final class LoginSuccess extends LoginOutcome {
   const LoginSuccess(this.token);
 }
 
-enum LoginFailureKind {
-  invalidCredentials,
-  network,
-  unknown,
-}
+enum LoginFailureKind { invalidCredentials, network, unknown }
 
 final class LoginFailure extends LoginOutcome {
   final LoginFailureKind kind;

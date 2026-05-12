@@ -19,4 +19,14 @@ abstract class TransactionRepository {
     required double amount,
     required String reason,
   });
+
+  /// Virement vers un compte tiers (autre banque / RIB).
+  Future<bool> transferExternalFunds({
+    required String fromAccountId,
+    required String beneficiaryName,
+    required String externalAccountNumber,
+    String? beneficiaryBank,
+    required double amount,
+    required String reason,
+  });
 }

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/pdf_generator_service.dart';
-import '../../../data/models/extra_models.dart';
 import '../../blocs/certificat/certificat_bloc.dart';
 import '../../widgets/loan/maturity_countdown.dart';
 
@@ -26,12 +24,19 @@ class _CertificateScreenState extends State<CertificateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(locale: 'fr_FR', symbol: 'FCFA', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      locale: 'fr_FR',
+      symbol: 'FCFA',
+      decimalDigits: 0,
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Suivi des Placements', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: const Text(
+          'Suivi des Placements',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -56,9 +61,16 @@ class _CertificateScreenState extends State<CertificateScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.account_balance_wallet_outlined, size: 64, color: Colors.grey),
+                  Icon(
+                    Icons.account_balance_wallet_outlined,
+                    size: 64,
+                    color: Colors.grey,
+                  ),
                   SizedBox(height: 16),
-                  Text('Aucun placement à terme trouvé.', style: TextStyle(color: Colors.grey)),
+                  Text(
+                    'Aucun placement à terme trouvé.',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ],
               ),
             );
@@ -120,14 +132,18 @@ class _CertificateScreenState extends State<CertificateScreen> {
                               color: AppColors.success.withOpacity(0.1),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.verified_rounded, color: AppColors.success, size: 20),
+                            child: const Icon(
+                              Icons.verified_rounded,
+                              color: AppColors.success,
+                              size: 20,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    
+
                     const Divider(height: 1),
-                    
+
                     // Body avec MaturityCountdown
                     Padding(
                       padding: const EdgeInsets.all(24),
@@ -142,16 +158,32 @@ class _CertificateScreenState extends State<CertificateScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              _buildDetailItem('Montant Initial', currencyFormat.format(cert.montantPlacement)),
-                              _buildDetailItem('Taux Annuel', '${cert.tauxInteret}%'),
+                              _buildDetailItem(
+                                'Montant Initial',
+                                currencyFormat.format(cert.montantPlacement),
+                              ),
+                              _buildDetailItem(
+                                'Taux Annuel',
+                                '${cert.tauxInteret}%',
+                              ),
                             ],
                           ),
                           const SizedBox(height: 20),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              _buildDetailItem('Date de début', DateFormat('dd MMM yyyy').format(cert.startDate)),
-                              _buildDetailItem('Échéance', DateFormat('dd MMM yyyy').format(cert.maturityDate)),
+                              _buildDetailItem(
+                                'Date de début',
+                                DateFormat(
+                                  'dd MMM yyyy',
+                                ).format(cert.startDate),
+                              ),
+                              _buildDetailItem(
+                                'Échéance',
+                                DateFormat(
+                                  'dd MMM yyyy',
+                                ).format(cert.maturityDate),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 20),
@@ -187,7 +219,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
                         ],
                       ),
                     ),
-                    
+
                     // Footer Actions
                     Padding(
                       padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
@@ -195,13 +227,21 @@ class _CertificateScreenState extends State<CertificateScreen> {
                         width: double.infinity,
                         height: 54,
                         child: ElevatedButton.icon(
-                          onPressed: () => PdfGeneratorService.generateAndPreviewCertificate(certificat: cert),
-                          icon: const Icon(Icons.file_download_outlined, size: 20),
+                          onPressed: () =>
+                              PdfGeneratorService.generateAndPreviewCertificate(
+                                certificat: cert,
+                              ),
+                          icon: const Icon(
+                            Icons.file_download_outlined,
+                            size: 20,
+                          ),
                           label: const Text('TÉLÉCHARGER LE CERTIFICAT'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
                             elevation: 0,
                           ),
                         ),
@@ -223,7 +263,11 @@ class _CertificateScreenState extends State<CertificateScreen> {
       itemCount: 3,
       itemBuilder: (context, index) => Padding(
         padding: const EdgeInsets.only(bottom: 24),
-        child: AppShimmer(height: 300, width: double.infinity, borderRadius: BorderRadius.circular(32)),
+        child: AppShimmer(
+          height: 300,
+          width: double.infinity,
+          borderRadius: BorderRadius.circular(32),
+        ),
       ),
     );
   }

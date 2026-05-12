@@ -39,8 +39,9 @@ class PremiumBottomNav extends StatelessWidget {
   Widget _buildStandardNav(BuildContext context, bool isDark) {
     return Container(
       decoration: BoxDecoration(
-        color: backgroundColor ?? 
-          (isDark ? AppColors.darkSurface : AppColors.surface),
+        color:
+            backgroundColor ??
+            (isDark ? AppColors.darkSurface : AppColors.surface),
         boxShadow: AppShadows.soft,
       ),
       child: SafeArea(
@@ -76,8 +77,9 @@ class PremiumBottomNav extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: backgroundColor ?? 
-          (isDark ? AppColors.darkSurface : AppColors.surface),
+        color:
+            backgroundColor ??
+            (isDark ? AppColors.darkSurface : AppColors.surface),
         borderRadius: BorderRadius.circular(AppSpacing.radiusXXLarge),
         boxShadow: AppShadows.floating,
       ),
@@ -118,8 +120,9 @@ class PremiumBottomNav extends StatelessWidget {
     VoidCallback onTap,
   ) {
     final selectedColor = selectedItemColor ?? AppColors.primary;
-    final unselectedColor = unselectedItemColor ?? 
-      (isDark ? AppColors.darkTextTertiary : AppColors.textTertiary);
+    final unselectedColor =
+        unselectedItemColor ??
+        (isDark ? AppColors.darkTextTertiary : AppColors.textTertiary);
 
     return InkWell(
       onTap: onTap,
@@ -134,13 +137,13 @@ class PremiumBottomNav extends StatelessWidget {
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: isSelected 
-                ? const EdgeInsets.all(AppSpacing.sm)
-                : EdgeInsets.zero,
+              padding: isSelected
+                  ? const EdgeInsets.all(AppSpacing.sm)
+                  : EdgeInsets.zero,
               decoration: BoxDecoration(
-                color: isSelected 
-                  ? selectedColor.withValues(alpha: 0.1)
-                  : Colors.transparent,
+                color: isSelected
+                    ? selectedColor.withValues(alpha: 0.1)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
               ),
               child: Icon(
@@ -180,11 +183,7 @@ class PremiumNavItem {
   final String label;
   final String? badge;
 
-  const PremiumNavItem({
-    required this.icon,
-    required this.label,
-    this.badge,
-  });
+  const PremiumNavItem({required this.icon, required this.label, this.badge});
 }
 
 class PremiumBottomNavWithFab extends StatelessWidget {
@@ -216,8 +215,9 @@ class PremiumBottomNavWithFab extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: backgroundColor ?? 
-          (isDark ? AppColors.darkSurface : AppColors.surface),
+        color:
+            backgroundColor ??
+            (isDark ? AppColors.darkSurface : AppColors.surface),
         boxShadow: AppShadows.soft,
       ),
       child: SafeArea(
@@ -228,12 +228,7 @@ class PremiumBottomNavWithFab extends StatelessWidget {
               flex: 2,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: items
-                    .take(2)
-                    .toList()
-                    .asMap()
-                    .entries
-                    .map((entry) {
+                children: items.take(2).toList().asMap().entries.map((entry) {
                   final index = entry.key;
                   final item = entry.value;
                   final isSelected = index == currentIndex;
@@ -250,22 +245,18 @@ class PremiumBottomNavWithFab extends StatelessWidget {
                 }).toList(),
               ),
             ),
-            
+
             // FAB space
             const SizedBox(width: 56),
-            
+
             // Right side nav items
             Expanded(
               flex: 2,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: items
-                    .skip(2)
-                    .take(2)
-                    .toList()
-                    .asMap()
-                    .entries
-                    .map((entry) {
+                children: items.skip(2).take(2).toList().asMap().entries.map((
+                  entry,
+                ) {
                   final index = entry.key + 2;
                   final item = entry.value;
                   final isSelected = index == currentIndex;
@@ -296,7 +287,8 @@ class PremiumBottomNavWithFab extends StatelessWidget {
     VoidCallback onTap,
   ) {
     final selectedColor = selectedItemColor ?? AppColors.primary;
-    final unselectedColor = unselectedItemColor ??
+    final unselectedColor =
+        unselectedItemColor ??
         (isDark ? AppColors.darkTextTertiary : AppColors.textTertiary);
 
     return InkWell(
@@ -312,13 +304,13 @@ class PremiumBottomNavWithFab extends StatelessWidget {
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: isSelected 
-                ? const EdgeInsets.all(AppSpacing.sm)
-                : EdgeInsets.zero,
+              padding: isSelected
+                  ? const EdgeInsets.all(AppSpacing.sm)
+                  : EdgeInsets.zero,
               decoration: BoxDecoration(
-                color: isSelected 
-                  ? selectedColor.withValues(alpha: 0.1)
-                  : Colors.transparent,
+                color: isSelected
+                    ? selectedColor.withValues(alpha: 0.1)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
               ),
               child: Icon(

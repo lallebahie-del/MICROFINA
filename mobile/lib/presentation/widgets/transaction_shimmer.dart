@@ -39,21 +39,13 @@ class TransactionShimmer extends StatelessWidget {
                         color: Colors.white,
                       ),
                       const SizedBox(height: 8),
-                      Container(
-                        width: 100,
-                        height: 10,
-                        color: Colors.white,
-                      ),
+                      Container(width: 100, height: 10, color: Colors.white),
                     ],
                   ),
                 ),
                 const SizedBox(width: 20),
                 // Montant
-                Container(
-                  width: 60,
-                  height: 12,
-                  color: Colors.white,
-                ),
+                Container(width: 60, height: 12, color: Colors.white),
               ],
             ),
           ),

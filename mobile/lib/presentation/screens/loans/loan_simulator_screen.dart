@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:local_auth/local_auth.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../core/auth/biometric_auth_service.dart';
+import '../../../core/di/service_locator.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/datasources/mock/mock_data.dart';
-import '../../blocs/loan_simulator/loan_simulator_bloc.dart';
 
 class SimulatorScreen extends StatefulWidget {
   const SimulatorScreen({super.key});
@@ -18,7 +16,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
   double _amount = 500000; // Montant initial
   int _duration = 12; // Durée initiale
   final double _interestRate = 0.05; // 5% d'intérêt simple fictif
-  final LocalAuthentication _auth = LocalAuthentication();
+  final BiometricAuthService _biometric = sl<BiometricAuthService>();
 
   double get _monthlyPayment {
     // M = Montant / Durée + (Montant * Taux) / Durée
@@ -29,8 +27,16 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
     return _monthlyPayment * _duration;
   }
 
-  void _showInsufficientFundsDialog(BuildContext context, double balance, double required) {
-    final currencyFormat = NumberFormat.currency(locale: 'fr_FR', symbol: 'FCFA', decimalDigits: 0);
+  void _showInsufficientFundsDialog(
+    BuildContext context,
+    double balance,
+    double required,
+  ) {
+    final currencyFormat = NumberFormat.currency(
+      locale: 'fr_FR',
+      symbol: 'FCFA',
+      decimalDigits: 0,
+    );
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -39,7 +45,13 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
           children: [
             Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
             SizedBox(width: 12),
-            Text("Solde Insuffisant", style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary)),
+            Text(
+              "Solde Insuffisant",
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                color: AppColors.primary,
+              ),
+            ),
           ],
         ),
         content: Column(
@@ -51,15 +63,29 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
               style: TextStyle(color: Colors.grey[600], fontSize: 14),
             ),
             const SizedBox(height: 16),
-            _buildBalanceInfo("Solde disponible", currencyFormat.format(balance), Colors.red),
+            _buildBalanceInfo(
+              "Solde disponible",
+              currencyFormat.format(balance),
+              Colors.red,
+            ),
             const SizedBox(height: 8),
-            _buildBalanceInfo("Requis (fictif)", currencyFormat.format(required), AppColors.primary),
+            _buildBalanceInfo(
+              "Requis (fictif)",
+              currencyFormat.format(required),
+              AppColors.primary,
+            ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("COMPRIS", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
+            child: const Text(
+              "COMPRIS",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppColors.primary,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -67,9 +93,17 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text("RECHARGER", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+            child: const Text(
+              "RECHARGER",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
           ),
         ],
       ),
@@ -80,8 +114,18 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-        Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: valueColor)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w900,
+            color: valueColor,
+          ),
+        ),
       ],
     );
   }
@@ -98,17 +142,13 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
 
     // 2. Authentification sécurisée
     try {
-      final bool canCheckBiometrics = await _auth.canCheckBiometrics;
-      final bool isDeviceSupported = await _auth.isDeviceSupported();
-
       bool authenticated = false;
-      if (canCheckBiometrics && isDeviceSupported) {
-        authenticated = await _auth.authenticate(
-          localizedReason: "Authentifiez-vous pour valider votre demande de prêt de ${NumberFormat.currency(symbol: 'FCFA', decimalDigits: 0).format(_amount)}",
-          options: const AuthenticationOptions(
-            stickyAuth: true,
-            biometricOnly: false,
-          ),
+      if (await _biometric.isDeviceReadyForBiometrics()) {
+        authenticated = await _biometric.authenticate(
+          localizedReason:
+              "Authentifiez-vous pour valider votre demande de prêt de ${NumberFormat.currency(symbol: 'FCFA', decimalDigits: 0).format(_amount)}",
+          biometricOnly: false,
+          stickyAuth: true,
         );
       } else {
         authenticated = true; // Simulé pour les appareils sans biométrie
@@ -130,12 +170,19 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(locale: 'fr_FR', symbol: 'FCFA', decimalDigits: 0);
+    final currencyFormat = NumberFormat.currency(
+      locale: 'fr_FR',
+      symbol: 'FCFA',
+      decimalDigits: 0,
+    );
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Simulateur de Crédit', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: const Text(
+          'Simulateur de Crédit',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -152,10 +199,14 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
           children: [
             const Text(
               'Ajustez les paramètres pour simuler votre mensualité et le coût total de votre prêt.',
-              style: TextStyle(fontSize: 15, color: Colors.grey, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.grey,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             const SizedBox(height: 32),
-            
+
             // Card Résultat stylisée
             Container(
               width: double.infinity,
@@ -179,16 +230,28 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                 children: [
                   const Text(
                     'MENSUALITÉ ESTIMÉE',
-                    style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.5),
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     currencyFormat.format(_monthlyPayment),
-                    style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 36,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(16),
@@ -198,11 +261,19 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                       children: [
                         const Text(
                           'Coût total du crédit',
-                          style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         Text(
                           currencyFormat.format(_totalCost),
-                          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ],
                     ),
@@ -210,9 +281,9 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 48),
-            
+
             // Contrôles Sliders
             _buildSliderSection(
               context,
@@ -224,22 +295,22 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
               label: currencyFormat.format(_amount),
               onChanged: (val) => setState(() => _amount = val),
             ),
-            
+
             const SizedBox(height: 40),
-            
+
             _buildSliderSection(
               context,
               title: 'DURÉE DU PRÊT',
               value: _duration.toDouble(),
               min: 3,
-              max: 24,
-              divisions: 21,
+              max: 60,
+              divisions: 57,
               label: '$_duration mois',
               onChanged: (val) => setState(() => _duration = val.toInt()),
             ),
-            
+
             const SizedBox(height: 60),
-            
+
             SizedBox(
               width: double.infinity,
               height: 64,
@@ -248,13 +319,19 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                   elevation: 8,
                   shadowColor: AppColors.primary.withOpacity(0.5),
                 ),
                 child: const Text(
                   'DEMANDER CE PRÊT',
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: 1),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 16,
+                    letterSpacing: 1,
+                  ),
                 ),
               ),
             ),
@@ -283,11 +360,20 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
           children: [
             Text(
               title,
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: AppColors.primary.withOpacity(0.4), letterSpacing: 1.5),
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                color: AppColors.primary.withOpacity(0.4),
+                letterSpacing: 1.5,
+              ),
             ),
             Text(
               label,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.primary),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                color: AppColors.primary,
+              ),
             ),
           ],
         ),

@@ -1,0 +1,8 @@
+# Exemple : copier les lignes utiles dans android/local.properties
+# (ce fichier est ignoré par git — ne commitez jamais votre vraie clé.)
+#
+# 1) Google Cloud Console → APIs & Services → Credentials → clé API
+# 2) Activer "Maps SDK for Android" pour cette clé
+# 3) Pour le debug, restriction "Android apps" avec le SHA-1 du keystore debug
+#
+GOOGLE_MAPS_API_KEY=

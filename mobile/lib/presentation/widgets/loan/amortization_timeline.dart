@@ -1,90 +1,55 @@
 import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:local_auth/local_auth.dart';
-import 'package:lottie/lottie.dart';
+import 'package:intl/intl.dart';
+import '../../../core/auth/biometric_auth_service.dart';
+import '../../../core/di/service_locator.dart';
 import '../../../data/datasources/mock/mock_data.dart';
 import '../../../data/models/amortp_model.dart';
-import 'package:intl/intl.dart';
 import '../../blocs/loan/loan_bloc.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/app_colors.dart';
 
 class AmortizationTimeline extends StatelessWidget {
   final List<AmortpModel> schedule;
-  final LocalAuthentication _auth = LocalAuthentication();
 
-  AmortizationTimeline({
-    super.key,
-    required this.schedule,
-  });
-
-  void _showSuccessAnimation(BuildContext context) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) {
-        Future.delayed(const Duration(seconds: 2), () {
-          if (context.mounted) Navigator.pop(context);
-        });
-        return Center(
-          child: Container(
-            width: 200,
-            height: 200,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(32),
-            ),
-            child: Lottie.network(
-              'https://assets10.lottiefiles.com/packages/lf20_af7p8v6v.json', // Animation de succès
-              repeat: false,
-              errorBuilder: (context, error, stackTrace) => const Icon(Icons.check_circle, size: 100, color: AppColors.success),
-            ),
-          ),
-        );
-      },
-    );
-  }
+  AmortizationTimeline({super.key, required this.schedule});
 
   Future<void> _handlePayment(BuildContext context, AmortpModel item) async {
     // 1. Vérification dynamique du solde avant toute action
     final currentBalance = MockData.getDefaultAccountBalance();
-    
+
     if (currentBalance < item.montantTotal) {
       if (context.mounted) {
         // Déclencher l'erreur de solde insuffisant via le Bloc pour afficher la pop-up
-        context.read<LoanBloc>().add(PayInstallment(
-          loanId: item.loanId,
-          installmentId: item.id,
-        ));
+        context.read<LoanBloc>().add(
+          PayInstallment(loanId: item.loanId, installmentId: item.id),
+        );
       }
       return;
     }
 
     // 2. Authentification biométrique seulement si le solde est suffisant
     try {
-      final bool canCheckBiometrics = await _auth.canCheckBiometrics;
-      final bool isDeviceSupported = await _auth.isDeviceSupported();
+      final biometric = sl<BiometricAuthService>();
 
       bool authenticated = false;
-      if (canCheckBiometrics && isDeviceSupported) {
-        authenticated = await _auth.authenticate(
-          localizedReason: "Authentifiez-vous pour valider le paiement de ${NumberFormat.currency(symbol: 'FCFA', decimalDigits: 0).format(item.montantTotal)}",
-          options: const AuthenticationOptions(
-            stickyAuth: true,
-            biometricOnly: false, // Permet le repli sur PIN/Schéma si FaceID/Empreinte échoue
-          ),
+      if (await biometric.isDeviceReadyForBiometrics()) {
+        authenticated = await biometric.authenticate(
+          localizedReason:
+              "Authentifiez-vous pour valider le paiement de ${NumberFormat.currency(symbol: 'FCFA', decimalDigits: 0).format(item.montantTotal)}",
+          biometricOnly: false,
+          stickyAuth: true,
         );
       } else {
         // Si pas de biométrie, on pourrait demander un PIN personnalisé ici
         // Pour ce sprint, on simule une validation réussie si l'appareil ne supporte pas la biométrie
-        authenticated = true; 
+        authenticated = true;
       }
 
       if (authenticated && context.mounted) {
-        context.read<LoanBloc>().add(PayInstallment(
-              loanId: item.loanId,
-              installmentId: item.id,
-            ));
+        context.read<LoanBloc>().add(
+          PayInstallment(loanId: item.loanId, installmentId: item.id),
+        );
       }
     } catch (e) {
       debugPrint('Erreur d\'authentification: $e');
@@ -115,7 +80,11 @@ class AmortizationTimeline extends StatelessWidget {
             const SizedBox(height: 32),
             const Text(
               "Confirmer le Paiement",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.primary),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+                color: AppColors.primary,
+              ),
             ),
             const SizedBox(height: 16),
             Text(
@@ -125,8 +94,15 @@ class AmortizationTimeline extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              NumberFormat.currency(symbol: 'FCFA', decimalDigits: 0).format(item.montantTotal),
-              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppColors.primary),
+              NumberFormat.currency(
+                symbol: 'FCFA',
+                decimalDigits: 0,
+              ).format(item.montantTotal),
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w900,
+                color: AppColors.primary,
+              ),
             ),
             const SizedBox(height: 40),
             Row(
@@ -136,10 +112,18 @@ class AmortizationTimeline extends StatelessWidget {
                     onPressed: () => Navigator.pop(bottomSheetContext),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       side: BorderSide(color: Colors.grey[300]!),
                     ),
-                    child: const Text("ANNULER", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      "ANNULER",
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -152,10 +136,15 @@ class AmortizationTimeline extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                       elevation: 0,
                     ),
-                    child: const Text("PAYER MAINTENANT", style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text(
+                      "PAYER MAINTENANT",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
               ],
@@ -203,16 +192,18 @@ class AmortizationTimeline extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Timeline avec CustomPainter
               CustomPaint(
-                size: const Size(40, double.infinity),
+                size: const Size(48, double.infinity),
                 painter: TimelinePainter(
                   status: status,
                   isLast: isLast,
                   isFirst: index == 0,
+                  upcomingAmountLabel: status == 'A_VENIR'
+                      ? _shortFcfa(item.montantTotal)
+                      : null,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               // Contenu
               Expanded(
                 child: Padding(
@@ -228,7 +219,9 @@ class AmortizationTimeline extends StatelessWidget {
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 14,
-                              color: status == "PAYE" ? Colors.grey : Colors.black87,
+                              color: status == "PAYE"
+                                  ? Colors.grey
+                                  : Colors.black87,
                             ),
                           ),
                           Text(
@@ -243,21 +236,34 @@ class AmortizationTimeline extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        NumberFormat.currency(symbol: 'FCFA', decimalDigits: 0).format(item.montantTotal),
+                        NumberFormat.currency(
+                          symbol: 'FCFA',
+                          decimalDigits: 0,
+                        ).format(item.montantTotal),
                         style: TextStyle(
                           fontSize: 16,
-                          fontWeight: status == "IMPAYE" ? FontWeight.w900 : FontWeight.w700,
-                          color: status == "PAYE" 
-                              ? Colors.grey 
-                              : (status == "IMPAYE" ? Colors.red : Colors.black87),
-                          decoration: status == "PAYE" ? TextDecoration.lineThrough : null,
+                          fontWeight: status == "IMPAYE"
+                              ? FontWeight.w900
+                              : FontWeight.w700,
+                          color: status == "PAYE"
+                              ? Colors.grey
+                              : (status == "IMPAYE"
+                                    ? Colors.red
+                                    : Colors.black87),
+                          decoration: status == "PAYE"
+                              ? TextDecoration.lineThrough
+                              : null,
                         ),
                       ),
                       if (status == "IMPAYE") ...[
                         const SizedBox(height: 4),
                         const Text(
                           "IMPAYÉ - À RÉGLER IMMÉDIATEMENT",
-                          style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                       if (status != "PAYE") ...[
@@ -265,15 +271,28 @@ class AmortizationTimeline extends StatelessWidget {
                         SizedBox(
                           height: 36,
                           child: ElevatedButton(
-                            onPressed: () => _showPaymentConfirmation(context, item),
+                            onPressed: () =>
+                                _showPaymentConfirmation(context, item),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: status == "IMPAYE" ? Colors.red : AppColors.primary,
+                              backgroundColor: status == "IMPAYE"
+                                  ? Colors.red
+                                  : AppColors.primary,
                               foregroundColor: Colors.white,
                               elevation: 0,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                             ),
-                            child: const Text("PAYER", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            child: const Text(
+                              "PAYER",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -289,15 +308,28 @@ class AmortizationTimeline extends StatelessWidget {
   }
 }
 
+/// Montant court pour pastille (ex. 1,1M / 875k).
+String _shortFcfa(double amount) {
+  if (amount >= 1000000) {
+    return '${(amount / 1000000).toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')}M';
+  }
+  if (amount >= 1000) {
+    return '${(amount / 1000).round()}k';
+  }
+  return amount.round().toString();
+}
+
 class TimelinePainter extends CustomPainter {
   final String status;
   final bool isLast;
   final bool isFirst;
+  final String? upcomingAmountLabel;
 
   TimelinePainter({
     required this.status,
     required this.isLast,
     required this.isFirst,
+    this.upcomingAmountLabel,
   });
 
   @override
@@ -309,8 +341,14 @@ class TimelinePainter extends CustomPainter {
 
     // Ligne verticale
     if (!isLast) {
+      final lineTop =
+          (status == "A_VENIR" &&
+              upcomingAmountLabel != null &&
+              upcomingAmountLabel!.isNotEmpty)
+          ? 28.0
+          : 20.0;
       canvas.drawLine(
-        Offset(center, 20),
+        Offset(center, lineTop),
         Offset(center, size.height),
         paint,
       );
@@ -325,7 +363,7 @@ class TimelinePainter extends CustomPainter {
     if (status == "PAYE") {
       circlePaint.color = Colors.green;
       canvas.drawCircle(Offset(center, 10), 10, circlePaint);
-      
+
       // Petit check blanc
       final checkPaint = Paint()
         ..color = Colors.white
@@ -340,14 +378,37 @@ class TimelinePainter extends CustomPainter {
       circlePaint.color = Colors.red;
       canvas.drawCircle(Offset(center, 10), 10, circlePaint);
     } else {
-      // A_VENIR : Cercle orange vide
-      circlePaint.color = Colors.white;
-      borderPaint.color = Colors.orange;
-      canvas.drawCircle(Offset(center, 10), 10, circlePaint);
-      canvas.drawCircle(Offset(center, 10), 10, borderPaint);
+      // À venir : pastille orange avec montant (AMORTP) si [upcomingAmountLabel] fourni.
+      if (upcomingAmountLabel != null && upcomingAmountLabel!.isNotEmpty) {
+        circlePaint.color = Colors.orange;
+        const double r = 16;
+        canvas.drawCircle(Offset(center, 12), r, circlePaint);
+        final tp = TextPainter(
+          text: TextSpan(
+            text: upcomingAmountLabel,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 9,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          textDirection: ui.TextDirection.ltr,
+        )..layout(maxWidth: 44);
+        tp.paint(canvas, Offset(center - tp.width / 2, 12 - tp.height / 2));
+      } else {
+        circlePaint.color = Colors.white;
+        borderPaint.color = Colors.orange;
+        canvas.drawCircle(Offset(center, 10), 10, circlePaint);
+        canvas.drawCircle(Offset(center, 10), 10, borderPaint);
+      }
     }
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant TimelinePainter oldDelegate) {
+    return oldDelegate.status != status ||
+        oldDelegate.isLast != isLast ||
+        oldDelegate.isFirst != isFirst ||
+        oldDelegate.upcomingAmountLabel != upcomingAmountLabel;
+  }
 }

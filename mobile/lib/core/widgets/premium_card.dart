@@ -5,19 +5,9 @@ import '../theme/app_spacing.dart';
 import '../theme/app_shadows.dart';
 import '../theme/app_text_styles.dart';
 
-enum PremiumCardType {
-  standard,
-  elevated,
-  outlined,
-  glass,
-  gradient,
-}
+enum PremiumCardType { standard, elevated, outlined, glass, gradient }
 
-enum PremiumCardSize {
-  small,
-  medium,
-  large,
-}
+enum PremiumCardSize { small, medium, large }
 
 class PremiumCard extends StatelessWidget {
   final Widget child;
@@ -59,23 +49,17 @@ class PremiumCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     final cardStyle = _getCardStyle(isDark);
     final dimensions = _getDimensions();
-    
+
     Widget cardChild = Column(
       crossAxisAlignment: alignment,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (header != null) ...[
-          header!,
-          SizedBox(height: AppSpacing.md),
-        ],
+        if (header != null) ...[header!, SizedBox(height: AppSpacing.md)],
         Flexible(child: child),
-        if (footer != null) ...[
-          SizedBox(height: AppSpacing.md),
-          footer!,
-        ],
+        if (footer != null) ...[SizedBox(height: AppSpacing.md), footer!],
       ],
     );
 
@@ -103,10 +87,7 @@ class PremiumCard extends StatelessWidget {
         boxShadow: cardStyle.shadow,
         gradient: cardStyle.gradient,
       ),
-      child: Padding(
-        padding: padding ?? dimensions.padding,
-        child: cardChild,
-      ),
+      child: Padding(padding: padding ?? dimensions.padding, child: cardChild),
     );
   }
 
@@ -114,41 +95,45 @@ class PremiumCard extends StatelessWidget {
     switch (type) {
       case PremiumCardType.standard:
         return _CardStyle(
-          backgroundColor: backgroundColor ?? 
-            (isDark ? AppColors.darkSurface : AppColors.surface),
+          backgroundColor:
+              backgroundColor ??
+              (isDark ? AppColors.darkSurface : AppColors.surface),
           shadow: customShadow ?? AppShadows.card,
           border: null,
           gradient: null,
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
         );
-      
+
       case PremiumCardType.elevated:
         return _CardStyle(
-          backgroundColor: backgroundColor ?? 
-            (isDark ? AppColors.darkSurface : AppColors.surface),
+          backgroundColor:
+              backgroundColor ??
+              (isDark ? AppColors.darkSurface : AppColors.surface),
           shadow: customShadow ?? AppShadows.floating,
           border: null,
           gradient: null,
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
         );
-      
+
       case PremiumCardType.outlined:
         return _CardStyle(
-          backgroundColor: backgroundColor ?? 
-            (isDark ? AppColors.darkSurface : AppColors.surface),
+          backgroundColor:
+              backgroundColor ??
+              (isDark ? AppColors.darkSurface : AppColors.surface),
           shadow: AppShadows.none,
           border: Border.all(
-            color: borderColor ?? 
-              (isDark ? AppColors.darkBorder : AppColors.border),
+            color:
+                borderColor ??
+                (isDark ? AppColors.darkBorder : AppColors.border),
             width: AppSpacing.strokeNormal,
           ),
           gradient: null,
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
         );
-      
+
       case PremiumCardType.glass:
         return _CardStyle(
           backgroundColor: (backgroundColor ?? AppColors.glass),
@@ -168,7 +153,7 @@ class PremiumCard extends StatelessWidget {
           splashColor: Colors.white.withOpacity(0.1),
           highlightColor: Colors.white.withOpacity(0.05),
         );
-      
+
       case PremiumCardType.gradient:
         return _CardStyle(
           backgroundColor: backgroundColor ?? AppColors.primary,
@@ -177,9 +162,9 @@ class PremiumCard extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: backgroundColor != null 
-              ? [backgroundColor!, backgroundColor!.withOpacity(0.8)]
-              : AppColors.primaryGradient,
+            colors: backgroundColor != null
+                ? [backgroundColor!, backgroundColor!.withOpacity(0.8)]
+                : AppColors.primaryGradient,
           ),
           splashColor: Colors.white.withOpacity(0.1),
           highlightColor: Colors.white.withOpacity(0.05),
@@ -195,14 +180,14 @@ class PremiumCard extends StatelessWidget {
           margin: const EdgeInsets.all(AppSpacing.xs),
           radius: AppSpacing.radiusMedium,
         );
-      
+
       case PremiumCardSize.medium:
         return _CardDimensions(
           padding: const EdgeInsets.all(AppSpacing.lg),
           margin: const EdgeInsets.all(AppSpacing.sm),
           radius: AppSpacing.radiusLarge,
         );
-      
+
       case PremiumCardSize.large:
         return _CardDimensions(
           padding: const EdgeInsets.all(AppSpacing.xl),
@@ -296,10 +281,7 @@ class AccountCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      accountName,
-                      style: AppTextStyles.cardTitle,
-                    ),
+                    Text(accountName, style: AppTextStyles.cardTitle),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       accountNumber,
@@ -316,7 +298,8 @@ class AccountCard extends StatelessWidget {
                   vertical: AppSpacing.xs,
                 ),
                 decoration: BoxDecoration(
-                  color: (accountColor ?? AppColors.accountChecking).withOpacity(0.1),
+                  color: (accountColor ?? AppColors.accountChecking)
+                      .withOpacity(0.1),
                   borderRadius: BorderRadius.circular(AppSpacing.radiusFull),
                 ),
                 child: Text(
@@ -396,7 +379,9 @@ class TransactionCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: (categoryColor ?? AppColors.categoryOther).withOpacity(0.1),
+              color: (categoryColor ?? AppColors.categoryOther).withOpacity(
+                0.1,
+              ),
               borderRadius: BorderRadius.circular(AppSpacing.radiusMedium),
             ),
             child: Icon(
@@ -410,10 +395,7 @@ class TransactionCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: AppTextStyles.titleSmall,
-                ),
+                Text(title, style: AppTextStyles.titleSmall),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   description,

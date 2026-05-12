@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
-import 'package:local_auth/local_auth.dart';
+import '../../../core/auth/biometric_auth_service.dart';
+import '../../../core/di/service_locator.dart';
 import '../../../core/storage/secure_storage_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shadows.dart';
+import '../../../core/utils/phone_number_policy.dart';
 import '../../widgets/numeric_keypad.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -20,9 +21,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _phoneController = TextEditingController();
   final _pinController = TextEditingController();
   final _confirmPinController = TextEditingController();
-  final _localAuth = LocalAuthentication();
-  final _secureStorage = SecureStorageService(const FlutterSecureStorage());
+  final BiometricAuthService _biometric = sl<BiometricAuthService>();
+  final SecureStorageService _secureStorage = sl<SecureStorageService>();
   bool _isFormValid = false;
+
   /// 0 = PIN principal, 1 = confirmation (cible du pavé numérique).
   int _activePinField = 0;
   String? _nameError;
@@ -51,32 +53,47 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _validate() {
     setState(() {
       if (_nameController.text.trim().length >= 3) _nameError = null;
-      if (_phoneController.text.trim().isNotEmpty) _phoneError = null;
+      final raw = _phoneController.text.trim();
+      if (raw.isNotEmpty) {
+        _phoneError = PhoneNumberPolicy.isValid(raw)
+            ? null
+            : PhoneNumberPolicy.validationMessage;
+      } else {
+        _phoneError = null;
+      }
       if (_pinController.text.length >= 4) _pinError = null;
       if (_confirmPinController.text.length >= 4 &&
           _confirmPinController.text == _pinController.text) {
         _confirmPinError = null;
       }
-      _isFormValid = _nameController.text.trim().length >= 3 &&
-          _phoneController.text.trim().isNotEmpty &&
+      _isFormValid =
+          _nameController.text.trim().length >= 3 &&
+          raw.isNotEmpty &&
+          PhoneNumberPolicy.isValid(raw) &&
           _pinController.text.length >= 4 &&
           _pinController.text == _confirmPinController.text;
     });
   }
 
   void _validateFieldsForSubmit() {
+    final raw = _phoneController.text.trim();
     setState(() {
       _nameError = _nameController.text.trim().length < 3
           ? 'Au moins 3 caractères pour le nom'
           : null;
-      _phoneError =
-          _phoneController.text.trim().isEmpty ? 'Numéro de téléphone requis' : null;
-      _pinError = _pinController.text.length < 4 ? 'Le code PIN doit comporter 4 chiffres' : null;
+      _phoneError = raw.isEmpty
+          ? 'Numéro de téléphone requis'
+          : (!PhoneNumberPolicy.isValid(raw)
+                ? PhoneNumberPolicy.validationMessage
+                : null);
+      _pinError = _pinController.text.length < 4
+          ? 'Le code PIN doit comporter 4 chiffres'
+          : null;
       _confirmPinError = _confirmPinController.text.length < 4
           ? 'Confirmez les 4 chiffres du code'
           : (_pinController.text != _confirmPinController.text
-              ? 'Les deux codes PIN doivent être identiques'
-              : null);
+                ? 'Les deux codes PIN doivent être identiques'
+                : null);
     });
   }
 
@@ -92,42 +109,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       // 1. Vérifier la disponibilité de la biométrie
-      final canCheck = await _localAuth.canCheckBiometrics;
-      final isSupported = await _localAuth.isDeviceSupported();
-
-      if (!canCheck || !isSupported) {
+      if (!await _biometric.isDeviceReadyForBiometrics()) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('La biométrie est obligatoire pour créer un compte.')),
+            const SnackBar(
+              content: Text(
+                'La biométrie est obligatoire pour créer un compte.',
+              ),
+            ),
           );
         }
         return;
       }
 
       // 2. Forcer l'authentification biométrique pour l'enrôlement
-      final didAuthenticate = await _localAuth.authenticate(
-        localizedReason: 'Veuillez configurer votre biométrie pour sécuriser votre compte',
-        options: const AuthenticationOptions(
-          biometricOnly: true,
-          stickyAuth: true,
-        ),
+      final didAuthenticate = await _biometric.authenticate(
+        localizedReason:
+            'Veuillez configurer votre biométrie pour sécuriser votre compte',
+        biometricOnly: true,
+        stickyAuth: true,
       );
 
       if (didAuthenticate && mounted) {
+        final phone = PhoneNumberPolicy.normalize(_phoneController.text.trim());
         // 3. Sauvegarder les infos utilisateur spécifiquement pour ce numéro
         await _secureStorage.saveAccountInfo(
-          phone: _phoneController.text,
-          name: _nameController.text,
+          phone: phone,
+          name: _nameController.text.trim(),
           biometricEnabled: true,
         );
-        
-        await _secureStorage.saveLastPhone(_phoneController.text);
-        await _secureStorage.setSecureMode(true); 
+
+        await _secureStorage.saveLastPhone(phone);
+        await _secureStorage.setSecureMode(true);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Compte créé et biométrie configurée avec succès !'),
+              content: Text(
+                'Compte créé et biométrie configurée avec succès !',
+              ),
               backgroundColor: AppColors.success,
             ),
           );
@@ -137,7 +157,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors de la configuration biométrique: $e')),
+          SnackBar(
+            content: Text('Erreur lors de la configuration biométrique: $e'),
+          ),
         );
       }
     }
@@ -164,10 +186,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
             slivers: [
               SliverAppBar(
                 leading: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.primary),
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: AppColors.primary,
+                  ),
                   onPressed: () => context.pop(),
                 ),
-                title: const Text('Créer un compte', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w900)),
+                title: const Text(
+                  'Créer un compte',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
                 floating: true,
               ),
               SliverToBoxAdapter(
@@ -185,22 +216,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             shape: BoxShape.circle,
                             boxShadow: AppShadows.soft,
                           ),
-                          child: const Icon(Icons.person_add_rounded, size: 40, color: AppColors.primary),
+                          child: const Icon(
+                            Icons.person_add_rounded,
+                            size: 40,
+                            color: AppColors.primary,
+                          ),
                         ),
                         const SizedBox(height: 24),
                         const Text(
                           'Bienvenue chez microCredit',
                           textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.primary, letterSpacing: -0.5),
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            color: AppColors.primary,
+                            letterSpacing: -0.5,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Sécurisez vos finances en quelques secondes.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: AppColors.primary.withOpacity(0.5), fontSize: 14, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                            color: AppColors.primary.withOpacity(0.5),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                         const SizedBox(height: 32),
-                        
+
                         _buildPremiumInput(
                           controller: _nameController,
                           label: 'Nom complet',
@@ -208,7 +252,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           errorText: _nameError,
                         ),
                         const SizedBox(height: 20),
-                        
+
                         _buildPremiumInput(
                           controller: _phoneController,
                           label: 'Numéro de téléphone',
@@ -216,25 +260,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           keyboardType: TextInputType.phone,
                           errorText: _phoneError,
                         ),
+                        const SizedBox(height: 4),
+                        Text(
+                          PhoneNumberPolicy.validationMessage,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
                         const SizedBox(height: 20),
-                        
+
                         _buildPremiumInput(
                           controller: _pinController,
                           label: 'Définir un Code PIN (4 chiffres)',
                           icon: Icons.lock_outline_rounded,
                           isPin: true,
                           errorText: _pinError,
-                          onPinPadFocus: () => setState(() => _activePinField = 0),
+                          onPinPadFocus: () =>
+                              setState(() => _activePinField = 0),
                         ),
                         const SizedBox(height: 20),
-                        
+
                         _buildPremiumInput(
                           controller: _confirmPinController,
                           label: 'Confirmer le Code PIN',
                           icon: Icons.lock_clock_rounded,
                           isPin: true,
                           errorText: _confirmPinError,
-                          onPinPadFocus: () => setState(() => _activePinField = 1),
+                          onPinPadFocus: () =>
+                              setState(() => _activePinField = 1),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -255,25 +309,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             boxShadow: AppShadows.soft,
                           ),
                           child: NumericKeypad(
+                            key: ValueKey(_activePinField),
                             digitColor: AppColors.primary,
-                            shuffle: false,
+                            shuffle: true,
                             onNumberPressed: (val) {
-                              final c = _activePinField == 0 ? _pinController : _confirmPinController;
+                              final c = _activePinField == 0
+                                  ? _pinController
+                                  : _confirmPinController;
                               if (c.text.length < 4) {
                                 setState(() => c.text += val);
                               }
                             },
                             onDeletePressed: () {
-                              final c = _activePinField == 0 ? _pinController : _confirmPinController;
+                              final c = _activePinField == 0
+                                  ? _pinController
+                                  : _confirmPinController;
                               if (c.text.isNotEmpty) {
-                                setState(() => c.text = c.text.substring(0, c.text.length - 1));
+                                setState(
+                                  () => c.text = c.text.substring(
+                                    0,
+                                    c.text.length - 1,
+                                  ),
+                                );
                               }
                             },
                           ),
                         ),
-                        
+
                         const SizedBox(height: 56),
-                        
+
                         ElevatedButton(
                           onPressed: _isFormValid ? _handleRegister : null,
                           style: ElevatedButton.styleFrom(
@@ -283,18 +347,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                           child: const Text('FINALISER L\'INSCRIPTION'),
                         ),
-                        
+
                         const SizedBox(height: 32),
                         TextButton(
                           onPressed: () => context.pop(),
                           child: RichText(
                             text: TextSpan(
                               text: 'Déjà un compte ? ',
-                              style: TextStyle(color: AppColors.primary.withOpacity(0.5), fontWeight: FontWeight.w500),
+                              style: TextStyle(
+                                color: AppColors.primary.withOpacity(0.5),
+                                fontWeight: FontWeight.w500,
+                              ),
                               children: const [
                                 TextSpan(
                                   text: 'Se connecter',
-                                  style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800),
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                                 ),
                               ],
                             ),
@@ -340,10 +410,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
             controller: controller,
             obscureText: isPin,
             readOnly: isPin,
-            keyboardType: isPin ? TextInputType.none : (keyboardType ?? TextInputType.text),
+            keyboardType: isPin
+                ? TextInputType.none
+                : (keyboardType ?? TextInputType.text),
             enableInteractiveSelection: !isPin,
             contextMenuBuilder: isPin
-                ? (BuildContext ctx, EditableTextState state) => const SizedBox.shrink()
+                ? (BuildContext ctx, EditableTextState state) =>
+                      const SizedBox.shrink()
                 : null,
             maxLength: isPin ? 4 : null,
             onTap: isPin && onPinPadFocus != null
@@ -352,10 +425,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     onPinPadFocus();
                   }
                 : null,
-            style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary),
+            style: const TextStyle(
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary,
+            ),
             decoration: InputDecoration(
               labelText: label,
-              prefixIcon: Icon(icon, color: AppColors.primary.withValues(alpha: 0.5)),
+              prefixIcon: Icon(
+                icon,
+                color: AppColors.primary.withValues(alpha: 0.5),
+              ),
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: OutlineInputBorder(
@@ -378,7 +457,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 const Padding(
                   padding: EdgeInsets.only(top: 1),
-                  child: Icon(Icons.error_outline_rounded, size: 14, color: AppColors.error),
+                  child: Icon(
+                    Icons.error_outline_rounded,
+                    size: 14,
+                    color: AppColors.error,
+                  ),
                 ),
                 const SizedBox(width: 6),
                 Expanded(

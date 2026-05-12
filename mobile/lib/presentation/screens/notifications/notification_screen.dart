@@ -19,7 +19,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Notifications', style: TextStyle(fontWeight: FontWeight.w800)),
+        title: const Text(
+          'Notifications',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -32,7 +35,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   MockData.markAllNotificationsAsRead();
                 });
               },
-              child: const Text('Tout lire', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Tout lire',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           const SizedBox(width: 8),
         ],
@@ -51,7 +57,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
               )
             : ListView.builder(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 itemCount: notifications.length,
                 itemBuilder: (context, index) {
                   final notif = notifications[index];
@@ -76,12 +85,20 @@ class _NotificationScreenState extends State<NotificationScreen> {
               color: AppColors.primary.withOpacity(0.05),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.notifications_none_rounded, size: 64, color: AppColors.primary.withOpacity(0.4)),
+            child: Icon(
+              Icons.notifications_none_rounded,
+              size: 64,
+              color: AppColors.primary.withOpacity(0.4),
+            ),
           ),
           const SizedBox(height: 24),
           const Text(
             'Tout est calme ici',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primary),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppColors.primary,
+            ),
           ),
           const SizedBox(height: 8),
           Padding(
@@ -89,7 +106,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
             child: Text(
               'Les alertes liées à vos virements, paiements et remboursements apparaîtront ici après chaque opération.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600], fontSize: 14, height: 1.35),
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
+                height: 1.35,
+              ),
             ),
           ),
         ],
@@ -97,9 +118,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 
-  Widget _buildNotificationCard(Map<String, dynamic> notif, bool isRead, DateTime date) {
+  Widget _buildNotificationCard(
+    Map<String, dynamic> notif,
+    bool isRead,
+    DateTime date,
+  ) {
     final category = _getCategory(notif['title']);
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -112,7 +137,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
             offset: const Offset(0, 4),
           ),
         ],
-        border: isRead ? null : Border.all(color: category.color.withOpacity(0.1), width: 1),
+        border: isRead
+            ? null
+            : Border.all(color: category.color.withOpacity(0.1), width: 1),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
@@ -120,11 +147,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           child: Row(
             children: [
               // Barre latérale de couleur pour les non-lus
-              if (!isRead)
-                Container(
-                  width: 5,
-                  color: category.color,
-                ),
+              if (!isRead) Container(width: 5, color: category.color),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
@@ -138,7 +161,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           color: category.color.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(16),
                         ),
-                        child: Icon(category.icon, color: category.color, size: 24),
+                        child: Icon(
+                          category.icon,
+                          color: category.color,
+                          size: 24,
+                        ),
                       ),
                       const SizedBox(width: 16),
                       // Contenu
@@ -153,7 +180,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                   child: Text(
                                     notif['title'],
                                     style: TextStyle(
-                                      fontWeight: isRead ? FontWeight.w700 : FontWeight.w900,
+                                      fontWeight: isRead
+                                          ? FontWeight.w700
+                                          : FontWeight.w900,
                                       fontSize: 15,
                                       color: AppColors.primary,
                                     ),
@@ -174,7 +203,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                             Text(
                               notif['message'],
                               style: TextStyle(
-                                color: isRead ? Colors.grey[600] : Colors.black87,
+                                color: isRead
+                                    ? Colors.grey[600]
+                                    : Colors.black87,
                                 fontSize: 13,
                                 height: 1.4,
                               ),
@@ -212,11 +243,17 @@ class _NotificationScreenState extends State<NotificationScreen> {
         t.contains('debit') ||
         t.contains('débit')) {
       // Même bleu que la part « Disponible » du dashboard (AppColors.secondary)
-      return _NotificationCategory(Icons.account_balance_wallet_rounded, AppColors.secondary);
+      return _NotificationCategory(
+        Icons.account_balance_wallet_rounded,
+        AppColors.secondary,
+      );
     } else if (t.contains('rappel')) {
       return _NotificationCategory(Icons.event_note_rounded, AppColors.info);
     }
-    return _NotificationCategory(Icons.notifications_rounded, AppColors.primary);
+    return _NotificationCategory(
+      Icons.notifications_rounded,
+      AppColors.primary,
+    );
   }
 
   String _formatDate(DateTime date) {

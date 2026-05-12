@@ -47,12 +47,12 @@ class AmortpModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        loanId,
-        dateEcheance,
-        montantCapital,
-        montantInteret,
-        montantTva,
-        estPaye,
-      ];
+    id,
+    loanId,
+    dateEcheance,
+    montantCapital,
+    montantInteret,
+    montantTva,
+    estPaye,
+  ];
 }

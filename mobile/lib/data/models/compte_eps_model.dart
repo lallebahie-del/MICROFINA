@@ -36,8 +36,8 @@ class CompteEpsModel extends Equatable {
       blockedBalance: (json['blockedBalance'] as num).toDouble(),
       accountType: json['accountType'] as String,
       devise: json['devise'] as String,
-      lastSyncedAt: json['lastSyncedAt'] != null 
-          ? DateTime.parse(json['lastSyncedAt'] as String) 
+      lastSyncedAt: json['lastSyncedAt'] != null
+          ? DateTime.parse(json['lastSyncedAt'] as String)
           : null,
       isDefaultAccount: json['isDefaultAccount'] as bool? ?? false,
       accountTypeColor: json['accountTypeColor'] as String?,
@@ -61,15 +61,15 @@ class CompteEpsModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        numeroCompte,
-        libelle,
-        availableBalance,
-        blockedBalance,
-        accountType,
-        devise,
-        lastSyncedAt,
-        isDefaultAccount,
-        accountTypeColor,
-      ];
+    id,
+    numeroCompte,
+    libelle,
+    availableBalance,
+    blockedBalance,
+    accountType,
+    devise,
+    lastSyncedAt,
+    isDefaultAccount,
+    accountTypeColor,
+  ];
 }

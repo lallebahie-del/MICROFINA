@@ -1,0 +1,29 @@
+[
+  {
+    "loanId": "cre_882",
+    "totalAmount": 6000000,
+    "remainingCapital": 4500000,
+    "interestRate": 12.5,
+    "endDate": "2026-12-15",
+    "statusCode": 1,
+    "nextInstallmentDueDate": "2026-05-15"
+  },
+  {
+    "loanId": "cre_883",
+    "totalAmount": 2000000,
+    "remainingCapital": 1200000,
+    "interestRate": 10,
+    "endDate": "2026-08-10",
+    "statusCode": 2,
+    "nextInstallmentDueDate": "2026-05-01"
+  },
+  {
+    "loanId": "cre_884",
+    "totalAmount": 1000000,
+    "remainingCapital": 0,
+    "interestRate": 11,
+    "endDate": "2026-01-20",
+    "statusCode": 3,
+    "nextInstallmentDueDate": null
+  }
+]

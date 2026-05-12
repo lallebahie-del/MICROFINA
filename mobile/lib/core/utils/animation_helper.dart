@@ -32,10 +32,7 @@ class AnimationHelper {
           position: Tween<Offset>(
             begin: begin,
             end: Offset.zero,
-          ).animate(CurvedAnimation(
-            parent: animation,
-            curve: curve,
-          )),
+          ).animate(CurvedAnimation(parent: animation, curve: curve)),
           child: child,
         );
       },
@@ -55,10 +52,7 @@ class AnimationHelper {
           opacity: Tween<double>(
             begin: 0.0,
             end: 1.0,
-          ).animate(CurvedAnimation(
-            parent: animation,
-            curve: curve,
-          )),
+          ).animate(CurvedAnimation(parent: animation, curve: curve)),
           child: child,
         );
       },
@@ -78,10 +72,7 @@ class AnimationHelper {
           scale: Tween<double>(
             begin: 0.0,
             end: 1.0,
-          ).animate(CurvedAnimation(
-            parent: animation,
-            curve: curve,
-          )),
+          ).animate(CurvedAnimation(parent: animation, curve: curve)),
           child: child,
         );
       },
@@ -100,10 +91,7 @@ class AnimationHelper {
       duration: duration,
       curve: curve,
       builder: (context, value, child) {
-        return Transform.translate(
-          offset: Offset(0.0, value),
-          child: child,
-        );
+        return Transform.translate(offset: Offset(0.0, value), child: child);
       },
       child: child,
     );
@@ -120,10 +108,7 @@ class AnimationHelper {
       duration: duration,
       curve: curve,
       builder: (context, value, child) {
-        return Transform.translate(
-          offset: Offset(value, 0.0),
-          child: child,
-        );
+        return Transform.translate(offset: Offset(value, 0.0), child: child);
       },
       child: child,
     );
@@ -139,10 +124,7 @@ class AnimationHelper {
       duration: duration,
       curve: curve,
       builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: child,
-        );
+        return Opacity(opacity: value, child: child);
       },
       child: child,
     );
@@ -159,10 +141,7 @@ class AnimationHelper {
       duration: duration,
       curve: curve,
       builder: (context, value, child) {
-        return Transform.scale(
-          scale: value,
-          child: child,
-        );
+        return Transform.scale(scale: value, child: child);
       },
       child: child,
     );
@@ -179,7 +158,7 @@ class AnimationHelper {
       children: children.asMap().entries.map((entry) {
         final index = entry.key;
         final child = entry.value;
-        
+
         return TweenAnimationBuilder<double>(
           tween: Tween<double>(begin: 0.0, end: 1.0),
           duration: duration,
@@ -192,29 +171,17 @@ class AnimationHelper {
               case AnimationType.slideInFromBottom:
                 return Transform.translate(
                   offset: Offset(0.0, (1.0 - value) * 50.0),
-                  child: Opacity(
-                    opacity: value,
-                    child: child,
-                  ),
+                  child: Opacity(opacity: value, child: child),
                 );
               case AnimationType.slideInFromLeft:
                 return Transform.translate(
                   offset: Offset((1.0 - value) * 50.0, 0.0),
-                  child: Opacity(
-                    opacity: value,
-                    child: child,
-                  ),
+                  child: Opacity(opacity: value, child: child),
                 );
               case AnimationType.fadeIn:
-                return Opacity(
-                  opacity: value,
-                  child: child,
-                );
+                return Opacity(opacity: value, child: child);
               case AnimationType.scaleIn:
-                return Transform.scale(
-                  scale: value,
-                  child: child,
-                );
+                return Transform.scale(scale: value, child: child);
             }
           },
           child: child,
@@ -240,11 +207,7 @@ class AnimationHelper {
       onTapCancel: () {
         // Scale back animation
       },
-      child: AnimatedScale(
-        scale: 1.0,
-        duration: duration,
-        child: child,
-      ),
+      child: AnimatedScale(scale: 1.0, duration: duration, child: child),
     );
   }
 
@@ -264,11 +227,7 @@ class AnimationHelper {
         return ShaderMask(
           shaderCallback: (bounds) {
             return LinearGradient(
-              colors: [
-                baseColor,
-                highlightColor,
-                baseColor,
-              ],
+              colors: [baseColor, highlightColor, baseColor],
               stops: const [0.0, 0.5, 1.0],
               begin: Alignment(value - 1.0, 0.0),
               end: Alignment(value, 0.0),
@@ -304,26 +263,13 @@ class AnimationHelper {
     required AnimationController parent,
     Curve curve = Curves.easeInOut,
   }) {
-    return CurvedAnimation(
-      parent: parent,
-      curve: curve,
-    );
+    return CurvedAnimation(parent: parent, curve: curve);
   }
 }
 
-enum SlideDirection {
-  left,
-  right,
-  up,
-  down,
-}
+enum SlideDirection { left, right, up, down }
 
-enum AnimationType {
-  slideInFromBottom,
-  slideInFromLeft,
-  fadeIn,
-  scaleIn,
-}
+enum AnimationType { slideInFromBottom, slideInFromLeft, fadeIn, scaleIn }
 
 class AnimatedCounter extends StatefulWidget {
   final int value;
@@ -353,18 +299,12 @@ class _AnimatedCounterState extends State<AnimatedCounter>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: widget.duration,
-      vsync: this,
-    );
+    _controller = AnimationController(duration: widget.duration, vsync: this);
 
     _animation = IntTween(
       begin: 0,
       end: widget.value,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
     _controller.forward();
   }
@@ -376,10 +316,7 @@ class _AnimatedCounterState extends State<AnimatedCounter>
       _animation = IntTween(
         begin: oldWidget.value,
         end: widget.value,
-      ).animate(CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOut,
-      ));
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
       _controller.forward(from: 0.0);
     }
   }
@@ -430,18 +367,12 @@ class _PulseWidgetState extends State<PulseWidget>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: widget.duration,
-      vsync: this,
-    );
+    _controller = AnimationController(duration: widget.duration, vsync: this);
 
     _animation = Tween<double>(
       begin: widget.minScale,
       end: widget.maxScale,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     _controller.repeat(reverse: true);
   }
@@ -457,10 +388,7 @@ class _PulseWidgetState extends State<PulseWidget>
     return AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
-        return Transform.scale(
-          scale: _animation.value,
-          child: child,
-        );
+        return Transform.scale(scale: _animation.value, child: child);
       },
       child: widget.child,
     );

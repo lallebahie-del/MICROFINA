@@ -37,11 +37,12 @@ class PayInstallment extends LoanEvent {
   final String loanId;
   final int installmentId;
 
-  const PayInstallment({
-    required this.loanId,
-    required this.installmentId,
-  });
+  const PayInstallment({required this.loanId, required this.installmentId});
 
   @override
   List<Object?> get props => [loanId, installmentId];
+}
+
+class ClearInstallmentPaymentPulse extends LoanEvent {
+  const ClearInstallmentPaymentPulse();
 }

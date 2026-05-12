@@ -15,7 +15,10 @@ class AccountBloc extends Bloc<AccountEvent, AccountState> {
     on<SelectAccount>(_onSelectAccount);
   }
 
-  Future<void> _onFetchAccounts(FetchAccounts event, Emitter<AccountState> emit) async {
+  Future<void> _onFetchAccounts(
+    FetchAccounts event,
+    Emitter<AccountState> emit,
+  ) async {
     emit(state.copyWith(status: AccountStatus.loading));
     try {
       final accounts = await _accountRepository.getAccounts();
@@ -25,14 +28,21 @@ class AccountBloc extends Bloc<AccountEvent, AccountState> {
               (acc) => acc.isDefaultAccount,
               orElse: () => accounts.first,
             );
-      emit(AccountState(
-        status: AccountStatus.success,
-        accounts: accounts,
-        selectedAccount: selectedAccount,
-        errorMessage: null,
-      ));
+      emit(
+        AccountState(
+          status: AccountStatus.success,
+          accounts: accounts,
+          selectedAccount: selectedAccount,
+          errorMessage: null,
+        ),
+      );
     } catch (e) {
-      emit(state.copyWith(status: AccountStatus.failure, errorMessage: e.toString()));
+      emit(
+        state.copyWith(
+          status: AccountStatus.failure,
+          errorMessage: e.toString(),
+        ),
+      );
     }
   }
 
