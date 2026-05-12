@@ -4,8 +4,51 @@ import 'package:intl/intl.dart';
 class MockData {
   static String currentUserPhone = '771234567'; // Défaut pour la démo
 
+  /// Filtre agrégé : toutes les transactions de tous les comptes (tri par date).
+  static const String transactionScopeAllAccounts = '__ALL__';
+
   /// --- GESTION DYNAMIQUE DES COMPTES ---
   static final Map<String, List<Map<String, dynamic>>> _userAccountsMap = {
+    /// Démo **Mariem** : connexion avec le numéro `779001122` (PIN selon votre API ou mode démo).
+    /// Deux comptes distincts pour tester le **virement interne** ; soldes confortables pour **paiement** / factures.
+    '779001122': [
+      {
+        'id': 'acc_mariem_001',
+        'numeroCompte': '37277900112201',
+        'libelle': 'Compte courant — Mariem',
+        'availableBalance': 2500000.0,
+        'blockedBalance': 0.0,
+        'accountType': 'EPARGNE',
+        'devise': 'FCFA',
+        'lastSyncedAt': DateTime.now().subtract(const Duration(minutes: 5)).toIso8601String(),
+        'isDefaultAccount': true,
+        'accountTypeColor': '#1A237E',
+      },
+      {
+        'id': 'acc_mariem_002',
+        'numeroCompte': '37277900112202',
+        'libelle': 'Épargne projet — Mariem',
+        'availableBalance': 850000.0,
+        'blockedBalance': 50000.0,
+        'accountType': 'GARANTIE',
+        'devise': 'FCFA',
+        'lastSyncedAt': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
+        'isDefaultAccount': false,
+        'accountTypeColor': '#00C853',
+      },
+      {
+        'id': 'acc_mariem_003',
+        'numeroCompte': '37277900112203',
+        'libelle': 'Compte paiements & services',
+        'availableBalance': 350000.0,
+        'blockedBalance': 0.0,
+        'accountType': 'EPARGNE',
+        'devise': 'FCFA',
+        'lastSyncedAt': DateTime.now().toIso8601String(),
+        'isDefaultAccount': false,
+        'accountTypeColor': '#FF6D00',
+      },
+    ],
     '771234567': [
       {
         'id': 'acc_001',
@@ -101,13 +144,7 @@ class MockData {
     fromAcc['availableBalance'] -= amount;
     toAcc['availableBalance'] += amount;
 
-    // Ajouter une notification
-    addNotification(
-      title: 'Virement effectué',
-      message: 'Votre virement de ${amount.toInt()} FCFA vers ${toAcc['libelle']} a été validé.',
-    );
-
-    // Ajouter à l'historique
+    // Historique (les notifications mouvements sont dérivées de cette liste)
     mockEpargneTransactions.insert(0, {
       'id': 'tx_transfer_deb_${DateTime.now().millisecondsSinceEpoch}',
       'accountId': fromAccountId,
@@ -139,6 +176,7 @@ class MockData {
     
     // On utilise le compte de l'utilisateur courant
     final accounts = _userAccountsMap[currentUserPhone] ?? getAccountsForPhone(currentUserPhone);
+    if (accounts.isEmpty) return false;
     final account = accounts.firstWhere((acc) => acc['isDefaultAccount'] == true, orElse: () => accounts.first);
 
     if (account['availableBalance'] < amount) {
@@ -183,12 +221,6 @@ class MockData {
     // Débit effectif
     account['availableBalance'] -= amount;
 
-    // Ajouter une notification
-    addNotification(
-      title: 'Paiement effectué',
-      message: 'Votre paiement de ${amount.toInt()} FCFA pour $serviceName a été enregistré.',
-    );
-
     // Ajouter à l'historique
     mockEpargneTransactions.insert(0, {
       'id': 'tx_pay_${DateTime.now().millisecondsSinceEpoch}',
@@ -206,19 +238,26 @@ class MockData {
     // Conservé pour compatibilité mais non utilisé par getAccountsForPhone désormais
   ];
 
-  /// --- EPARGNE (Transactions - 100 entrées simulées) ---
-  static final List<Map<String, dynamic>> mockEpargneTransactions = List.generate(100, (index) {
-    final bool isEven = index % 2 == 0;
-    // On lie toutes les transactions à acc_001 pour la démo de pagination
-    return {
-      'id': 'tx_${index.toString().padLeft(3, '0')}',
-      'accountId': 'acc_001',
-      'date': DateTime.now().subtract(Duration(days: index)).toIso8601String(),
-      'montant': (index + 1) * 2500.0,
-      'type': isEven ? 'CREDIT' : 'DEBIT',
-      'libelle': isEven ? 'Dépôt Espèces' : 'Retrait GAB',
-    };
-  });
+  /// --- EPARGNE (historique dynamique : uniquement opérations réelles sur vos comptes) ---
+  ///
+  /// Alimenté par [performInternalTransfer], [performServicePayment], [payLoanInstallment].
+  /// Plus de données « seed » : la liste est vidée lors d’un changement d’utilisateur (téléphone).
+  static final List<Map<String, dynamic>> mockEpargneTransactions = [];
+  static String? _transactionHistoryOwnerPhone;
+
+  static Set<String> _currentUserAccountIds() {
+    return getAccountsForPhone(currentUserPhone).map((e) => e['id'] as String).toSet();
+  }
+
+  static void _syncTransactionHistoryForCurrentUser() {
+    final switched = _transactionHistoryOwnerPhone != null &&
+        _transactionHistoryOwnerPhone != currentUserPhone;
+    if (switched) {
+      mockEpargneTransactions.clear();
+      _readNotificationIds.clear();
+    }
+    _transactionHistoryOwnerPhone = currentUserPhone;
+  }
 
   /// Simulation de pagination avec filtres
   static Future<List<Map<String, dynamic>>> getPaginatedTransactions({
@@ -227,19 +266,39 @@ class MockData {
     required int pageSize,
     DateTimeRange? dateRange,
   }) async {
-    // Simuler un délai réseau
-    await Future.delayed(const Duration(milliseconds: 1500));
-    
-    var filteredTransactions = mockEpargneTransactions.where((tx) => tx['accountId'] == accountId).toList();
-    
+    await Future.delayed(const Duration(milliseconds: 400));
+
+    _syncTransactionHistoryForCurrentUser();
+
+    final allowedIds = _currentUserAccountIds();
+
+    List<Map<String, dynamic>> filteredTransactions;
+    if (accountId == transactionScopeAllAccounts) {
+      filteredTransactions = mockEpargneTransactions
+          .where((tx) => allowedIds.contains(tx['accountId'] as String))
+          .toList();
+    } else {
+      if (!allowedIds.contains(accountId)) {
+        return [];
+      }
+      filteredTransactions =
+          mockEpargneTransactions.where((tx) => tx['accountId'] == accountId).toList();
+    }
+
+    filteredTransactions.sort((a, b) {
+      final da = DateTime.parse(a['date'] as String);
+      final db = DateTime.parse(b['date'] as String);
+      return db.compareTo(da);
+    });
+
     // Appliquer le filtre de date si présent
     if (dateRange != null) {
       filteredTransactions = filteredTransactions.where((tx) {
-        final txDate = DateTime.parse(tx['date']);
+        final txDate = DateTime.parse(tx['date'] as String);
         return txDate.isAfter(dateRange.start) && txDate.isBefore(dateRange.end.add(const Duration(days: 1)));
       }).toList();
     }
-    
+
     final int start = page * pageSize;
     final int end = start + pageSize;
     
@@ -267,67 +326,49 @@ class MockData {
     });
   }
 
-  /// --- NOTIFICATIONS ---
-  static final List<Map<String, dynamic>> _notifications = [
-    {
-      'id': 'not_001',
-      'title': 'Virement reçu',
-      'message': 'Vous avez reçu 50 000 FCFA de la part de Fatima Diop.',
-      'date': DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
-      'isRead': false,
-    },
-    {
-      'id': 'not_002',
-      'title': 'Sécurité',
-      'message': 'Votre mot de passe a été mis à jour avec succès.',
-      'date': DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
-      'isRead': true,
-    },
-  ];
+  /// --- NOTIFICATIONS (dynamiques : uniquement opérations réellement enregistrées sur vos comptes) ---
+  ///
+  /// Dérivées de [mockEpargneTransactions] (virements, paiements, remboursements). Pas de rappels fictifs.
+  static final Set<String> _readNotificationIds = <String>{};
 
-  static List<Map<String, dynamic>> getNotifications() => _notifications;
+  static List<Map<String, dynamic>> _composeNotificationFeed() {
+    _syncTransactionHistoryForCurrentUser();
+    final accounts = getAccountsForPhone(currentUserPhone);
+    final accountIds = accounts.map((e) => e['id'] as String).toSet();
+    final fmt = NumberFormat.currency(locale: 'fr_FR', symbol: 'FCFA', decimalDigits: 0);
+
+    final txs = mockEpargneTransactions.where((t) => accountIds.contains(t['accountId'])).toList();
+    txs.sort((a, b) {
+      final da = DateTime.parse(a['date'] as String);
+      final db = DateTime.parse(b['date'] as String);
+      return db.compareTo(da);
+    });
+
+    final feed = <Map<String, dynamic>>[];
+    for (final tx in txs.take(30)) {
+      final id = tx['id'] as String;
+      final isCredit = tx['type'] == 'CREDIT';
+      final montant = (tx['montant'] as num).toDouble();
+      feed.add({
+        'id': 'feed_$id',
+        'title': isCredit ? 'Crédit sur compte' : 'Débit sur compte',
+        'message': '${tx['libelle']} · ${fmt.format(montant)}',
+        'date': tx['date'],
+      });
+    }
+    return feed;
+  }
+
+  static List<Map<String, dynamic>> getNotifications() {
+    return _composeNotificationFeed().map((n) {
+      final id = n['id'] as String;
+      return Map<String, dynamic>.from(n)..['isRead'] = _readNotificationIds.contains(id);
+    }).toList();
+  }
 
   static void markAllNotificationsAsRead() {
-    for (var notif in _notifications) {
-      notif['isRead'] = true;
-    }
-  }
-
-  static void addNotification({required String title, required String message}) {
-    _notifications.insert(0, {
-      'id': 'not_${DateTime.now().millisecondsSinceEpoch}',
-      'title': title,
-      'message': message,
-      'date': DateTime.now().toIso8601String(),
-      'isRead': false,
-    });
-  }
-
-  static void checkUpcomingPayments() {
-    final now = DateTime.now();
-    for (var amortp in mockAmortpList) {
-      if (!amortp['estPaye']) {
-        final dueDate = DateTime.parse(amortp['dateEcheance']);
-        final difference = dueDate.difference(now).inDays;
-        
-        // Si l'échéance est dans moins de 5 jours et pas encore notifiée
-        if (difference >= 0 && difference <= 5) {
-          final message = 'Votre échéance de ${amortp['montantCapital'] + amortp['montantInteret'] + amortp['montantTva']} FCFA est prévue pour le ${DateFormat('dd/MM/yyyy').format(dueDate)}.';
-          
-          // Éviter les doublons de notification pour la même échéance aujourd'hui
-          bool alreadyNotified = _notifications.any((n) => 
-            n['title'] == 'Rappel de Paiement' && 
-            n['message'].contains(DateFormat('dd/MM/yyyy').format(dueDate))
-          );
-
-          if (!alreadyNotified) {
-            addNotification(
-              title: 'Rappel de Paiement',
-              message: message,
-            );
-          }
-        }
-      }
+    for (final n in _composeNotificationFeed()) {
+      _readNotificationIds.add(n['id'] as String);
     }
   }
 

@@ -1,11 +1,30 @@
+import 'package:flutter/material.dart';
+
 import '../../core/network/dio_client.dart';
 import '../../domain/repositories/transaction_repository.dart';
+import '../datasources/mock/mock_data.dart';
 import '../models/extra_models.dart';
 
 class TransactionRepositoryImpl implements TransactionRepository {
   final DioClient _dioClient;
 
   TransactionRepositoryImpl(this._dioClient);
+
+  @override
+  Future<List<EpargneTransactionModel>> getPaginatedTransactions({
+    required String accountId,
+    required int page,
+    required int pageSize,
+    DateTimeRange? dateRange,
+  }) async {
+    final batch = await MockData.getPaginatedTransactions(
+      accountId: accountId,
+      page: page,
+      pageSize: pageSize,
+      dateRange: dateRange,
+    );
+    return batch.map(EpargneTransactionModel.fromJson).toList();
+  }
 
   @override
   Future<List<EpargneTransactionModel>> getTransactions(String accountId) async {
@@ -33,9 +52,16 @@ class TransactionRepositoryImpl implements TransactionRepository {
         'amount': amount,
         'reason': reason,
       });
-      return response.statusCode == 200;
-    } catch (e) {
-      return false;
+      final code = response.statusCode;
+      if (code != null && code >= 200 && code < 300) return true;
+    } catch (_) {
+      // API indisponible : simulation locale (mêmes règles que MockData).
     }
+    return MockData.performInternalTransfer(
+      fromAccountId: fromAccountId,
+      toAccountId: toAccountId,
+      amount: amount,
+      reason: reason,
+    );
   }
 }

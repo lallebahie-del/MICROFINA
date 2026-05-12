@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../data/datasources/mock/mock_data.dart';
-import '../../../data/models/extra_models.dart';
+import '../../../domain/repositories/transaction_repository.dart';
 import 'transaction_event.dart';
 import 'transaction_state.dart';
 
@@ -12,11 +11,9 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
   static const int _pageSize = 20; // Mis à jour à 20 selon Tâche 3.4
   DateTimeRange? _currentDateRange;
 
-  static List<EpargneTransactionModel> _toModels(List<Map<String, dynamic>> batch) {
-    return batch.map(EpargneTransactionModel.fromJson).toList();
-  }
+  final TransactionRepository _transactionRepository;
 
-  TransactionBloc() : super(TransactionInitial()) {
+  TransactionBloc(this._transactionRepository) : super(TransactionInitial()) {
     on<LoadTransactions>(_onLoadTransactions);
     on<LoadMoreTransactions>(_onLoadMoreTransactions);
     on<FilterTransactionsByDate>(_onFilterTransactionsByDate);
@@ -26,12 +23,12 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     emit(TransactionLoading());
     _currentDateRange = event.dateRange;
     
-    final firstBatch = _toModels(await MockData.getPaginatedTransactions(
+    final firstBatch = await _transactionRepository.getPaginatedTransactions(
       accountId: event.accountId,
       page: 0,
       pageSize: _pageSize,
       dateRange: _currentDateRange,
-    ));
+    );
     
     emit(TransactionLoaded(
       transactions: firstBatch,
@@ -43,12 +40,12 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     emit(TransactionLoading());
     _currentDateRange = event.dateRange;
     
-    final filteredBatch = _toModels(await MockData.getPaginatedTransactions(
+    final filteredBatch = await _transactionRepository.getPaginatedTransactions(
       accountId: event.accountId,
       page: 0,
       pageSize: _pageSize,
       dateRange: _currentDateRange,
-    ));
+    );
     
     emit(TransactionLoaded(
       transactions: filteredBatch,
@@ -65,12 +62,12 @@ class TransactionBloc extends Bloc<TransactionEvent, TransactionState> {
     final nextIndex = currentState.transactions.length;
     final page = nextIndex ~/ _pageSize;
     
-    final nextBatch = _toModels(await MockData.getPaginatedTransactions(
+    final nextBatch = await _transactionRepository.getPaginatedTransactions(
       accountId: event.accountId,
       page: page,
       pageSize: _pageSize,
       dateRange: _currentDateRange,
-    ));
+    );
     
     if (nextBatch.isEmpty) {
       emit(TransactionLoaded(

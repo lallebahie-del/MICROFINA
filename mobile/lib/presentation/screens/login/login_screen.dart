@@ -6,7 +6,11 @@ import 'package:intl/intl.dart';
 import 'package:local_auth/local_auth.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/storage/secure_storage_service.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/premium_button.dart';
+import '../../../core/widgets/premium_input.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../widgets/numeric_keypad.dart';
 
@@ -24,6 +28,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _secureStorage = SecureStorageService(const FlutterSecureStorage());
   bool _isPinMode = false;
   bool _isFormValid = false;
+  String? _phoneError;
+  String? _pinError;
   String? _lastPhone;
   DateTime? _lastLoginDate;
   String? _userName;
@@ -72,57 +78,113 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showAccountSelector() {
-    showModalBottomSheet(
+    final sheetTheme = Theme.of(context);
+    final maxListHeight = MediaQuery.of(context).size.height * 0.45;
+    showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(30),
-            topRight: Radius.circular(30),
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.sm,
+          AppSpacing.lg,
+          AppSpacing.lg + MediaQuery.of(context).padding.bottom,
+        ),
+        decoration: BoxDecoration(
+          color: sheetTheme.colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppSpacing.radiusLarge),
           ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
+            Text(
               'Choisir un compte',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+              style: sheetTheme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+              ),
             ),
-            const SizedBox(height: 20),
-            Flexible(
-              child: ListView.builder(
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Sélectionnez le profil à utiliser sur cet appareil.',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: sheetTheme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxListHeight),
+              child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: _registeredPhones.length,
+                separatorBuilder: (context, _) => const SizedBox(height: AppSpacing.xs),
                 itemBuilder: (context, index) {
                   final phone = _registeredPhones[index];
                   return FutureBuilder<String?>(
                     future: _secureStorage.getUserName(phone),
                     builder: (context, snapshot) {
-                      return ListTile(
-                        onTap: () {
-                          Navigator.pop(context);
-                          _selectAccount(phone);
-                        },
-                        leading: const CircleAvatar(
-                          backgroundColor: AppTheme.bgLight,
-                          child: Icon(Icons.person_rounded, color: AppTheme.accentBlue),
+                      final selected = phone == _lastPhone;
+                      return Material(
+                        color: selected
+                            ? AppColors.primary.withValues(alpha: 0.1)
+                            : sheetTheme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.pop(context);
+                            _selectAccount(phone);
+                          },
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusLarge),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.sm + 2,
+                            ),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 22,
+                                  backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                                  child: const Icon(Icons.person_rounded, color: AppColors.primary),
+                                ),
+                                const SizedBox(width: AppSpacing.md),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        snapshot.data ?? phone,
+                                        style: AppTextStyles.titleSmall.copyWith(
+                                          color: sheetTheme.colorScheme.onSurface,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        phone,
+                                        style: AppTextStyles.bodySmall.copyWith(
+                                          color: sheetTheme.colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (selected)
+                                  const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 26),
+                              ],
+                            ),
+                          ),
                         ),
-                        title: Text(snapshot.data ?? phone, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(phone),
-                        trailing: phone == _lastPhone 
-                          ? const Icon(Icons.check_circle_rounded, color: AppTheme.successGreen)
-                          : null,
                       );
                     },
                   );
                 },
               ),
             ),
-            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -138,22 +200,41 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _validate() {
     setState(() {
-      _isFormValid = _phoneController.text.isNotEmpty && _pinController.text.length >= 4;
+      if (_phoneController.text.trim().isNotEmpty) {
+        _phoneError = null;
+      }
+      if (_pinController.text.length >= 4) {
+        _pinError = null;
+      }
+      _isFormValid = _phoneController.text.trim().isNotEmpty && _pinController.text.length >= 4;
     });
   }
 
   void _onLoginPressed() async {
-    if (_isFormValid) {
-      await _secureStorage.saveLastPhone(_phoneController.text);
-      await _secureStorage.saveLastLoginDate(DateTime.now());
-      if (mounted) {
-        context.read<AuthBloc>().add(
-              LoginRequested(
-                phone: _phoneController.text,
-                pin: _pinController.text,
-              ),
-            );
-      }
+    setState(() {
+      _phoneError = null;
+      _pinError = null;
+    });
+    final phone = _phoneController.text.trim();
+    if (phone.isEmpty) {
+      setState(() => _phoneError = 'Veuillez saisir votre numéro de téléphone');
+      return;
+    }
+    if (_pinController.text.length < 4) {
+      setState(() => _pinError = 'Le code PIN doit comporter 4 chiffres');
+      return;
+    }
+    if (!_isFormValid) return;
+
+    await _secureStorage.saveLastPhone(phone);
+    await _secureStorage.saveLastLoginDate(DateTime.now());
+    if (mounted) {
+      context.read<AuthBloc>().add(
+            LoginRequested(
+              phone: phone,
+              pin: _pinController.text,
+            ),
+          );
     }
   }
 
@@ -201,269 +282,304 @@ class _LoginScreenState extends State<LoginScreen> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthFailure) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: AppTheme.errorRed,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-            ),
-          );
+          final msg = state.message;
+          final lower = msg.toLowerCase();
+          setState(() {
+            if (_lastPhone != null) {
+              _phoneError = null;
+              _pinError = msg;
+            } else if (lower.contains('téléphone') ||
+                lower.contains('telephone') ||
+                lower.contains('phone')) {
+              _phoneError = msg;
+              _pinError = null;
+            } else {
+              _pinError = msg;
+              _phoneError = null;
+            }
+          });
+        } else if (state is AuthSuccess) {
+          setState(() {
+            _phoneError = null;
+            _pinError = null;
+          });
         }
       },
       child: Scaffold(
-        body: Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppTheme.bgLight,
-                AppTheme.lightBlue.withOpacity(0.5),
-              ],
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            physics: const ClampingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.screenPadding,
+              vertical: AppSpacing.md,
             ),
-          ),
-          child: SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  children: [
-                    const SizedBox(height: 40),
-                    // Logo animée ou stylisée
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(28),
-                        boxShadow: AppTheme.softShadow,
-                      ),
-                      child: const Icon(
-                        Icons.account_balance_wallet_rounded,
-                        size: 40,
-                        color: AppTheme.accentBlue,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'microCredit',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w900,
-                        color: AppTheme.primaryBlue,
-                        letterSpacing: -1,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Votre banque, partout avec vous.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppTheme.primaryBlue.withOpacity(0.5),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                    
-                    if (_lastPhone != null) ...[
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: AppTheme.softShadow,
-                          border: Border.all(color: AppTheme.accentBlue.withOpacity(0.1)),
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.lightBlue,
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  child: const Icon(Icons.person_rounded, color: AppTheme.accentBlue),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        _userName != null ? 'Heureux de vous revoir,' : 'Bon retour,', 
-                                        style: TextStyle(fontSize: 12, color: AppTheme.primaryBlue.withOpacity(0.4), fontWeight: FontWeight.w600)
-                                      ),
-                                      Text(
-                                        _userName ?? _lastPhone!, 
-                                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17, color: AppTheme.primaryBlue)
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                if (_registeredPhones.length > 1)
-                                  IconButton(
-                                    onPressed: () => _showAccountSelector(),
-                                    icon: const Icon(Icons.swap_horiz_rounded, color: AppTheme.accentBlue),
-                                    style: IconButton.styleFrom(backgroundColor: AppTheme.lightBlue),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 15),
-                            TextButton(
-                              onPressed: () => setState(() {
-                                _lastPhone = null;
-                                _userName = null;
-                                _phoneController.clear();
-                                _isPinMode = false;
-                              }),
-                              child: const Text('Utiliser un autre compte', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.accentBlue)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                    ],
-
-                    // Phone Input
-                    if (_lastPhone == null)
-                      _buildPremiumTextField(
-                        controller: _phoneController,
-                        label: 'Téléphone',
-                        icon: Icons.phone_android_rounded,
-                        keyboardType: TextInputType.phone,
-                        onTap: () => setState(() => _isPinMode = false),
-                      ),
-                    
-                    if (_lastPhone == null) const SizedBox(height: 20),
-                    
-                    // PIN Input
-                    _buildPremiumTextField(
-                      controller: _pinController,
-                      label: 'Code PIN Secret',
-                      icon: Icons.lock_person_rounded,
-                      isPin: true,
-                      onTap: () => setState(() => _isPinMode = true),
-                      suffixIcon: Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        child: IconButton(
-                          onPressed: _authenticateBiometrically,
-                          icon: const Icon(Icons.fingerprint_rounded, size: 28, color: AppTheme.accentBlue),
-                          style: IconButton.styleFrom(backgroundColor: AppTheme.lightBlue),
-                        ),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 48),
-                    
-                    // Login Button
-                    BlocBuilder<AuthBloc, AuthState>(
-                      builder: (context, state) {
-                        if (state is AuthLoading) {
-                          return const Center(child: CircularProgressIndicator(color: AppTheme.accentBlue));
-                        }
-                        return Column(
-                          children: [
-                            ElevatedButton(
-                              onPressed: _isFormValid ? _onLoginPressed : null,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryBlue,
-                                shadowColor: AppTheme.primaryBlue.withOpacity(0.3),
-                                elevation: 12,
-                              ),
-                              child: const Text('ACCÉDER À MON COMPTE'),
-                            ),
-                            const SizedBox(height: 32),
-                            GestureDetector(
-                              onTap: () => context.push(AppRouter.register),
-                              child: RichText(
-                                text: TextSpan(
-                                  text: 'Nouveau ici ? ',
-                                  style: TextStyle(color: AppTheme.primaryBlue.withOpacity(0.5), fontWeight: FontWeight.w500),
-                                  children: const [
-                                    TextSpan(
-                                      text: 'Ouvrir un compte',
-                                      style: TextStyle(color: AppTheme.accentBlue, fontWeight: FontWeight.w800),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                    
-                    if (_isPinMode) ...[
-                      const SizedBox(height: 32),
-                      NumericKeypad(
-                        shuffle: false,
-                        onNumberPressed: (val) {
-                          if (_pinController.text.length < 4) {
-                            _pinController.text += val;
-                          }
-                        },
-                        onDeletePressed: () {
-                          if (_pinController.text.isNotEmpty) {
-                            _pinController.text = _pinController.text.substring(0, _pinController.text.length - 1);
-                          }
-                        },
-                      ),
-                    ],
-                    const SizedBox(height: 20),
-                  ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: AppSpacing.lg),
+                Icon(
+                  Icons.account_balance_wallet_rounded,
+                  size: 48,
+                  color: AppColors.primary,
                 ),
-              ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  'microCredit',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.headlineSmall.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Connexion à votre compte',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                if (_lastPhone != null) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                        child: const Icon(Icons.person_rounded, color: AppColors.primary),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _userName != null ? 'Heureux de vous revoir,' : 'Bon retour,',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            Text(
+                              _userName ?? _lastPhone!,
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (_registeredPhones.length > 1)
+                        IconButton(
+                          tooltip: 'Changer de compte',
+                          onPressed: _showAccountSelector,
+                          icon: const Icon(Icons.swap_horiz_rounded, color: AppColors.primary),
+                        ),
+                    ],
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+                      onPressed: () => setState(() {
+                        _lastPhone = null;
+                        _userName = null;
+                        _phoneController.clear();
+                        _isPinMode = false;
+                      }),
+                      child: const Text('Utiliser un autre compte'),
+                    ),
+                  ),
+                  Divider(
+                    height: AppSpacing.xl,
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                  ),
+                ],
+                if (_lastPhone == null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                    child: Text(
+                      'Saisissez votre numéro et un code PIN à 4 chiffres.',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                if (_lastPhone == null)
+                  PremiumInput(
+                    label: 'Téléphone',
+                    hint: 'Entrez votre numéro de téléphone',
+                    controller: _phoneController,
+                    type: PremiumInputType.phone,
+                    errorText: _phoneError,
+                    focusedBorderColor: AppColors.primary,
+                    emphasizeBorder: !_isPinMode,
+                    prefixIcon: const Icon(
+                      Icons.phone_android_rounded,
+                      color: AppColors.primary,
+                    ),
+                    onTap: () {
+                      FocusManager.instance.primaryFocus?.unfocus();
+                      setState(() => _isPinMode = false);
+                    },
+                  ),
+                if (_lastPhone == null) const SizedBox(height: AppSpacing.inputSpacing),
+                PremiumInput(
+                  label: 'Code PIN',
+                  hint: '4 chiffres — pavé numérique',
+                  controller: _pinController,
+                  type: PremiumInputType.password,
+                  obscureText: true,
+                  pinPadInput: true,
+                  maxLength: 4,
+                  errorText: _pinError,
+                  focusedBorderColor: AppColors.primary,
+                  emphasizeBorder: _isPinMode,
+                  prefixIcon: const Icon(
+                    Icons.lock_person_rounded,
+                    color: AppColors.primary,
+                  ),
+                  suffixIcon: IconButton(
+                    tooltip: 'Connexion biométrique',
+                    onPressed: _authenticateBiometrically,
+                    icon: const Icon(
+                      Icons.fingerprint_rounded,
+                      size: 26,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  onTap: () {
+                    FocusManager.instance.primaryFocus?.unfocus();
+                    setState(() => _isPinMode = true);
+                  },
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                BlocBuilder<AuthBloc, AuthState>(
+                  builder: (context, state) {
+                    final loading = state is AuthLoading;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        PremiumButton(
+                          text: 'Se connecter',
+                          type: PremiumButtonType.primary,
+                          size: PremiumButtonSize.large,
+                          isFullWidth: true,
+                          isLoading: loading,
+                          onPressed: (!loading && _isFormValid) ? _onLoginPressed : null,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Pas encore de compte ?',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            TextButton(
+                              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+                              onPressed: () => context.push(AppRouter.register),
+                              child: const Text('Créer un compte'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                if (_isPinMode) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(
+                    'Pavé numérique',
+                    style: AppTextStyles.titleSmall.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  NumericKeypad(
+                    shuffle: false,
+                    onNumberPressed: (val) {
+                      if (_pinController.text.length < 4) {
+                        _pinController.text += val;
+                      }
+                    },
+                    onDeletePressed: () {
+                      if (_pinController.text.isNotEmpty) {
+                        _pinController.text =
+                            _pinController.text.substring(0, _pinController.text.length - 1);
+                      }
+                    },
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.lg),
+                _LoginFooter(
+                  lastLogin: _lastLoginDate,
+                  onSurfaceVariant: Theme.of(context).colorScheme.onSurfaceVariant,
+                  accentColor: AppColors.primary,
+                ),
+              ],
             ),
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildPremiumTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    bool isPin = false,
-    TextInputType? keyboardType,
-    VoidCallback? onTap,
-    Widget? suffixIcon,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: AppTheme.softShadow,
-      ),
-      child: TextFormField(
-        controller: controller,
-        readOnly: isPin,
-        obscureText: isPin,
-        keyboardType: keyboardType,
-        onTap: onTap,
-        style: TextStyle(
-          fontWeight: FontWeight.w800,
-          letterSpacing: isPin ? 12 : 0.5,
-          fontSize: isPin ? 24 : 16,
-          color: AppTheme.primaryBlue,
-        ),
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: Icon(icon, color: AppTheme.accentBlue.withOpacity(0.5)),
-          suffixIcon: suffixIcon,
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(24),
-            borderSide: const BorderSide(color: AppTheme.accentBlue, width: 2),
+class _LoginFooter extends StatelessWidget {
+  const _LoginFooter({
+    required this.lastLogin,
+    required this.onSurfaceVariant,
+    required this.accentColor,
+  });
+
+  final DateTime? lastLogin;
+  final Color onSurfaceVariant;
+  final Color accentColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final dateLine = lastLogin != null
+        ? 'Dernière connexion · ${DateFormat('dd/MM/yyyy · HH:mm').format(lastLogin!)}'
+        : null;
+
+    return Column(
+      children: [
+        if (dateLine != null) ...[
+          Text(
+            dateLine,
+            textAlign: TextAlign.center,
+            style: AppTextStyles.labelSmall.copyWith(color: onSurfaceVariant, height: 1.2),
           ),
+          const SizedBox(height: AppSpacing.xs),
+        ],
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.shield_outlined,
+              size: 16,
+              color: accentColor,
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Flexible(
+              child: Text(
+                'Connexion sécurisée.',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: accentColor.withValues(alpha: 0.85),
+                  height: 1.25,
+                ),
+              ),
+            ),
+          ],
         ),
-      ),
+      ],
     );
   }
 }

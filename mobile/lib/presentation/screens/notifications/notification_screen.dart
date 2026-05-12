@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../data/datasources/mock/mock_data.dart';
 
 class NotificationScreen extends StatefulWidget {
@@ -24,7 +23,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
-        foregroundColor: AppTheme.primaryBlue,
+        foregroundColor: AppColors.primary,
         actions: [
           if (notifications.isNotEmpty && hasUnread)
             TextButton(
@@ -38,19 +37,31 @@ class _NotificationScreenState extends State<NotificationScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: notifications.isEmpty
-          ? _buildEmptyState()
-          : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              itemCount: notifications.length,
-              itemBuilder: (context, index) {
-                final notif = notifications[index];
-                final bool isRead = notif['isRead'] ?? false;
-                final date = DateTime.parse(notif['date']);
-                
-                return _buildNotificationCard(notif, isRead, date);
-              },
-            ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          setState(() {});
+        },
+        child: notifications.isEmpty
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  SizedBox(height: MediaQuery.sizeOf(context).height * 0.2),
+                  _buildEmptyState(),
+                ],
+              )
+            : ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                itemCount: notifications.length,
+                itemBuilder: (context, index) {
+                  final notif = notifications[index];
+                  final bool isRead = notif['isRead'] ?? false;
+                  final date = DateTime.parse(notif['date'] as String);
+
+                  return _buildNotificationCard(notif, isRead, date);
+                },
+              ),
+      ),
     );
   }
 
@@ -62,20 +73,24 @@ class _NotificationScreenState extends State<NotificationScreen> {
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: AppTheme.primaryBlue.withOpacity(0.05),
+              color: AppColors.primary.withOpacity(0.05),
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.notifications_none_rounded, size: 64, color: AppTheme.primaryBlue.withOpacity(0.4)),
+            child: Icon(Icons.notifications_none_rounded, size: 64, color: AppColors.primary.withOpacity(0.4)),
           ),
           const SizedBox(height: 24),
           const Text(
             'Tout est calme ici',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppTheme.primaryBlue),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primary),
           ),
           const SizedBox(height: 8),
-          Text(
-            'Vous n\'avez aucune nouvelle notification.',
-            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              'Les alertes liées à vos virements, paiements et remboursements apparaîtront ici après chaque opération.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600], fontSize: 14, height: 1.35),
+            ),
           ),
         ],
       ),
@@ -140,7 +155,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                                     style: TextStyle(
                                       fontWeight: isRead ? FontWeight.w700 : FontWeight.w900,
                                       fontSize: 15,
-                                      color: AppTheme.primaryBlue,
+                                      color: AppColors.primary,
                                     ),
                                   ),
                                 ),
@@ -191,12 +206,17 @@ class _NotificationScreenState extends State<NotificationScreen> {
     final t = title.toLowerCase();
     if (t.contains('sécurité')) {
       return _NotificationCategory(Icons.security_rounded, Colors.orange);
-    } else if (t.contains('paiement') || t.contains('virement')) {
-      return _NotificationCategory(Icons.account_balance_wallet_rounded, Colors.green);
+    } else if (t.contains('paiement') ||
+        t.contains('virement') ||
+        t.contains('crédit') ||
+        t.contains('debit') ||
+        t.contains('débit')) {
+      // Même bleu que la part « Disponible » du dashboard (AppColors.secondary)
+      return _NotificationCategory(Icons.account_balance_wallet_rounded, AppColors.secondary);
     } else if (t.contains('rappel')) {
-      return _NotificationCategory(Icons.event_note_rounded, Colors.blue);
+      return _NotificationCategory(Icons.event_note_rounded, AppColors.info);
     }
-    return _NotificationCategory(Icons.notifications_rounded, AppTheme.primaryBlue);
+    return _NotificationCategory(Icons.notifications_rounded, AppColors.primary);
   }
 
   String _formatDate(DateTime date) {

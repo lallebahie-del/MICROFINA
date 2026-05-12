@@ -1,3 +1,8 @@
+# Flutter mobile (explicit paths from repo root)
+mobile/build/
+mobile/.dart_tool/
+mobile/.idea/
+
 # Build artifacts
 backend/target/
 frontend/dist/

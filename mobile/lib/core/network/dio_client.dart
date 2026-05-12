@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../storage/secure_storage_service.dart';
 
 class DioClient {
@@ -6,20 +7,29 @@ class DioClient {
   final SecureStorageService _secureStorage;
 
   DioClient(this._dio, this._secureStorage) {
-    _dio
-      ..options.baseUrl = 'https://api.microfina.com/v1'
-      ..options.connectTimeout = const Duration(seconds: 10)
-      ..options.receiveTimeout = const Duration(seconds: 10)
-      ..options.responseType = ResponseType.json
-      ..interceptors.addAll([
-        AuthInterceptor(_secureStorage, _dio),
+    const baseUrl = String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: 'https://api.microfina.com/v1',
+    );
+    final interceptors = <Interceptor>[
+      AuthInterceptor(_secureStorage, _dio),
+    ];
+    if (kDebugMode) {
+      interceptors.add(
         LogInterceptor(
           requestHeader: true,
           requestBody: true,
           responseHeader: true,
           responseBody: true,
         ),
-      ]);
+      );
+    }
+    _dio
+      ..options.baseUrl = baseUrl
+      ..options.connectTimeout = const Duration(seconds: 10)
+      ..options.receiveTimeout = const Duration(seconds: 10)
+      ..options.responseType = ResponseType.json
+      ..interceptors.addAll(interceptors);
   }
 
   Future<Response> get(

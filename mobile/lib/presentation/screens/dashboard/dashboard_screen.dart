@@ -8,11 +8,12 @@ import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_shadows.dart';
 import '../../../data/datasources/mock/mock_data.dart';
 import '../../../core/router/app_router.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/account/account_bloc.dart';
-import '../../../data/models/compte_eps_model.dart';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/storage/secure_storage_service.dart';
@@ -42,7 +43,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.initState();
     _listenToConnectivity();
     _loadUserData();
-    MockData.checkUpcomingPayments(); // Vérifier les échéances proches
   }
 
   void _listenToConnectivity() {
@@ -78,109 +78,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Déconnexion'),
-        content: const Text('Voulez-vous vraiment vous déconnecter de votre espace sécurisé ?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('ANNULER'),
-          ),
-          TextButton(
-            onPressed: () {
-              final authBloc = context.read<AuthBloc>();
-              Navigator.pop(context);
-              authBloc.add(LogoutRequested());
-            },
-            child: const Text('DÉCONNEXION', style: TextStyle(color: AppTheme.errorRed)),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showComingSoon(BuildContext context, String feature) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('$feature bientôt disponible'),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      ),
-    );
-  }
-
-  void _showAllAccounts(BuildContext context, List<CompteEpsModel> accounts, NumberFormat currencyFormat) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
-        padding: const EdgeInsets.all(32),
-        decoration: const BoxDecoration(
-          color: AppTheme.bgLight,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(40),
-            topRight: Radius.circular(40),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
-            ),
-            const SizedBox(height: 32),
-            const Text(
-              'Tous mes comptes',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppTheme.primaryBlue),
-            ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: ListView.builder(
-                itemCount: accounts.length,
-                itemBuilder: (context, index) {
-                  final account = accounts[index];
-                  final Color accountColor = account.accountTypeColor != null 
-                      ? Color(int.parse(account.accountTypeColor!.replaceFirst('#', '0xFF')))
-                      : AppTheme.accentBlue;
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: AppTheme.softShadow,
-                    ),
-                    child: ListTile(
-                      onTap: () {
-                        final router = GoRouter.of(context);
-                        Navigator.pop(context);
-                        router.push('${AppRouter.transactions}/${account.id}');
-                      },
-                      contentPadding: EdgeInsets.zero,
-                      leading: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(color: accountColor.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
-                        child: Icon(Icons.account_balance_rounded, color: accountColor, size: 20),
-                      ),
-                      title: Text(account.libelle, style: const TextStyle(fontWeight: FontWeight.w800, color: AppTheme.primaryBlue)),
-                      subtitle: Text(account.numeroCompte),
-                      trailing: Text(
-                        _isBalanceVisible ? currencyFormat.format(account.availableBalance) : '••••••',
-                        style: TextStyle(fontWeight: FontWeight.w900, color: accountColor, fontSize: 16),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -212,7 +115,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (_connectivityStatus == ConnectivityStatus.offline)
                 Container(
                   width: double.infinity,
-                  color: AppTheme.errorRed,
+                  color: AppColors.error,
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: const Text(
                     'MODE HORS-LIGNE - DONNÉES LOCALES',
@@ -233,7 +136,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         child: Container(
                           padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
                           decoration: const BoxDecoration(
-                            color: AppTheme.primaryBlue,
+                            color: AppColors.primary,
                             borderRadius: BorderRadius.only(
                               bottomLeft: Radius.circular(40),
                               bottomRight: Radius.circular(40),
@@ -261,15 +164,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 children: [
                                   const Text(
                                     'Actions Rapides',
-                                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppTheme.primaryBlue),
+                                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.primary),
                                   ),
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: AppTheme.primaryBlue.withOpacity(0.05), 
+                                      color: AppColors.primary.withOpacity(0.05), 
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: const Icon(Icons.auto_awesome_rounded, color: AppTheme.primaryBlue, size: 14),
+                                    child: const Icon(Icons.auto_awesome_rounded, color: AppColors.primary, size: 14),
                                   ),
                                 ],
                               ),
@@ -325,7 +228,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(32),
-                                  boxShadow: AppTheme.softShadow,
+                                  boxShadow: AppShadows.soft,
                                 ),
                                 child: Column(
                                   children: [
@@ -334,15 +237,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                         Container(
                                           padding: const EdgeInsets.all(8),
                                           decoration: BoxDecoration(
-                                            color: AppTheme.primaryBlue.withOpacity(0.1),
+                                            color: AppColors.primary.withOpacity(0.1),
                                             borderRadius: BorderRadius.circular(12),
                                           ),
-                                          child: const Icon(Icons.pie_chart_rounded, color: AppTheme.primaryBlue, size: 20),
+                                          child: const Icon(Icons.pie_chart_rounded, color: AppColors.primary, size: 20),
                                         ),
                                         const SizedBox(width: 12),
                                         const Text(
                                           'Répartition des avoirs',
-                                          style: TextStyle(color: AppTheme.primaryBlue, fontWeight: FontWeight.w800, fontSize: 16),
+                                          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800, fontSize: 16),
                                         ),
                                       ],
                                     ),
@@ -373,18 +276,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                               sections: [
                                                 PieChartSectionData(
                                                   value: soldeDisponible,
-                                                  color: AppTheme.accentBlue,
+                                                  color: AppColors.primary,
                                                   title: '',
                                                   radius: _touchedIndex == 0 ? 30 : 25,
-                                                  badgeWidget: _touchedIndex == 0 ? _buildBadge(currencyFormat.format(soldeDisponible), AppTheme.accentBlue) : null,
+                                                  badgeWidget: _touchedIndex == 0 ? _buildBadge(currencyFormat.format(soldeDisponible), AppColors.primary) : null,
                                                   badgePositionPercentageOffset: 1.3,
                                                 ),
                                                 PieChartSectionData(
                                                   value: soldeBloque,
-                                                  color: AppTheme.successGreen,
+                                                  color: AppColors.success,
                                                   title: '',
                                                   radius: _touchedIndex == 1 ? 25 : 20,
-                                                  badgeWidget: _touchedIndex == 1 ? _buildBadge(currencyFormat.format(soldeBloque), AppTheme.successGreen) : null,
+                                                  badgeWidget: _touchedIndex == 1 ? _buildBadge(currencyFormat.format(soldeBloque), AppColors.success) : null,
                                                   badgePositionPercentageOffset: 1.3,
                                                 ),
                                               ],
@@ -396,7 +299,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                               Text(
                                                 'TOTAL',
                                                 style: TextStyle(
-                                                  color: AppTheme.primaryBlue.withOpacity(0.5),
+                                                  color: AppColors.primary.withOpacity(0.5),
                                                   fontSize: 10,
                                                   fontWeight: FontWeight.bold,
                                                   letterSpacing: 1,
@@ -405,7 +308,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                               Text(
                                                 _isBalanceVisible ? currencyFormat.format(soldeTotal) : '••••••',
                                                 style: const TextStyle(
-                                                  color: AppTheme.primaryBlue,
+                                                  color: AppColors.primary,
                                                   fontSize: 14,
                                                   fontWeight: FontWeight.w900,
                                                 ),
@@ -419,9 +322,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        _buildLegendItem(AppTheme.accentBlue, 'Disponible', isDark: false),
+                                        _buildLegendItem(AppColors.primary, 'Disponible', isDark: false),
                                         const SizedBox(width: 24),
-                                        _buildLegendItem(AppTheme.successGreen, 'Bloqué', isDark: false),
+                                        _buildLegendItem(AppColors.success, 'Bloqué', isDark: false),
                                       ],
                                     ),
                                   ],
@@ -433,22 +336,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 children: [
                                   const Text(
                                     'Mes Comptes',
-                                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppTheme.primaryBlue),
+                                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.primary),
                                   ),
                                   Row(
                                     children: [
                                       TextButton(
-                                        onPressed: () => _showAllAccounts(context, userAccounts, currencyFormat),
+                                        onPressed: () => context.push(AppRouter.accounts),
                                         child: const Text('VOIR TOUT', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, letterSpacing: 1)),
                                       ),
                                       const SizedBox(width: 4),
                                       Container(
                                         padding: const EdgeInsets.all(6),
                                         decoration: BoxDecoration(
-                                          color: AppTheme.primaryBlue.withOpacity(0.05),
+                                          color: AppColors.primary.withOpacity(0.05),
                                           shape: BoxShape.circle,
                                         ),
-                                        child: const Icon(Icons.account_balance_rounded, color: AppTheme.primaryBlue, size: 12),
+                                        child: const Icon(Icons.account_balance_rounded, color: AppColors.primary, size: 12),
                                       ),
                                     ],
                                   ),
@@ -465,7 +368,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     final account = userAccounts[index];
                                     final Color accountColor = account.accountTypeColor != null 
                                         ? Color(int.parse(account.accountTypeColor!.replaceFirst('#', '0xFF')))
-                                        : AppTheme.accentBlue;
+                                        : AppColors.secondary;
 
                                     return AnimationConfiguration.staggeredList(
                                       position: index,
@@ -509,7 +412,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                         children: [
                                                           Text(
                                                             account.libelle,
-                                                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppTheme.primaryBlue),
+                                                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.primary),
                                                           ),
                                                           const SizedBox(height: 2),
                                                           Text(
@@ -519,24 +422,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                         ],
                                                       ),
                                                     ),
-                                                    Column(
-                                                      crossAxisAlignment: CrossAxisAlignment.end,
-                                                      children: [
-                                                        Text(
-                                                          _isBalanceVisible 
-                                                            ? currencyFormat.format(account.availableBalance)
-                                                            : '••••••',
-                                                          style: const TextStyle(
-                                                            fontWeight: FontWeight.w700,
-                                                            color: AppTheme.primaryBlue,
-                                                            fontSize: 15,
+                                                    Flexible(
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                                        children: [
+                                                          FittedBox(
+                                                            fit: BoxFit.scaleDown,
+                                                            alignment: Alignment.centerRight,
+                                                            child: Text(
+                                                              _isBalanceVisible
+                                                                  ? currencyFormat.format(account.availableBalance)
+                                                                  : '••••••',
+                                                              style: const TextStyle(
+                                                                fontWeight: FontWeight.w700,
+                                                                color: AppColors.primary,
+                                                                fontSize: 15,
+                                                              ),
+                                                              maxLines: 1,
+                                                            ),
                                                           ),
-                                                        ),
-                                                        Text(
-                                                          'Solde disponible',
-                                                          style: TextStyle(fontSize: 10, color: Colors.grey[400], fontWeight: FontWeight.w500),
-                                                        ),
-                                                      ],
+                                                          Text(
+                                                            'Solde disponible',
+                                                            style: TextStyle(fontSize: 10, color: Colors.grey[400], fontWeight: FontWeight.w500),
+                                                            maxLines: 1,
+                                                            overflow: TextOverflow.ellipsis,
+                                                          ),
+                                                        ],
+                                                      ),
                                                     ),
                                                     const SizedBox(width: 8),
                                                     Icon(Icons.chevron_right_rounded, color: Colors.grey[300], size: 20),
@@ -582,7 +494,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 child: CircleAvatar(
                   radius: 22,
-                  backgroundColor: AppTheme.surfaceDark,
+                  backgroundColor: AppColors.darkSurface,
                   backgroundImage: _photoPath != null ? FileImage(File(_photoPath!)) : null,
                   child: _photoPath == null 
                     ? const Icon(Icons.person_rounded, color: Colors.white, size: 22)
@@ -657,13 +569,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(
-                    _isBalanceVisible ? currencyFormat.format(soldeTotal) : '•••••••• FCFA',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        _isBalanceVisible ? currencyFormat.format(soldeTotal) : '•••••••• FCFA',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        ),
+                        maxLines: 1,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -690,7 +609,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.check_circle_rounded, color: AppTheme.successGreen, size: 12),
+                        const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 12),
                         const SizedBox(width: 6),
                         Text(
                           'Compte vérifié',
@@ -744,16 +663,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: AppTheme.primaryBlue.withOpacity(0.05)),
+              border: Border.all(color: AppColors.primary.withOpacity(0.05)),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primaryBlue.withOpacity(0.03),
+                  color: AppColors.primary.withOpacity(0.03),
                   blurRadius: 15,
                   offset: const Offset(0, 5),
                 ),
               ],
             ),
-            child: Icon(icon, color: AppTheme.primaryBlue, size: 26),
+            child: Icon(icon, color: AppColors.primary, size: 26),
           ),
           const SizedBox(height: 10),
           Text(
@@ -761,7 +680,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: AppTheme.primaryBlue,
+              color: AppColors.primary,
               letterSpacing: 0.1,
             ),
           ),
@@ -790,9 +709,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   width: 10,
                   height: 10,
                   decoration: BoxDecoration(
-                    color: AppTheme.errorRed,
+                    color: AppColors.error,
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppTheme.primaryBlue, width: 2),
+                    border: Border.all(color: AppColors.primary, width: 2),
                   ),
                 ),
               ),
@@ -807,7 +726,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 8),
-        Text(label, style: TextStyle(color: isDark ? Colors.white70 : AppTheme.primaryBlue.withOpacity(0.6), fontSize: 12, fontWeight: FontWeight.w600)),
+        Text(label, style: TextStyle(color: isDark ? Colors.white70 : AppColors.primary.withOpacity(0.6), fontSize: 12, fontWeight: FontWeight.w600)),
       ],
     );
   }

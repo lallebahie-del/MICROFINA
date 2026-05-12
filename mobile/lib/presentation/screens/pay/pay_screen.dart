@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:lottie/lottie.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_shadows.dart';
 import '../../../data/datasources/mock/mock_data.dart';
 import '../../blocs/auth/auth_bloc.dart';
 
@@ -29,7 +31,7 @@ class _PayScreenState extends State<PayScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Paiement de services', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: AppTheme.primaryBlue,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
@@ -44,7 +46,7 @@ class _PayScreenState extends State<PayScreen> {
           children: [
             const Text(
               'Que souhaitez-vous régler ?',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary),
             ),
             const SizedBox(height: 24),
             Expanded(
@@ -62,7 +64,7 @@ class _PayScreenState extends State<PayScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(24),
-                      boxShadow: AppTheme.softShadow,
+                      boxShadow: AppShadows.soft,
                     ),
                     child: InkWell(
                       onTap: () => _showPaymentForm(context, service['label'] as String, service['icon'] as IconData, service['color'] as Color),
@@ -81,7 +83,7 @@ class _PayScreenState extends State<PayScreen> {
                           const SizedBox(height: 12),
                           Text(
                             service['label'] as String,
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary),
                           ),
                         ],
                       ),
@@ -96,7 +98,7 @@ class _PayScreenState extends State<PayScreen> {
               child: ElevatedButton(
                 onPressed: () => context.pop(),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryBlue,
+                  backgroundColor: AppColors.primary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 child: const Text('RETOUR AU DASHBOARD', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -132,11 +134,11 @@ class _PayScreenState extends State<PayScreen> {
               children: [
                 Icon(icon, color: color, size: 32),
                 const SizedBox(width: 16),
-                Text('Paiement $serviceName', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
+                Text('Paiement $serviceName', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primary)),
               ],
             ),
             const SizedBox(height: 32),
-            const Text('Référence / Numéro de compteur', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
+            const Text('Référence / Numéro de compteur', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
             const SizedBox(height: 8),
             TextField(
               controller: idController,
@@ -148,7 +150,7 @@ class _PayScreenState extends State<PayScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            const Text('Montant à payer (FCFA)', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
+            const Text('Montant à payer (FCFA)', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
             const SizedBox(height: 8),
             TextField(
               controller: amountController,
@@ -223,7 +225,7 @@ class _PayScreenState extends State<PayScreen> {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Validation de Paiement', 
-          style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
+          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -258,7 +260,7 @@ class _PayScreenState extends State<PayScreen> {
                 }
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
             child: const Text('VALIDER'),
           ),
         ],
@@ -274,6 +276,10 @@ class _PayScreenState extends State<PayScreen> {
     }
     
     final accounts = MockData.getAccountsForPhone(currentPhone);
+    if (accounts.isEmpty) {
+      if (mounted) _showErrorPopup(context, 'Aucun compte disponible pour ce paiement.');
+      return;
+    }
     final defaultAccount = accounts.firstWhere((acc) => acc['isDefaultAccount'], orElse: () => accounts.first);
 
     final success = await MockData.performServicePayment(
@@ -309,7 +315,7 @@ class _PayScreenState extends State<PayScreen> {
               repeat: false,
             ),
             const SizedBox(height: 24),
-            const Text('Succès !', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppTheme.primaryBlue)),
+            const Text('Succès !', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.primary)),
             const SizedBox(height: 12),
             Text(message, textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
             const SizedBox(height: 32),
@@ -322,7 +328,7 @@ class _PayScreenState extends State<PayScreen> {
                   Navigator.pop(context);
                   router.pop();
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryBlue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
                 child: const Text('RETOUR À L\'ACCUEIL', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ),
@@ -342,11 +348,11 @@ class _PayScreenState extends State<PayScreen> {
           children: [
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: AppTheme.errorRed.withOpacity(0.1), shape: BoxShape.circle),
-              child: const Icon(Icons.error_rounded, color: AppTheme.errorRed, size: 60),
+              decoration: BoxDecoration(color: AppColors.error.withOpacity(0.1), shape: BoxShape.circle),
+              child: const Icon(Icons.error_rounded, color: AppColors.error, size: 60),
             ),
             const SizedBox(height: 24),
-            const Text('Oups !', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppTheme.primaryBlue)),
+            const Text('Oups !', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.primary)),
             const SizedBox(height: 12),
             Text(message, textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
             const SizedBox(height: 32),
@@ -355,7 +361,7 @@ class _PayScreenState extends State<PayScreen> {
               height: 56,
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[200], foregroundColor: AppTheme.primaryBlue, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[200], foregroundColor: AppColors.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
                 child: const Text('RÉESSAYER', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ),

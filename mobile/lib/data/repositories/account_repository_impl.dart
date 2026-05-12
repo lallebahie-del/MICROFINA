@@ -2,6 +2,7 @@ import '../../core/network/dio_client.dart';
 import '../../core/network/connectivity_service.dart';
 import '../../core/storage/local_cache_service.dart';
 import '../../domain/repositories/account_repository.dart';
+import '../datasources/mock/mock_data.dart';
 import '../models/compte_eps_model.dart';
 
 class AccountRepositoryImpl implements AccountRepository {
@@ -11,13 +12,22 @@ class AccountRepositoryImpl implements AccountRepository {
 
   AccountRepositoryImpl(this._dioClient, this._cacheService, this._connectivityService);
 
+  List<CompteEpsModel> _mockAccountsForCurrentUser() {
+    return MockData.getAccountsForPhone(MockData.currentUserPhone)
+        .map(CompteEpsModel.fromJson)
+        .toList();
+  }
+
   @override
   Future<List<CompteEpsModel>> getAccounts() async {
     final isConnected = await _connectivityService.isConnected;
     
     if (!isConnected) {
       final cached = await _cacheService.getCachedAccounts();
-      return cached.map((json) => CompteEpsModel.fromJson(json)).toList();
+      if (cached.isNotEmpty) {
+        return cached.map((json) => CompteEpsModel.fromJson(json)).toList();
+      }
+      return _mockAccountsForCurrentUser();
     }
 
     try {
@@ -25,13 +35,15 @@ class AccountRepositoryImpl implements AccountRepository {
       final List<dynamic> data = response.data;
       final accountsJson = data.map((e) => e as Map<String, dynamic>).toList();
       final accounts = accountsJson.map((json) => CompteEpsModel.fromJson(json)).toList();
-      
+      if (accounts.isEmpty) {
+        return _mockAccountsForCurrentUser();
+      }
       await _cacheService.cacheAccounts(accountsJson);
       return accounts;
     } catch (e) {
       final cached = await _cacheService.getCachedAccounts();
       if (cached.isNotEmpty) return cached.map((json) => CompteEpsModel.fromJson(json)).toList();
-      rethrow;
+      return _mockAccountsForCurrentUser();
     }
   }
 

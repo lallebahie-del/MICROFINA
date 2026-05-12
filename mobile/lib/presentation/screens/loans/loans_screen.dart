@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../data/models/credit_model.dart';
 import '../../blocs/loan/loan_bloc.dart';
 
@@ -31,7 +31,7 @@ class _LoansScreenState extends State<LoansScreen> {
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
-        foregroundColor: AppTheme.primaryBlue,
+        foregroundColor: AppColors.primary,
       ),
       body: BlocBuilder<LoanBloc, LoanState>(
         builder: (context, state) {
@@ -101,11 +101,11 @@ class _LoansScreenState extends State<LoansScreen> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryBlue,
+                    color: AppColors.primary,
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.primaryBlue.withOpacity(0.2),
+                        color: AppColors.primary.withOpacity(0.2),
                         blurRadius: 15,
                         offset: const Offset(0, 5),
                       ),
@@ -133,7 +133,7 @@ class _LoansScreenState extends State<LoansScreen> {
                         onPressed: () => context.push('/loan_request'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
-                          foregroundColor: AppTheme.primaryBlue,
+                          foregroundColor: AppColors.primary,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           elevation: 0,
                           minimumSize: const Size(100, 40),
@@ -198,7 +198,7 @@ class _LoansScreenState extends State<LoansScreen> {
                                       children: [
                                         Text(
                                           "Prêt ${loan.loanId}",
-                                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppTheme.primaryBlue),
+                                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.primary),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
@@ -234,7 +234,7 @@ class _LoansScreenState extends State<LoansScreen> {
                                       ),
                                       Text(
                                         "Remboursé à ${loan.progressPercentage.toInt()}%",
-                                        style: TextStyle(color: AppTheme.primaryBlue, fontSize: 11, fontWeight: FontWeight.bold),
+                                        style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold),
                                       ),
                                     ],
                                   ),

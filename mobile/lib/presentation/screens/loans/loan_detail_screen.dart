@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../data/models/credit_model.dart';
 import '../../blocs/loan/loan_bloc.dart';
 import '../../widgets/loan/amortization_timeline.dart';
@@ -35,7 +36,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
           children: [
             Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
             SizedBox(width: 12),
-            Text("Solde Insuffisant", style: TextStyle(fontWeight: FontWeight.w900, color: AppTheme.primaryBlue)),
+            Text("Solde Insuffisant", style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary)),
           ],
         ),
         content: Text(
@@ -45,7 +46,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("COMPRIS", style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
+            child: const Text("COMPRIS", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -53,7 +54,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
               // Optionnel: Rediriger vers l'écran de dépôt/recharge
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryBlue,
+              backgroundColor: AppColors.primary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: const Text("RECHARGER", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
@@ -100,7 +101,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                   "Paiement Réussi !",
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
-                    color: AppTheme.successGreen,
+                    color: AppColors.success,
                     fontSize: 16,
                   ),
                 ),
@@ -181,7 +182,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                 floating: false,
                 pinned: true,
                 elevation: 0,
-                backgroundColor: AppTheme.primaryBlue,
+                backgroundColor: AppColors.primary,
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
                   onPressed: () => context.pop(),
@@ -203,8 +204,8 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          AppTheme.primaryBlue,
-                          AppTheme.primaryBlue.withOpacity(0.8),
+                          AppColors.primary,
+                          AppColors.primary.withOpacity(0.8),
                         ],
                       ),
                     ),
@@ -272,7 +273,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w900,
-                            color: AppTheme.primaryBlue,
+                            color: AppColors.primary,
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -329,7 +330,7 @@ class _LoanDetailScreenState extends State<LoanDetailScreen> {
                               subtitle: Text(g.description, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
                               trailing: Text(
                                 NumberFormat.currency(symbol: 'FCFA', decimalDigits: 0).format(g.valeur),
-                                style: TextStyle(fontWeight: FontWeight.w900, color: AppTheme.primaryBlue),
+                                style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary),
                               ),
                             ),
                           )),

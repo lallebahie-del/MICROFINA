@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_colors.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -41,7 +41,7 @@ class _ScanScreenState extends State<ScanScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Scanner QR Code', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: AppTheme.primaryBlue,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
@@ -57,7 +57,7 @@ class _ScanScreenState extends State<ScanScreen> {
                 ? Container(
                     margin: const EdgeInsets.all(40),
                     decoration: BoxDecoration(
-                      border: Border.all(color: AppTheme.accentBlue, width: 4),
+                      border: Border.all(color: AppColors.secondary, width: 4),
                       borderRadius: BorderRadius.circular(30),
                     ),
                     clipBehavior: Clip.antiAlias,
@@ -122,7 +122,6 @@ class _ScanScreenState extends State<ScanScreen> {
             flex: 2,
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(32),
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.only(
@@ -130,32 +129,53 @@ class _ScanScreenState extends State<ScanScreen> {
                   topRight: Radius.circular(40),
                 ),
               ),
-              child: Column(
-                children: [
-                  const Text(
-                    'Scannez un code pour payer',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryBlue),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Placez le QR code dans le cadre pour lancer le paiement automatique.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                  const Spacer(),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: () => context.pop(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryBlue,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: SafeArea(
+                top: false,
+                minimum: const EdgeInsets.only(bottom: 8),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text(
+                        'Scannez un code pour payer',
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.primary),
                       ),
-                      child: const Text('RETOUR AU DASHBOARD', style: TextStyle(fontWeight: FontWeight.bold)),
-                    ),
+                      const SizedBox(height: 8),
+                      Flexible(
+                        child: SingleChildScrollView(
+                          physics: const ClampingScrollPhysics(),
+                          child: Text(
+                            'Placez le QR code dans le cadre pour lancer le paiement automatique.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: () => context.pop(),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                          child: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'RETOUR AU DASHBOARD',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              maxLines: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),

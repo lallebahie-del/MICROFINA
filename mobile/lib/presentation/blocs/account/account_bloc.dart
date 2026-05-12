@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../data/models/compte_eps_model.dart';
 import '../../../domain/repositories/account_repository.dart';
 import 'account_event.dart';
 import 'account_state.dart';
@@ -18,14 +19,17 @@ class AccountBloc extends Bloc<AccountEvent, AccountState> {
     emit(state.copyWith(status: AccountStatus.loading));
     try {
       final accounts = await _accountRepository.getAccounts();
-      final selectedAccount = accounts.firstWhere(
-        (acc) => acc.isDefaultAccount,
-        orElse: () => accounts.first,
-      );
-      emit(state.copyWith(
+      final CompteEpsModel? selectedAccount = accounts.isEmpty
+          ? null
+          : accounts.firstWhere(
+              (acc) => acc.isDefaultAccount,
+              orElse: () => accounts.first,
+            );
+      emit(AccountState(
         status: AccountStatus.success,
         accounts: accounts,
         selectedAccount: selectedAccount,
+        errorMessage: null,
       ));
     } catch (e) {
       emit(state.copyWith(status: AccountStatus.failure, errorMessage: e.toString()));
@@ -33,7 +37,11 @@ class AccountBloc extends Bloc<AccountEvent, AccountState> {
   }
 
   void _onSelectAccount(SelectAccount event, Emitter<AccountState> emit) {
-    final selectedAccount = state.accounts.firstWhere((acc) => acc.id == event.accountId);
-    emit(state.copyWith(selectedAccount: selectedAccount));
+    for (final acc in state.accounts) {
+      if (acc.id == event.accountId) {
+        emit(state.copyWith(selectedAccount: acc));
+        return;
+      }
+    }
   }
 }

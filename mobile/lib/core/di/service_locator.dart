@@ -22,6 +22,7 @@ import '../../presentation/blocs/loan/loan_bloc.dart';
 import '../../presentation/blocs/transfer/transfer_bloc.dart';
 import '../../presentation/blocs/loan_simulator/loan_simulator_bloc.dart';
 import '../../presentation/blocs/certificat/certificat_bloc.dart';
+import '../../presentation/blocs/transaction/transaction_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -44,11 +45,12 @@ void setupLocator() {
   sl.registerLazySingleton<TransactionRepository>(() => TransactionRepositoryImpl(sl()));
   sl.registerLazySingleton<CertificatRepository>(() => CertificatRepositoryImpl(sl(), sl(), sl()));
 
-  // Blocs
-  sl.registerFactory(() => AuthBloc(sl())..add(AppStarted()));
+  // Blocs — AuthBloc doit rester une instance unique (router + Provider + déconnexion).
+  sl.registerLazySingleton(() => AuthBloc(sl())..add(AppStarted()));
   sl.registerFactory(() => AccountBloc(sl()));
   sl.registerFactory(() => LoanBloc(sl()));
   sl.registerFactory(() => TransferBloc(sl()));
   sl.registerFactory(() => LoanSimulatorBloc());
   sl.registerFactory(() => CertificatBloc(sl()));
+  sl.registerFactory(() => TransactionBloc(sl()));
 }

@@ -7,6 +7,7 @@ import '../../../data/models/amortp_model.dart';
 import 'package:intl/intl.dart';
 import '../../blocs/loan/loan_bloc.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_colors.dart';
 
 class AmortizationTimeline extends StatelessWidget {
   final List<AmortpModel> schedule;
@@ -36,7 +37,7 @@ class AmortizationTimeline extends StatelessWidget {
             child: Lottie.network(
               'https://assets10.lottiefiles.com/packages/lf20_af7p8v6v.json', // Animation de succès
               repeat: false,
-              errorBuilder: (context, error, stackTrace) => const Icon(Icons.check_circle, size: 100, color: AppTheme.successGreen),
+              errorBuilder: (context, error, stackTrace) => const Icon(Icons.check_circle, size: 100, color: AppColors.success),
             ),
           ),
         );
@@ -114,7 +115,7 @@ class AmortizationTimeline extends StatelessWidget {
             const SizedBox(height: 32),
             const Text(
               "Confirmer le Paiement",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppTheme.primaryBlue),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppColors.primary),
             ),
             const SizedBox(height: 16),
             Text(
@@ -125,7 +126,7 @@ class AmortizationTimeline extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               NumberFormat.currency(symbol: 'FCFA', decimalDigits: 0).format(item.montantTotal),
-              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppTheme.primaryBlue),
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppColors.primary),
             ),
             const SizedBox(height: 40),
             Row(
@@ -149,7 +150,7 @@ class AmortizationTimeline extends StatelessWidget {
                       _handlePayment(context, item);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryBlue,
+                      backgroundColor: AppColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       elevation: 0,
@@ -266,7 +267,7 @@ class AmortizationTimeline extends StatelessWidget {
                           child: ElevatedButton(
                             onPressed: () => _showPaymentConfirmation(context, item),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: status == "IMPAYE" ? Colors.red : AppTheme.primaryBlue,
+                              backgroundColor: status == "IMPAYE" ? Colors.red : AppColors.primary,
                               foregroundColor: Colors.white,
                               elevation: 0,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

@@ -1,12 +1,24 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../data/datasources/mock/mock_data.dart';
-import '../../../domain/repositories/auth_repository.dart';
 import '../../../data/repositories/auth_repository_impl.dart';
+import '../../../domain/models/login_outcome.dart';
+import '../../../domain/repositories/auth_repository.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 
 export 'auth_event.dart';
 export 'auth_state.dart';
+
+String _loginFailureMessage(LoginFailureKind kind) {
+  switch (kind) {
+    case LoginFailureKind.invalidCredentials:
+      return 'Numéro ou code PIN incorrect.';
+    case LoginFailureKind.network:
+      return 'Problème de connexion. Vérifiez votre réseau et réessayez.';
+    case LoginFailureKind.unknown:
+      return "Erreur d'authentification. Réessayez.";
+  }
+}
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
@@ -39,12 +51,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     emit(AuthLoading());
     try {
-      final token = await _authRepository.login(event.phone, event.pin);
-      if (token != null) {
-        MockData.currentUserPhone = event.phone;
-        emit(AuthSuccess(token, phone: event.phone));
-      } else {
-        emit(const AuthFailure("Erreur d'authentification"));
+      final outcome = await _authRepository.login(event.phone, event.pin);
+      switch (outcome) {
+        case LoginSuccess(:final token):
+          MockData.currentUserPhone = event.phone;
+          emit(AuthSuccess(token, phone: event.phone));
+        case LoginFailure(:final kind):
+          emit(AuthFailure(_loginFailureMessage(kind)));
       }
     } catch (e) {
       emit(AuthFailure(e.toString()));
@@ -52,7 +65,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onLogoutRequested(LogoutRequested event, Emitter<AuthState> emit) async {
-    await _authRepository.logout();
+    try {
+      await _authRepository.logout();
+    } catch (_) {
+      // Réseau ou API : on force quand même la sortie locale (tokens effacés dans le repo).
+    }
     emit(Unauthenticated());
   }
 }

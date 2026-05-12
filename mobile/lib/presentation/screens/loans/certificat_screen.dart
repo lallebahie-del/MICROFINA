@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/pdf_generator_service.dart';
 import '../../../data/models/extra_models.dart';
 import '../../blocs/certificat/certificat_bloc.dart';
@@ -34,7 +35,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
-        foregroundColor: AppTheme.primaryBlue,
+        foregroundColor: AppColors.primary,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () => Navigator.pop(context),
@@ -96,7 +97,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
                               Text(
                                 cert.numeroCertificat,
                                 style: TextStyle(
-                                  color: AppTheme.primaryBlue.withOpacity(0.5),
+                                  color: AppColors.primary.withOpacity(0.5),
                                   fontWeight: FontWeight.w800,
                                   fontSize: 12,
                                   letterSpacing: 1,
@@ -108,7 +109,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.w900,
                                   fontSize: 14,
-                                  color: AppTheme.primaryBlue,
+                                  color: AppColors.primary,
                                 ),
                               ),
                             ],
@@ -116,10 +117,10 @@ class _CertificateScreenState extends State<CertificateScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppTheme.successGreen.withOpacity(0.1),
+                              color: AppColors.success.withOpacity(0.1),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.verified_rounded, color: AppTheme.successGreen, size: 20),
+                            child: const Icon(Icons.verified_rounded, color: AppColors.success, size: 20),
                           ),
                         ],
                       ),
@@ -158,7 +159,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: AppTheme.lightBlue.withOpacity(0.5),
+                              color: Colors.blue.withOpacity(0.5),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Row(
@@ -168,7 +169,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
                                   'Intérêts attendus',
                                   style: TextStyle(
                                     fontWeight: FontWeight.w700,
-                                    color: AppTheme.primaryBlue,
+                                    color: AppColors.primary,
                                     fontSize: 13,
                                   ),
                                 ),
@@ -176,7 +177,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
                                   '+ ${currencyFormat.format(cert.expectedInterests)}',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w900,
-                                    color: AppTheme.successGreen,
+                                    color: AppColors.success,
                                     fontSize: 15,
                                   ),
                                 ),
@@ -198,7 +199,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
                           icon: const Icon(Icons.file_download_outlined, size: 20),
                           label: const Text('TÉLÉCHARGER LE CERTIFICAT'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primaryBlue,
+                            backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             elevation: 0,
@@ -246,7 +247,7 @@ class _CertificateScreenState extends State<CertificateScreen> {
           style: const TextStyle(
             fontWeight: FontWeight.w800,
             fontSize: 14,
-            color: AppTheme.primaryBlue,
+            color: AppColors.primary,
           ),
         ),
       ],

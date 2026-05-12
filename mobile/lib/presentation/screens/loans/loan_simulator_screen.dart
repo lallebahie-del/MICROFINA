@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:local_auth/local_auth.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../data/datasources/mock/mock_data.dart';
 import '../../blocs/loan_simulator/loan_simulator_bloc.dart';
 
@@ -38,7 +39,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
           children: [
             Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
             SizedBox(width: 12),
-            Text("Solde Insuffisant", style: TextStyle(fontWeight: FontWeight.w900, color: AppTheme.primaryBlue)),
+            Text("Solde Insuffisant", style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.primary)),
           ],
         ),
         content: Column(
@@ -52,20 +53,20 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
             const SizedBox(height: 16),
             _buildBalanceInfo("Solde disponible", currencyFormat.format(balance), Colors.red),
             const SizedBox(height: 8),
-            _buildBalanceInfo("Requis (fictif)", currencyFormat.format(required), AppTheme.primaryBlue),
+            _buildBalanceInfo("Requis (fictif)", currencyFormat.format(required), AppColors.primary),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("COMPRIS", style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryBlue)),
+            child: const Text("COMPRIS", style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary)),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryBlue,
+              backgroundColor: AppColors.primary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: const Text("RECHARGER", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
@@ -117,7 +118,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Demande de prêt validée avec succès !'),
-            backgroundColor: AppTheme.successGreen,
+            backgroundColor: AppColors.success,
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -138,7 +139,7 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
-        foregroundColor: AppTheme.primaryBlue,
+        foregroundColor: AppColors.primary,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () => Navigator.pop(context),
@@ -161,14 +162,14 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [AppTheme.primaryBlue, Color(0xFF0F172A)],
+                  colors: [AppColors.primary, Color(0xFF0F172A)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(32),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryBlue.withOpacity(0.3),
+                    color: AppColors.primary.withOpacity(0.3),
                     blurRadius: 30,
                     offset: const Offset(0, 15),
                   ),
@@ -245,11 +246,11 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
               child: ElevatedButton(
                 onPressed: _handleLoanRequest,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryBlue,
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   elevation: 8,
-                  shadowColor: AppTheme.primaryBlue.withOpacity(0.5),
+                  shadowColor: AppColors.primary.withOpacity(0.5),
                 ),
                 child: const Text(
                   'DEMANDER CE PRÊT',
@@ -282,21 +283,21 @@ class _SimulatorScreenState extends State<SimulatorScreen> {
           children: [
             Text(
               title,
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: AppTheme.primaryBlue.withOpacity(0.4), letterSpacing: 1.5),
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: AppColors.primary.withOpacity(0.4), letterSpacing: 1.5),
             ),
             Text(
               label,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppTheme.primaryBlue),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.primary),
             ),
           ],
         ),
         const SizedBox(height: 8),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            activeTrackColor: AppTheme.primaryBlue,
-            inactiveTrackColor: AppTheme.primaryBlue.withOpacity(0.1),
-            thumbColor: AppTheme.primaryBlue,
-            overlayColor: AppTheme.primaryBlue.withOpacity(0.1),
+            activeTrackColor: AppColors.primary,
+            inactiveTrackColor: AppColors.primary.withOpacity(0.1),
+            thumbColor: AppColors.primary,
+            overlayColor: AppColors.primary.withOpacity(0.1),
             trackHeight: 6,
             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
           ),

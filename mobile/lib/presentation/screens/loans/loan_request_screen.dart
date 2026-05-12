@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../blocs/loan/loan_bloc.dart';
 
 class NewLoanRequestScreen extends StatefulWidget {
@@ -63,7 +64,7 @@ class _NewLoanRequestScreenState extends State<NewLoanRequestScreen> {
           centerTitle: true,
           elevation: 0,
           backgroundColor: Colors.transparent,
-          foregroundColor: AppTheme.primaryBlue,
+          foregroundColor: AppColors.primary,
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -83,7 +84,7 @@ class _NewLoanRequestScreenState extends State<NewLoanRequestScreen> {
                 TextFormField(
                   controller: _amountController,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 24, color: AppTheme.primaryBlue),
+                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 24, color: AppColors.primary),
                   textAlign: TextAlign.center,
                   decoration: InputDecoration(
                     hintText: '0 FCFA',
@@ -160,10 +161,10 @@ class _NewLoanRequestScreenState extends State<NewLoanRequestScreen> {
                       child: ElevatedButton(
                         onPressed: isLoading ? null : _submitRequest,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryBlue,
+                          backgroundColor: AppColors.primary,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                           elevation: 4,
-                          shadowColor: AppTheme.primaryBlue.withOpacity(0.4),
+                          shadowColor: AppColors.primary.withOpacity(0.4),
                         ),
                         child: isLoading 
                           ? const CircularProgressIndicator(color: Colors.white)
@@ -186,7 +187,7 @@ class _NewLoanRequestScreenState extends State<NewLoanRequestScreen> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: AppTheme.primaryBlue.withOpacity(0.4), letterSpacing: 1.5),
+      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: AppColors.primary.withOpacity(0.4), letterSpacing: 1.5),
     );
   }
 }

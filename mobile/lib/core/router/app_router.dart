@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/di/service_locator.dart';
 import '../../presentation/blocs/auth/auth_bloc.dart';
 import '../../presentation/blocs/transaction/transaction_bloc.dart';
 import '../../presentation/screens/login/login_screen.dart';
@@ -19,12 +20,15 @@ import '../../presentation/screens/loans/loan_detail_screen.dart';
 import '../../presentation/screens/loans/loan_simulator_screen.dart';
 import '../../presentation/screens/loans/certificat_screen.dart';
 import '../../presentation/screens/loans/loan_request_screen.dart';
+import '../../presentation/screens/accounts/accounts_screen.dart';
+import '../../data/datasources/mock/mock_data.dart';
 
 class AppRouter {
   static const String root = '/';
   static const String login = '/login';
   static const String register = '/register';
   static const String dashboard = '/dashboard';
+  static const String accounts = '/accounts';
   static const String transactions = '/transactions';
   static const String transfer = '/transfer';
   static const String scan = '/scan';
@@ -88,11 +92,32 @@ class AppRouter {
               builder: (context, state) => const DashboardScreen(),
             ),
             GoRoute(
+              path: accounts,
+              builder: (context, state) => const AccountsScreen(),
+            ),
+            GoRoute(
+              path: '$accounts/:accountId',
+              builder: (context, state) {
+                final accountId = state.pathParameters['accountId']!;
+                return AccountDetailScreen(accountId: accountId);
+              },
+            ),
+            GoRoute(
+              path: transactions,
+              builder: (context, state) => BlocProvider(
+                create: (context) => sl<TransactionBloc>()
+                  ..add(LoadTransactions(MockData.transactionScopeAllAccounts)),
+                child: TransactionsScreen(
+                  accountId: MockData.transactionScopeAllAccounts,
+                ),
+              ),
+            ),
+            GoRoute(
               path: '$transactions/:accountId',
               builder: (context, state) {
                 final accountId = state.pathParameters['accountId']!;
                 return BlocProvider(
-                  create: (context) => TransactionBloc()..add(LoadTransactions(accountId)),
+                  create: (context) => sl<TransactionBloc>()..add(LoadTransactions(accountId)),
                   child: TransactionsScreen(accountId: accountId),
                 );
               },
