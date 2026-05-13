@@ -25,6 +25,12 @@ import java.util.List;
  * puis se rabat sur l'ancienne table {@code AGENT_CREDIT} pour assurer la
  * rétrocompatibilité avec les comptes existants.</p>
  *
+ * <p>Si une ligne {@code Utilisateur} existe mais qu'un agent {@code AGENT_CREDIT}
+ * actif partage le même login (insensible à la casse), le <strong>mot de passe
+ * vérifié</strong> est celui d'{@code AGENT_CREDIT} — ainsi les identifiants seedés
+ * ({@code admin} / {@code Admin@1234}) restent valides même si
+ * {@code mot_de_passe_hash} était désynchronisé.</p>
+ *
  * <h2>Modèle d'autorisation — Utilisateur (Phase 9)</h2>
  *
  * <p>Les authorities retournées sont les {@code code_privilege} des privilèges
@@ -115,7 +121,7 @@ public class MicrofinaUserDetailsService implements UserDetailsService {
         String sqlUtilisateur =
             "SELECT u.id, u.login, u.mot_de_passe_hash, u.actif " +
             "FROM Utilisateur u " +
-            "WHERE u.login = :login";
+            "WHERE LOWER(LTRIM(RTRIM(u.login))) = LOWER(LTRIM(RTRIM(:login)))";
 
         Object[] rowUtilisateur;
         try {
@@ -137,6 +143,22 @@ public class MicrofinaUserDetailsService implements UserDetailsService {
         if (!actif) {
             throw new UsernameNotFoundException(
                 "Le compte Utilisateur " + username + " est désactivé.");
+        }
+
+        String hashPourAuth = motDePasseHash != null ? motDePasseHash.trim() : "";
+        try {
+            Object agentPwd = em.createNativeQuery(
+                    "SELECT TOP 1 a.password FROM AGENT_CREDIT a "
+                  + "WHERE LOWER(LTRIM(RTRIM(a.usercode))) = LOWER(LTRIM(RTRIM(:login))) "
+                  + "AND UPPER(LTRIM(RTRIM(COALESCE(a.actif, N'N')))) = N'O' "
+                  + "AND a.password IS NOT NULL AND LEN(LTRIM(RTRIM(a.password))) > 0")
+                    .setParameter("login", login)
+                    .getSingleResult();
+            if (agentPwd instanceof String s && !s.isBlank()) {
+                hashPourAuth = s.trim();
+            }
+        } catch (NoResultException ignored) {
+            // Aucun agent : conserver mot_de_passe_hash Utilisateur
         }
 
         // Chargement des privilèges via la chaîne de jointure complète
@@ -164,7 +186,7 @@ public class MicrofinaUserDetailsService implements UserDetailsService {
 
         return User.builder()
                    .username(login)
-                   .password(motDePasseHash)   // hash BCrypt déjà encodé
+                   .password(hashPourAuth)   // BCrypt : priorité AGENT_CREDIT si présent
                    .authorities(authorities)
                    .accountExpired(false)
                    .accountLocked(false)
@@ -195,7 +217,7 @@ public class MicrofinaUserDetailsService implements UserDetailsService {
         String sql =
             "SELECT a.usercode, a.password, a.tfunction, a.actif " +
             "FROM AGENT_CREDIT a " +
-            "WHERE a.usercode = :usercode";
+            "WHERE LOWER(LTRIM(RTRIM(a.usercode))) = LOWER(LTRIM(RTRIM(:usercode)))";
 
         Object[] row;
         try {
@@ -264,6 +286,7 @@ public class MicrofinaUserDetailsService implements UserDetailsService {
                 "PRIV_EXPORT_REPORTS",
                 "PRIV_POST_REGLEMENT",
                 "PRIV_BANK_OPERATION",
+                "PRIV_MANAGE_CASH",
                 "PRIV_MANAGE_CHEQUE",
                 "PRIV_OPEN_COMPTE_EPS",
                 "PRIV_DEPOSIT_EPARGNE",

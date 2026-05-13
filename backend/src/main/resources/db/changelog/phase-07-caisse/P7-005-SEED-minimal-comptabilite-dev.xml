@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Écriture comptable minimale ID=1 pour environnement local : sans elle, POST /operations-caisse
+  échoue en contrainte FK (table comptabilite vide si test-data-seeder.xml n'est pas appliqué).
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P7-005-seed-minimal-comptabilite-dev" author="microfina">
+        <comment>Insère comptabilite.IDCOMPTABILITE=1 si absent (lien agence NKC requis par FK_comptabilite_AGENCE).</comment>
+        <sql dbms="mssql">
+            IF NOT EXISTS (SELECT 1 FROM comptabilite WHERE IDCOMPTABILITE = 1)
+            BEGIN
+                SET IDENTITY_INSERT comptabilite ON;
+                INSERT INTO comptabilite (
+                    IDCOMPTABILITE, DATEOPERATION, DEBIT, CREDIT, LIBELLE,
+                    agence, ETAT, CODE_SENS, VERSION, planComptable
+                )
+                VALUES (
+                    1, CAST(GETDATE() AS DATE), 0.0000, 0.0000, N'DEV — squelette pour tests caisse',
+                    N'NKC', N'VALIDE', N'D', 0, N'101100'
+                );
+                SET IDENTITY_INSERT comptabilite OFF;
+            END
+        </sql>
+        <rollback>
+            <sql dbms="mssql">DELETE FROM comptabilite WHERE IDCOMPTABILITE = 1 AND LIBELLE LIKE N'DEV — squelette%';</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

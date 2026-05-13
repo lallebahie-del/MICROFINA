@@ -1,11 +1,15 @@
 package com.pfe.backend.controller;
 
+import com.microfina.entity.Utilisateur;
 import com.microfina.security.JwtService;
 import com.pfe.backend.dto.LoginRequest;
 import com.pfe.backend.dto.LoginResponse;
+import com.pfe.backend.repository.UtilisateurRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,6 +20,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
@@ -38,12 +43,18 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final AuthenticationManager authManager;
-    private final JwtService            jwtService;
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
-    public AuthController(AuthenticationManager authManager, JwtService jwtService) {
-        this.authManager = authManager;
-        this.jwtService  = jwtService;
+    private final AuthenticationManager  authManager;
+    private final JwtService             jwtService;
+    private final UtilisateurRepository  utilisateurRepository;
+
+    public AuthController(AuthenticationManager authManager,
+                          JwtService jwtService,
+                          UtilisateurRepository utilisateurRepository) {
+        this.authManager           = authManager;
+        this.jwtService            = jwtService;
+        this.utilisateurRepository = utilisateurRepository;
     }
 
     // ── POST /api/auth/login ──────────────────────────────────────────────
@@ -64,6 +75,9 @@ public class AuthController {
 
             UserDetails userDetails = (UserDetails) auth.getPrincipal();
             String token = jwtService.generateToken(userDetails);
+
+            // Mise à jour de la dernière connexion (best-effort, n'empêche pas le login en cas d'erreur)
+            updateDerniereConnexion(userDetails.getUsername());
 
             // Priorité : retourner un ROLE_* si présent, sinon fallback sur une authority PRIV_*
             String role = userDetails.getAuthorities().stream()
@@ -114,5 +128,23 @@ public class AuthController {
                 "username", auth.getName(),
                 "role",     role
         ));
+    }
+
+    /**
+     * Met à jour le champ {@code derniere_connexion} et réinitialise {@code nombre_echecs}
+     * pour l'utilisateur dont le login correspond. Si l'utilisateur n'existe pas dans
+     * la table {@code Utilisateur} (cas du fallback {@code AGENT_CREDIT}), aucune mise
+     * à jour n'est effectuée.
+     */
+    private void updateDerniereConnexion(String login) {
+        try {
+            utilisateurRepository.findByLogin(login).ifPresent(u -> {
+                u.setDerniereConnexion(LocalDateTime.now());
+                u.setNombreEchecs(0);
+                utilisateurRepository.save(u);
+            });
+        } catch (Exception e) {
+            log.warn("Impossible de mettre à jour derniere_connexion pour {} : {}", login, e.getMessage());
+        }
     }
 }

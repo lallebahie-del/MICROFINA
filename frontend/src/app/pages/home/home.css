@@ -1,10 +1,12 @@
-/* ── Layout ───────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   DASHBOARD — Microfina++ (Fintech modern look)
+   ═══════════════════════════════════════════════════════════════ */
 .dashboard {
-  padding: 20px 24px;
+  padding: 28px 32px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  max-width: 100%;
+  gap: 24px;
+  max-width: 1440px;
 }
 
 /* ── Header ───────────────────────────────────────────────────────── */
@@ -17,192 +19,217 @@
 }
 
 .db-greeting {
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
   color: var(--text-dark);
-  letter-spacing: -0.2px;
+  letter-spacing: -0.6px;
 }
 
 .db-subtitle {
   font-size: 13px;
-  color: var(--text-medium);
+  color: var(--text-light);
   margin-top: 4px;
   text-transform: capitalize;
 }
 
 .db-header-actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
 }
 
-/* ── KPI cards ────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   KPI CARDS
+   ═══════════════════════════════════════════════════════════════ */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
 }
 
 .kpi-card {
-  background: #fff;
+  position: relative;
+  background: var(--bg-white);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  padding: 20px 22px 22px;
   display: flex;
-  align-items: center;
-  gap: 14px;
+  align-items: flex-start;
+  gap: 16px;
   text-decoration: none;
   color: inherit;
-  position: relative;
   overflow: hidden;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: transform .18s, box-shadow .18s, border-color .18s;
+  box-shadow: var(--shadow-sm);
 }
 
 .kpi-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(20, 50, 90, 0.08);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-strong);
 }
 
+/* Liseré coloré gauche (vertical) */
 .kpi-card::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; bottom: 0;
+  top: 14px; bottom: 14px; left: 0;
   width: 4px;
-  background: var(--kpi-accent, var(--primary-blue));
+  background: var(--kpi-accent, var(--brand-teal));
+  border-radius: 0 4px 4px 0;
 }
 
-.kpi-blue   { --kpi-accent: #1970c2; }
-.kpi-orange { --kpi-accent: #fd7e14; }
-.kpi-green  { --kpi-accent: #28a745; }
-.kpi-red    { --kpi-accent: #dc3545; }
+.kpi-blue   { --kpi-accent: #0EA5E9; }
+.kpi-orange { --kpi-accent: #F97316; }
+.kpi-green  { --kpi-accent: #10B981; }
+.kpi-red    { --kpi-accent: #EF4444; }
 
+/* Icône en haut à droite */
 .kpi-icon {
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   border-radius: 10px;
-  background: rgba(25, 112, 194, 0.1);
+  background: var(--kpi-icon-bg, rgba(15, 118, 110, .10));
   color: var(--kpi-accent);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  order: 2;
+  margin-left: auto;
 }
 
-.kpi-blue   .kpi-icon { background: rgba(25, 112, 194, 0.10); }
-.kpi-orange .kpi-icon { background: rgba(253, 126, 20, 0.10); }
-.kpi-green  .kpi-icon { background: rgba(40, 167, 69, 0.10); }
-.kpi-red    .kpi-icon { background: rgba(220, 53, 69, 0.10); }
+.kpi-icon svg { width: 20px; height: 20px; }
+
+.kpi-blue   { --kpi-icon-bg: rgba(14, 165, 233, .12); }
+.kpi-orange { --kpi-icon-bg: rgba(249, 115, 22, .12); }
+.kpi-green  { --kpi-icon-bg: rgba(16, 185, 129, .12); }
+.kpi-red    { --kpi-icon-bg: rgba(239, 68, 68, .12); }
 
 .kpi-body {
   flex: 1;
   min-width: 0;
+  order: 1;
 }
 
 .kpi-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--text-medium);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
+  color: var(--text-light);
+  letter-spacing: 0.2px;
+  text-transform: none;
 }
 
 .kpi-value {
-  font-size: 22px;
+  font-size: 28px;
   font-weight: 700;
   color: var(--text-dark);
-  line-height: 1.2;
-  margin-top: 4px;
+  line-height: 1.15;
+  margin-top: 6px;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.6px;
 }
 
 .kpi-unit {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--text-medium);
   margin-left: 2px;
 }
 
 .kpi-trend {
-  margin-top: 6px;
+  margin-top: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
 
 .kpi-mini {
-  font-size: 11px;
-  color: var(--text-medium);
+  font-size: 12px;
+  color: var(--text-light);
 }
 
 .kpi-mini-pct {
   font-size: 11px;
-  font-weight: 600;
-  color: #28a745;
-  background: rgba(40, 167, 69, 0.10);
-  padding: 2px 6px;
-  border-radius: 4px;
+  font-weight: 700;
+  color: var(--color-success);
+  background: #DCFCE7;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
 }
 
-.kpi-ok   { color: #28a745; }
-.kpi-warn { color: #ffc107; }
-.kpi-bad  { color: #dc3545; }
+.kpi-ok   { color: var(--color-success); }
+.kpi-warn { color: var(--color-warning); }
+.kpi-bad  { color: var(--color-danger); }
 
-/* ── Chart grid ───────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   CHARTS
+   ═══════════════════════════════════════════════════════════════ */
 .chart-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 18px;
 }
 
 .chart-grid-3 {
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
 }
 
 .chart-card {
-  background: #fff;
+  background: var(--bg-white);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  padding: 22px 24px;
   display: flex;
   flex-direction: column;
-  min-height: 240px;
+  min-height: 260px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow .18s, border-color .18s;
 }
 
-.chart-card-full {
-  grid-column: 1 / -1;
+.chart-card:hover {
+  box-shadow: var(--shadow-md);
 }
 
-.chart-card-gauge { min-height: 200px; }
+.chart-card-full { grid-column: 1 / -1; }
+.chart-card-gauge { min-height: 220px; }
 
 .chart-head {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
+  align-items: flex-start;
+  margin-bottom: 16px;
   gap: 8px;
 }
 
 .chart-head h3 {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--text-dark);
   margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: -0.2px;
+  text-transform: none;
 }
 
-/* ── Donut + legend ───────────────────────────────────────────────── */
+.chart-head .sub-text {
+  font-size: 12px;
+  color: var(--text-light);
+  margin-top: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DONUT
+   ═══════════════════════════════════════════════════════════════ */
 .donut-wrap {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 20px;
   flex: 1;
   flex-wrap: wrap;
 }
 
-.donut {
-  flex-shrink: 0;
-}
+.donut { flex-shrink: 0; }
 
 .donut-legend {
   list-style: none;
@@ -210,7 +237,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   flex: 1;
   min-width: 140px;
 }
@@ -218,9 +245,12 @@
 .donut-legend li {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
+  gap: 10px;
+  font-size: 13px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-soft);
 }
+.donut-legend li:last-child { border-bottom: 0; }
 
 .legend-dot {
   width: 10px;
@@ -231,60 +261,67 @@
 
 .legend-label {
   flex: 1;
-  color: var(--text-dark);
+  color: var(--text-medium);
+  font-weight: 500;
 }
 
 .legend-value {
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-dark);
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Bar chart ────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   BAR CHART
+   ═══════════════════════════════════════════════════════════════ */
 .bar-wrap {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   flex: 1;
 }
 
 .bar-row {
   display: grid;
-  grid-template-columns: 100px 1fr 120px;
+  grid-template-columns: 110px 1fr 130px;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .bar-label {
-  font-size: 12px;
-  color: var(--text-dark);
+  font-size: 13px;
+  color: var(--text-medium);
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .bar-track {
-  height: 14px;
-  background: #eef1f5;
-  border-radius: 7px;
+  height: 10px;
+  background: var(--bg-light);
+  border-radius: var(--radius-pill);
   overflow: hidden;
 }
 
 .bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #1970c2, #4a9be0);
-  transition: width 0.6s ease;
+  background: linear-gradient(90deg, var(--brand-teal-light), var(--brand-teal));
+  border-radius: var(--radius-pill);
+  transition: width .6s cubic-bezier(.4, 0, .2, 1);
 }
 
 .bar-value {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text-dark);
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Gauge ────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   GAUGE
+   ═══════════════════════════════════════════════════════════════ */
 .gauge-wrap {
   display: flex;
   flex-direction: column;
@@ -294,33 +331,37 @@
 }
 
 .gauge-value {
-  font-size: 36px;
+  font-size: 44px;
   font-weight: 800;
   text-align: center;
-  letter-spacing: -1px;
+  letter-spacing: -1.5px;
+  line-height: 1.05;
 }
 
 .gauge-unit {
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 18px;
+  font-weight: 600;
   color: var(--text-medium);
 }
 
 .gauge-bar {
-  height: 10px;
-  background: #eef1f5;
-  border-radius: 5px;
+  height: 8px;
+  background: var(--bg-light);
+  border-radius: var(--radius-pill);
   overflow: hidden;
-  margin-top: 12px;
+  margin-top: 16px;
   position: relative;
 }
 
 .gauge-fill {
   height: 100%;
-  transition: width 0.6s ease;
+  border-radius: var(--radius-pill);
+  transition: width .6s cubic-bezier(.4, 0, .2, 1);
 }
 
-/* ── Shortcuts ────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   SHORTCUTS
+   ═══════════════════════════════════════════════════════════════ */
 .shortcuts {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -333,32 +374,48 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 12px 8px;
-  background: var(--bg-light, #f7faff);
+  gap: 8px;
+  padding: 18px 10px;
+  background: var(--bg-app);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   text-decoration: none;
   color: var(--text-dark);
-  transition: background 0.15s, transform 0.15s;
+  transition: background .15s, border-color .15s, transform .12s, box-shadow .15s;
 }
 
 .shortcut:hover {
-  background: rgba(25, 112, 194, 0.08);
-  transform: translateY(-1px);
+  background: var(--brand-teal-ghost);
+  border-color: var(--brand-teal-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
 .shortcut-icon {
-  font-size: 22px;
+  font-size: 24px;
+  line-height: 1;
 }
 
 .shortcut-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
+  color: var(--text-medium);
   text-align: center;
 }
 
-/* ── Responsive ──────────────────────────────────────────────────── */
-@media (max-width: 900px) {
+.shortcut:hover .shortcut-label {
+  color: var(--brand-teal-dark);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 1100px) {
   .chart-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .dashboard { padding: 20px 16px; gap: 18px; }
+  .kpi-value { font-size: 24px; }
+  .db-greeting { font-size: 22px; }
 }

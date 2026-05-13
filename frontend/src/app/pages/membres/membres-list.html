@@ -59,7 +59,7 @@
       <tbody>
         <tr *ngFor="let m of result()!.content">
           <td class="mono">{{ m.numMembre }}</td>
-          <td>
+          <td class="nowrap">
             <strong>{{ m.nom }} {{ m.prenom }}</strong>
             <div class="sub-text" *ngIf="m.raisonSociale">{{ m.raisonSociale }}</div>
           </td>

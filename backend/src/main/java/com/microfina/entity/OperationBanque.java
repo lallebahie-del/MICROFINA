@@ -66,6 +66,14 @@ public class OperationBanque implements Serializable {
     @Column(name = "utilisateur", length = 48)
     private String utilisateur;
 
+    /**
+     * Code banque choisi à la saisie (référentiel {@code Banque.code_banque}),
+     * conservé pour l'affichage même sans {@link CompteBanque} résolu.
+     */
+    @Size(max = 20)
+    @Column(name = "code_banque_saisie", length = 20)
+    private String codeBanqueSaisie;
+
     // ── Optimistic lock ───────────────────────────────────────────
 
     @Version
@@ -144,6 +152,9 @@ public class OperationBanque implements Serializable {
 
     public String getUtilisateur() { return utilisateur; }
     public void setUtilisateur(String utilisateur) { this.utilisateur = utilisateur; }
+
+    public String getCodeBanqueSaisie() { return codeBanqueSaisie; }
+    public void setCodeBanqueSaisie(String codeBanqueSaisie) { this.codeBanqueSaisie = codeBanqueSaisie; }
 
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) { this.version = version; }

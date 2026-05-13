@@ -116,9 +116,23 @@ export class HomeComponent implements OnInit {
     let pending = 3;
     const done = () => { pending--; if (pending === 0) this.loading.set(false); };
 
+    /**
+     * Ces endpoints exigent le privilège PRIV_VIEW_REPORTS (rôle ADMIN / SUPERVISEUR /
+     * COMITE). Pour les profils sans ce droit (ex. AGENT), le backend renvoie 403
+     * — c'est attendu, on ne doit pas afficher de message d'erreur rouge :
+     * les cartes resteront simplement à zéro et l'utilisateur navigue via la sidebar.
+     */
+    const isAccessError = (e: any): boolean =>
+      e?.status === 401 || e?.status === 403;
+
     this.reporting.getIndicateurs().subscribe({
       next: list => { this.indicateurs.set(list); done(); },
-      error: e   => { this.error.set('Erreur indicateurs : ' + (e.error?.message ?? e.message)); done(); }
+      error: e   => {
+        if (!isAccessError(e)) {
+          this.error.set('Erreur indicateurs : ' + (e.error?.message ?? e.message));
+        }
+        done();
+      }
     });
     this.reporting.getRatiosBcm().subscribe({
       next: list => { this.ratios.set(list); done(); },

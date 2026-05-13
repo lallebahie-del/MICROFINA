@@ -150,7 +150,7 @@ public class BackupService {
             jdbc.execute(killSql);
             jdbc.execute(restoreSql);
             jdbc.execute(multiUser);
-            log.info("[Restore] Restauration terminée depuis {}", source);
+            log.info("[Restore] Restauration terminée depuis {}", hostSource);
         } catch (Exception e) {
             log.error("[Restore] Échec restauration : {}", e.getMessage());
             throw new BusinessException("Échec de la restauration SQL Server : " + e.getMessage());

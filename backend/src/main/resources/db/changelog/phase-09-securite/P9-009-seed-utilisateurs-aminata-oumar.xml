@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  P9-009 — Aligne la table Utilisateur avec les agents seedés en phase initiale.
+
+  Contexte :
+    Les comptes « aminata.sow » et « oumar.ba » ont été créés dans la table héritée
+    AGENT_CREDIT pour permettre le login via le fallback du MicrofinaUserDetailsService,
+    mais ils n'apparaissaient pas dans la liste « Administration → Utilisateurs »
+    parce qu'aucune ligne correspondante n'existait dans la table Utilisateur (RBAC).
+
+  Ce changelog :
+    1) Insère aminata.sow dans Utilisateur (en copiant le hash BCrypt depuis AGENT_CREDIT)
+       et la relie au rôle AGENT_CREDIT.
+    2) Insère oumar.ba dans Utilisateur et la relie au rôle COMITE_CREDIT.
+    3) Supprime le compte test.user (et ses éventuelles liaisons UtilisateurRole)
+       afin de nettoyer les données de test.
+
+  Idempotence : chaque INSERT est gardé par un IF NOT EXISTS, le DELETE est sûr.
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!-- ── A) Seed aminata.sow → Utilisateur + rôle AGENT_CREDIT ─────────── -->
+    <changeSet id="P9-009a-seed-utilisateur-aminata-sow" author="microfina">
+        <comment>Créer Utilisateur aminata.sow + rôle AGENT_CREDIT si absent</comment>
+        <sql dbms="mssql" splitStatements="false"><![CDATA[
+IF NOT EXISTS (SELECT 1 FROM Utilisateur WHERE LOWER(LTRIM(RTRIM(login))) = N'aminata.sow')
+   AND EXISTS (SELECT 1 FROM AGENT_CREDIT WHERE LOWER(LTRIM(RTRIM(usercode))) = N'aminata.sow')
+BEGIN
+    INSERT INTO Utilisateur (
+        login, mot_de_passe_hash, nom_complet, actif, nombre_echecs, version, code_agence
+    )
+    SELECT
+        LTRIM(RTRIM(a.usercode)),
+        a.password,
+        ISNULL(a.DESIGNATION, N'Aminata Sow'),
+        1,
+        0,
+        0,
+        a.CODE_AGENCE
+    FROM AGENT_CREDIT a
+    WHERE LOWER(LTRIM(RTRIM(a.usercode))) = N'aminata.sow';
+END;
+
+INSERT INTO UtilisateurRole (id_utilisateur, id_role)
+SELECT u.id, r.id
+FROM Utilisateur u
+CROSS JOIN Role r
+WHERE LOWER(LTRIM(RTRIM(u.login))) = N'aminata.sow'
+  AND r.code_role = N'AGENT_CREDIT'
+  AND NOT EXISTS (
+      SELECT 1 FROM UtilisateurRole ur
+      WHERE ur.id_utilisateur = u.id AND ur.id_role = r.id
+  );
+        ]]></sql>
+    </changeSet>
+
+    <!-- ── B) Seed oumar.ba → Utilisateur + rôle COMITE_CREDIT ───────────── -->
+    <changeSet id="P9-009b-seed-utilisateur-oumar-ba" author="microfina">
+        <comment>Créer Utilisateur oumar.ba + rôle COMITE_CREDIT si absent</comment>
+        <sql dbms="mssql" splitStatements="false"><![CDATA[
+IF NOT EXISTS (SELECT 1 FROM Utilisateur WHERE LOWER(LTRIM(RTRIM(login))) = N'oumar.ba')
+   AND EXISTS (SELECT 1 FROM AGENT_CREDIT WHERE LOWER(LTRIM(RTRIM(usercode))) = N'oumar.ba')
+BEGIN
+    INSERT INTO Utilisateur (
+        login, mot_de_passe_hash, nom_complet, actif, nombre_echecs, version, code_agence
+    )
+    SELECT
+        LTRIM(RTRIM(a.usercode)),
+        a.password,
+        ISNULL(a.DESIGNATION, N'Oumar Ba'),
+        1,
+        0,
+        0,
+        a.CODE_AGENCE
+    FROM AGENT_CREDIT a
+    WHERE LOWER(LTRIM(RTRIM(a.usercode))) = N'oumar.ba';
+END;
+
+INSERT INTO UtilisateurRole (id_utilisateur, id_role)
+SELECT u.id, r.id
+FROM Utilisateur u
+CROSS JOIN Role r
+WHERE LOWER(LTRIM(RTRIM(u.login))) = N'oumar.ba'
+  AND r.code_role = N'COMITE_CREDIT'
+  AND NOT EXISTS (
+      SELECT 1 FROM UtilisateurRole ur
+      WHERE ur.id_utilisateur = u.id AND ur.id_role = r.id
+  );
+        ]]></sql>
+    </changeSet>
+
+    <!-- ── C) Nettoyage : supprimer test.user (et ses liaisons rôles) ────── -->
+    <changeSet id="P9-009c-cleanup-test-user" author="microfina">
+        <comment>Supprimer le compte de test test.user et ses liaisons</comment>
+        <sql dbms="mssql" splitStatements="false"><![CDATA[
+DELETE ur
+FROM UtilisateurRole ur
+INNER JOIN Utilisateur u ON u.id = ur.id_utilisateur
+WHERE LOWER(LTRIM(RTRIM(u.login))) = N'test.user';
+
+DELETE FROM Utilisateur
+WHERE LOWER(LTRIM(RTRIM(login))) = N'test.user';
+        ]]></sql>
+    </changeSet>
+
+    <!-- ── D) Compléter email / téléphone (absents dans AGENT_CREDIT) ───── -->
+    <changeSet id="P9-009d-fill-contact-aminata-oumar" author="microfina">
+        <comment>Renseigner email/téléphone d'aminata.sow et oumar.ba si vides</comment>
+        <sql dbms="mssql" splitStatements="false"><![CDATA[
+UPDATE Utilisateur
+SET    email     = COALESCE(email,     N'aminata.sow@microfina.com'),
+       telephone = COALESCE(telephone, N'22260101')
+WHERE  LOWER(LTRIM(RTRIM(login))) = N'aminata.sow';
+
+UPDATE Utilisateur
+SET    email     = COALESCE(email,     N'oumar.ba@microfina.com'),
+       telephone = COALESCE(telephone, N'22260202')
+WHERE  LOWER(LTRIM(RTRIM(login))) = N'oumar.ba';
+        ]]></sql>
+    </changeSet>
+
+</databaseChangeLog>

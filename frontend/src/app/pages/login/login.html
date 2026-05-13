@@ -34,7 +34,7 @@
       </div>
     }
 
-    <form (ngSubmit)="onSubmit()" #loginForm="ngForm" novalidate>
+    <form (ngSubmit)="onSubmit()" #loginForm="ngForm" novalidate autocomplete="off">
 
       <!-- Username -->
       <div class="field-group">
@@ -50,10 +50,13 @@
           <input
             id="username"
             type="text"
-            name="username"
+            name="login-field"
             [(ngModel)]="username"
             placeholder="ex : admin"
-            autocomplete="username"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
             required
             [disabled]="loading()"
           />
@@ -74,10 +77,10 @@
           <input
             id="password"
             [type]="showPass() ? 'text' : 'password'"
-            name="password"
+            name="password-field"
             [(ngModel)]="password"
             placeholder="••••••••"
-            autocomplete="current-password"
+            autocomplete="new-password"
             required
             [disabled]="loading()"
           />
@@ -114,13 +117,6 @@
       </button>
 
     </form>
-
-    <!-- Hint for dev -->
-    <p class="hint">
-      <strong>admin</strong> / Admin@1234 &nbsp;·&nbsp;
-      <strong>aminata.sow</strong> / Agent@1234 &nbsp;·&nbsp;
-      <strong>oumar.ba</strong> / Comite@1234
-    </p>
 
   </div>
 </div>

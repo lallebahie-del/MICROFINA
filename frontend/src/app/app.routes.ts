@@ -19,6 +19,13 @@ export const routes: Routes = [
     children: [
       { path: '', component: HomeComponent },
 
+      // ── Profil utilisateur courant ───────────────────────────────
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./pages/profile/profile').then(m => m.ProfileComponent)
+      },
+
       // ── Membres ──────────────────────────────────────────────────
       {
         path: 'membres',

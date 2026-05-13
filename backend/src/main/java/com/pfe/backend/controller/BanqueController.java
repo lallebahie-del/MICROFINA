@@ -41,7 +41,7 @@ public class BanqueController {
 
     @Operation(summary = "Lister toutes les banques")
     @GetMapping
-    @PreAuthorize("hasAuthority('PRIV_VIEW_REPORTS')")
+    @PreAuthorize("hasAnyAuthority('PRIV_VIEW_REPORTS','PRIV_BANK_OPERATION','PRIV_MANAGE_BANK')")
     public ResponseEntity<List<BanqueDTO.Response>> listAll() {
         return ResponseEntity.ok(banqueService.findAll());
     }
@@ -50,7 +50,7 @@ public class BanqueController {
 
     @Operation(summary = "Lister les banques actives")
     @GetMapping("/actives")
-    @PreAuthorize("hasAuthority('PRIV_VIEW_REPORTS')")
+    @PreAuthorize("hasAnyAuthority('PRIV_VIEW_REPORTS','PRIV_BANK_OPERATION','PRIV_MANAGE_BANK')")
     public ResponseEntity<List<BanqueDTO.Response>> listActives() {
         return ResponseEntity.ok(banqueService.findActives());
     }
@@ -59,7 +59,7 @@ public class BanqueController {
 
     @Operation(summary = "Obtenir une banque par son code")
     @GetMapping("/{codeBanque}")
-    @PreAuthorize("hasAuthority('PRIV_VIEW_REPORTS')")
+    @PreAuthorize("hasAnyAuthority('PRIV_VIEW_REPORTS','PRIV_BANK_OPERATION','PRIV_MANAGE_BANK')")
     public ResponseEntity<BanqueDTO.Response> getOne(@PathVariable String codeBanque) {
         return ResponseEntity.ok(banqueService.findById(codeBanque));
     }

@@ -123,4 +123,13 @@ export class OperationsBanqueListComponent implements OnInit {
     if (u.includes('CHEQUE')) return 'badge badge-warning';
     return 'badge badge-info';
   }
+
+  /** Libellé banque pour le tableau (référentiel chargé au démarrage). */
+  libelleBanqueListe(code: string | null | undefined): string {
+    if (code == null || String(code).trim() === '') return '—';
+    const c = String(code).trim();
+    const b = this.banques().find(x => x.codeBanque === c);
+    if (b) return `${b.codeBanque} — ${b.nom}`;
+    return c;
+  }
 }

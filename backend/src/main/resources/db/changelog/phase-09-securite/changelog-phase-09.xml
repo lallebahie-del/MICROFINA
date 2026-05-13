@@ -28,4 +28,13 @@
     <include file="db/changelog/phase-09-securite/P9-007-seed-roles-privileges.xml"
              relativeToChangelogFile="false"/>
 
+    <include file="db/changelog/phase-09-securite/P9-008-sync-Utilisateur-password-from-AGENT_CREDIT.xml"
+             relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/phase-09-securite/P9-009-seed-utilisateurs-aminata-oumar.xml"
+             relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/phase-09-securite/P9-010-renumber-utilisateurs-ids.xml"
+             relativeToChangelogFile="false"/>
+
 </databaseChangeLog>

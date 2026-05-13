@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Référentiel banques — Mauritanie (Micro Crédit ++)
+  Codes banque : 001, 002, 003 (PK code_banque)
+  Statut : actif = 1 (ACTIF côté métier)
+
+  Sigles BMCI / BNM / GBM : indiqués entre parenthèses dans le libellé pour les listes UI
+  (la table Banque n’a pas de colonne « sigle » séparée).
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P6-011-seed-banques-referentiel-mauritanie" author="microfina-seed" runOnChange="false">
+        <comment>Référentiel minimal BMCI / BNM / GBM pour alimenter les listes (opérations banque, comptes).</comment>
+        <sql dbms="mssql" splitStatements="false" stripComments="false"><![CDATA[
+IF NOT EXISTS (SELECT 1 FROM Banque WHERE code_banque = N'001')
+    INSERT INTO Banque (code_banque, nom, swift_bic, pays, actif, version)
+    VALUES (
+        N'001',
+        N'Banque Mauritanienne pour le Commerce International (BMCI)',
+        N'BMCIMRUM',
+        N'Mauritanie',
+        1,
+        0
+    );
+IF NOT EXISTS (SELECT 1 FROM Banque WHERE code_banque = N'002')
+    INSERT INTO Banque (code_banque, nom, swift_bic, pays, actif, version)
+    VALUES (
+        N'002',
+        N'Banque Nationale de Mauritanie (BNM)',
+        N'BNMRMRUM',
+        N'Mauritanie',
+        1,
+        0
+    );
+IF NOT EXISTS (SELECT 1 FROM Banque WHERE code_banque = N'003')
+    INSERT INTO Banque (code_banque, nom, swift_bic, pays, actif, version)
+    VALUES (
+        N'003',
+        N'Générale de Banque de Mauritanie (GBM)',
+        N'GBMMRUM',
+        N'Mauritanie',
+        1,
+        0
+    );
+        ]]></sql>
+        <rollback>
+            <sql dbms="mssql"><![CDATA[
+DELETE FROM Banque WHERE code_banque IN (N'001', N'002', N'003');
+            ]]></sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

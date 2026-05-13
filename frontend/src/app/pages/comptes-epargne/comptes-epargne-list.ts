@@ -67,7 +67,12 @@ export class ComptesEpargneListComponent implements OnInit {
   }
 
   openNew(): void {
-    this.form = { tauxInteret: 0, solde: 0, dateOuverture: new Date().toISOString().slice(0, 10) };
+    this.form = {
+      tauxInteret: 0,
+      solde: 0,
+      agence: '',
+      dateOuverture: new Date().toISOString().slice(0, 10),
+    };
     this.showForm.set(true);
     this.error.set(null);
     this.success.set(null);
@@ -78,7 +83,8 @@ export class ComptesEpargneListComponent implements OnInit {
   }
 
   submit(): void {
-    if (!this.form.numCompte || !this.form.numMembre || !this.form.agence) {
+    const codeAgence = (this.form.agence ?? '').toString().trim();
+    if (!this.form.numCompte?.trim() || !this.form.numMembre?.trim() || !codeAgence) {
       this.error.set('N° compte, N° membre et agence sont obligatoires.');
       return;
     }

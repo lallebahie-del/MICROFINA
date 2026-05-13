@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  P9-010 — Renumérote les comptes admin / aminata.sow / oumar.ba
+  afin d'obtenir des id séquentiels 1, 2, 3 (après suppression de test.user qui
+  occupait l'id 2 et laissait des "trous" dans la séquence IDENTITY).
+
+  Stratégie :
+    1) Sauvegarder l'état actuel des 3 comptes dans une table temporaire (#SaveUsers)
+    2) Supprimer leurs liaisons UtilisateurRole et leurs lignes Utilisateur
+    3) Réinitialiser le compteur IDENTITY à 0
+    4) Réinsérer les 3 utilisateurs avec id explicites (SET IDENTITY_INSERT ON)
+    5) Reseed à 3 pour que la prochaine création reprenne à id=4
+    6) Recréer les liaisons UtilisateurRole avec les rôles ADMIN / AGENT_CREDIT / COMITE_CREDIT
+
+  Sécurité :
+    - Liquibase exécute ce changeset une seule fois (id unique).
+    - Toutes les opérations sont dans une transaction implicite Spring/JDBC.
+    - On ne touche QUE aux trois logins ciblés ; aucun autre utilisateur n'est affecté.
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P9-010-renumber-admin-aminata-oumar-ids" author="microfina">
+        <comment>Renuméroter admin/aminata.sow/oumar.ba en id 1/2/3</comment>
+        <sql dbms="mssql" splitStatements="false"><![CDATA[
+-- 1) Sauvegarde des données actuelles
+IF OBJECT_ID('tempdb..#SaveUsers') IS NOT NULL DROP TABLE #SaveUsers;
+
+SELECT *
+INTO   #SaveUsers
+FROM   Utilisateur
+WHERE  LOWER(LTRIM(RTRIM(login))) IN (N'admin', N'aminata.sow', N'oumar.ba');
+
+-- 2) Suppression des liaisons UtilisateurRole puis des comptes
+DELETE ur
+FROM   UtilisateurRole ur
+INNER JOIN Utilisateur u ON u.id = ur.id_utilisateur
+WHERE  LOWER(LTRIM(RTRIM(u.login))) IN (N'admin', N'aminata.sow', N'oumar.ba');
+
+DELETE FROM Utilisateur
+WHERE  LOWER(LTRIM(RTRIM(login))) IN (N'admin', N'aminata.sow', N'oumar.ba');
+
+-- 3) Réinitialiser le compteur IDENTITY
+DBCC CHECKIDENT('Utilisateur', RESEED, 0);
+
+-- 4) Réinsérer avec id explicites
+SET IDENTITY_INSERT Utilisateur ON;
+
+INSERT INTO Utilisateur (
+    id, login, mot_de_passe_hash, nom_complet, email, telephone,
+    actif, nombre_echecs, version, code_agence
+)
+SELECT 1, login, mot_de_passe_hash, nom_complet, email, telephone,
+       ISNULL(actif, 1), 0, 0, code_agence
+FROM   #SaveUsers
+WHERE  LOWER(LTRIM(RTRIM(login))) = N'admin';
+
+INSERT INTO Utilisateur (
+    id, login, mot_de_passe_hash, nom_complet, email, telephone,
+    actif, nombre_echecs, version, code_agence
+)
+SELECT 2, login, mot_de_passe_hash, nom_complet,
+       COALESCE(email,     N'aminata.sow@microfina.com'),
+       COALESCE(telephone, N'22260101'),
+       ISNULL(actif, 1), 0, 0, code_agence
+FROM   #SaveUsers
+WHERE  LOWER(LTRIM(RTRIM(login))) = N'aminata.sow';
+
+INSERT INTO Utilisateur (
+    id, login, mot_de_passe_hash, nom_complet, email, telephone,
+    actif, nombre_echecs, version, code_agence
+)
+SELECT 3, login, mot_de_passe_hash, nom_complet,
+       COALESCE(email,     N'oumar.ba@microfina.com'),
+       COALESCE(telephone, N'22260202'),
+       ISNULL(actif, 1), 0, 0, code_agence
+FROM   #SaveUsers
+WHERE  LOWER(LTRIM(RTRIM(login))) = N'oumar.ba';
+
+SET IDENTITY_INSERT Utilisateur OFF;
+
+-- 5) Recaler le compteur pour que les prochaines créations reprennent à 4
+DBCC CHECKIDENT('Utilisateur', RESEED, 3);
+
+-- 6) Recréer les liaisons UtilisateurRole
+INSERT INTO UtilisateurRole (id_utilisateur, id_role)
+SELECT 1, r.id FROM Role r WHERE r.code_role = N'ADMIN';
+
+INSERT INTO UtilisateurRole (id_utilisateur, id_role)
+SELECT 2, r.id FROM Role r WHERE r.code_role = N'AGENT_CREDIT';
+
+INSERT INTO UtilisateurRole (id_utilisateur, id_role)
+SELECT 3, r.id FROM Role r WHERE r.code_role = N'COMITE_CREDIT';
+
+-- Nettoyage
+DROP TABLE #SaveUsers;
+        ]]></sql>
+    </changeSet>
+
+</databaseChangeLog>

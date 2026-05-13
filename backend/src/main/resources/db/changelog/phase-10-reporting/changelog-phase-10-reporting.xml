@@ -53,4 +53,7 @@
     <!-- ── P10-409 : Liste clients consolidée ── -->
     <include file="db/changelog/phase-10-reporting/P10-409-CREATE-VIEW-vue_liste_clients.xml"/>
 
+    <!-- ── P10-410 : Correctif FERME/BLOQUE NVARCHAR sur vues épargne (dashboard / indicateurs) ── -->
+    <include file="db/changelog/phase-10-reporting/P10-410-FIX-vue-indicateurs-liste-clients-compte-eps-ferme.xml"/>
+
 </databaseChangeLog>

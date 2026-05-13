@@ -17,5 +17,6 @@
     <include file="db/changelog/phase-07-caisse/P7-002-CREATE-TABLE-DepotEpargne.xml"/>
     <include file="db/changelog/phase-07-caisse/P7-003-CREATE-TABLE-RetraitEpargne.xml"/>
     <include file="db/changelog/phase-07-caisse/P7-004-CREATE-TABLE-FraisAdhesion.xml"/>
+    <include file="db/changelog/phase-07-caisse/P7-005-SEED-minimal-comptabilite-dev.xml"/>
 
 </databaseChangeLog>

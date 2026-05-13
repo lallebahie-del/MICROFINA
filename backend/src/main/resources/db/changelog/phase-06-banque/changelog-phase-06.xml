@@ -11,6 +11,9 @@
       P6-007  RemiseCheque         (sous-type JOINED de OperationBanque)
       P6-008  RetraitBanque        (sous-type JOINED de OperationBanque)
       P6-009  DepotBanque          (sous-type JOINED de OperationBanque)
+      P6-010  SEED démo opérations bancaires (optionnel — données test)
+      P6-011  SEED référentiel banques Mauritanie (001 / 002 / 003)
+      P6-012  ALTER OperationBanque — code_banque_saisie (affichage liste)
 -->
 <databaseChangeLog
     xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
@@ -27,5 +30,8 @@
     <include file="db/changelog/phase-06-banque/P6-007-CREATE-TABLE-RemiseCheque.xml"/>
     <include file="db/changelog/phase-06-banque/P6-008-CREATE-TABLE-RetraitBanque.xml"/>
     <include file="db/changelog/phase-06-banque/P6-009-CREATE-TABLE-DepotBanque.xml"/>
+    <include file="db/changelog/phase-06-banque/P6-011-SEED-banques-referentiel-mauritanie.xml"/>
+    <include file="db/changelog/phase-06-banque/P6-012-ALTER-OperationBanque-add-code-banque-saisie.xml"/>
+    <include file="db/changelog/phase-06-banque/P6-010-SEED-operation-banque-demo.xml"/>
 
 </databaseChangeLog>

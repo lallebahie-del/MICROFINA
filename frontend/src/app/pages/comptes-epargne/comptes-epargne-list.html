@@ -63,9 +63,9 @@
           <div class="form-group">
             <label>Agence *</label>
             <select [(ngModel)]="form.agence" name="agence">
-              <option [ngValue]="undefined">— Sélectionner —</option>
+              <option [ngValue]="null">— Sélectionner —</option>
               @for (a of agences(); track a.codeAgence) {
-                <option [value]="a.codeAgence">{{ a.codeAgence }} — {{ a.nomAgence }}</option>
+                <option [ngValue]="a.codeAgence">{{ a.codeAgence }} — {{ a.nomAgence }}</option>
               }
             </select>
           </div>
@@ -119,11 +119,11 @@
             <tr>
               <td class="mono"><strong>{{ c.numCompte }}</strong></td>
               <td>{{ c.nomMembre || c.numMembre }}</td>
-              <td class="mono">{{ c.agence }}</td>
+              <td class="mono">{{ c.agence || '—' }}</td>
               <td class="num">{{ c.solde | number:'1.2-2' }}</td>
               <td class="num">{{ c.tauxInteret | number:'1.2-2' }}</td>
-              <td>{{ c.dateOuverture | date:'dd/MM/yyyy' }}</td>
-              <td><span [class]="statutClass(c.statut)">{{ c.statut }}</span></td>
+              <td>{{ c.dateOuverture ? (c.dateOuverture | date:'dd/MM/yyyy') : '—' }}</td>
+              <td><span [class]="statutClass(c.statut)">{{ c.statut || '—' }}</span></td>
               <td>
                 <div class="actions-cell">
                   @if (c.statut === 'ACTIF') {
