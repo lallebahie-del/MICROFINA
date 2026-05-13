@@ -1,0 +1,105 @@
+<div class="page-container">
+
+  <div class="page-header">
+    <h2 class="page-title">Types de garantie</h2>
+    <button class="btn btn-primary" (click)="openNew()">+ Nouveau type</button>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
+
+  <!-- ── Formulaire ─────────────────────────────────────────── -->
+  @if (showForm()) {
+    <div class="form-card" style="margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h3 style="font-size:15px;font-weight:600;color:var(--text-dark)">
+          {{ editingCode() ? 'Modifier le type' : 'Nouveau type de garantie' }}
+        </h3>
+        <button class="btn btn-outline btn-sm" (click)="cancel()">Annuler</button>
+      </div>
+
+      <fieldset class="form-section">
+        <legend>Identification</legend>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Code *</label>
+            <input [(ngModel)]="form.code" name="code"
+                   placeholder="Ex: HYPOTHEQUE" [disabled]="!!editingCode()"/>
+          </div>
+          <div class="form-group">
+            <label>Libellé *</label>
+            <input [(ngModel)]="form.libelle" name="libelle" placeholder="Libellé court"/>
+          </div>
+          <div class="form-group" style="max-width:140px">
+            <label>Statut</label>
+            <select [(ngModel)]="form.actif" name="actif">
+              <option [ngValue]="true">Actif</option>
+              <option [ngValue]="false">Archivé</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Description</label>
+            <textarea [(ngModel)]="form.description" name="description" rows="3"
+                      placeholder="Description longue du type de garantie"></textarea>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" (click)="submit()" [disabled]="saving()">
+          {{ saving() ? 'Enregistrement…' : (editingCode() ? 'Mettre à jour' : 'Créer le type') }}
+        </button>
+        <button class="btn btn-secondary" (click)="cancel()">Annuler</button>
+      </div>
+    </div>
+  }
+
+  <!-- ── Liste ──────────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Libellé</th>
+            <th>Description</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of items(); track t.code) {
+            <tr>
+              <td class="mono">{{ t.code }}</td>
+              <td>{{ t.libelle }}</td>
+              <td class="sub-text">{{ t.description || '—' }}</td>
+              <td>
+                <span [class]="t.actif ? 'badge badge-success' : 'badge badge-danger'">
+                  {{ t.actif ? 'Actif' : 'Archivé' }}
+                </span>
+              </td>
+              <td>
+                <div class="actions-cell">
+                  <button class="btn btn-outline btn-sm" (click)="openEdit(t)">Modifier</button>
+                  <button class="btn btn-danger btn-sm" (click)="delete(t.code)">Supprimer</button>
+                </div>
+              </td>
+            </tr>
+          }
+          @if (items().length === 0) {
+            <tr><td colspan="5" class="empty-row">Aucun type de garantie défini.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+</div>

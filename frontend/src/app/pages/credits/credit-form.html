@@ -18,12 +18,19 @@
       <div class="form-row">
         <div class="form-group">
           <label>Membre *</label>
-          <select [(ngModel)]="form.membreNum" name="membreNum" required>
+          <select [(ngModel)]="form.membreNum" name="membreNum" required (change)="onMembreChange()">
             <option value="">— Sélectionner —</option>
+            <option *ngIf="membres().length === 0" disabled value="">
+              Aucun membre trouvé — créez d'abord un membre
+            </option>
             <option *ngFor="let m of membres()" [value]="m.numMembre">
               {{ m.numMembre }} – {{ m.nom }} {{ m.prenom }}
             </option>
           </select>
+          <small *ngIf="membres().length === 0" style="color:#e67e22">
+            Aucun membre disponible.
+            <a routerLink="/membres/nouveau" style="color:#2980b9">Créer un membre →</a>
+          </small>
         </div>
         <div class="form-group">
           <label>Produit crédit *</label>

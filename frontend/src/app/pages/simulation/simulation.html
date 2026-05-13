@@ -33,9 +33,18 @@
 
   @if (result(); as r) {
     <div class="result-summary">
-      <div class="summary-card"><span>Échéance</span><strong>{{ r.echeanceMensuelle | number:'1.2-2' }} MRU</strong></div>
-      <div class="summary-card"><span>Total remboursé</span><strong>{{ r.totalRembourse | number:'1.2-2' }} MRU</strong></div>
-      <div class="summary-card"><span>Total intérêts</span><strong>{{ r.totalInteret | number:'1.2-2' }} MRU</strong></div>
+      <div class="summary-card">
+        <span>Échéance</span>
+        <strong>{{ r.echeanceMensuelle | number:'1.2-2' }} MRU</strong>
+      </div>
+      <div class="summary-card">
+        <span>Total remboursé</span>
+        <strong>{{ r.totalRembourse | number:'1.2-2' }} MRU</strong>
+      </div>
+      <div class="summary-card">
+        <span>Total intérêts</span>
+        <strong>{{ r.totalInteret | number:'1.2-2' }} MRU</strong>
+      </div>
     </div>
 
     <table class="data-table">

@@ -1,37 +1,206 @@
 <div class="page-container">
-  <h2 class="page-title">Agences</h2>
 
-  <div class="filters">
-    <select [(ngModel)]="filtreActif" (change)="load()" class="form-control">
-      <option value="">Toutes</option>
+  <div class="page-header">
+    <h2 class="page-title">Agences</h2>
+    <button class="btn btn-primary" (click)="openNew()">+ Nouvelle agence</button>
+  </div>
+
+  <div class="filter-bar">
+    <input class="filter-input"
+           type="text"
+           placeholder="Rechercher (code, nom, chef d'agence…)"
+           [(ngModel)]="search"
+           (input)="applyFilters()"/>
+
+    <select class="filter-select" [(ngModel)]="filtreActif" (change)="applyFilters()">
+      <option value="">Tous les statuts</option>
       <option value="true">Actives</option>
       <option value="false">Inactives</option>
     </select>
+
+    <select class="filter-select" [(ngModel)]="filtreType" (change)="applyFilters()">
+      <option value="">Tous les types</option>
+      <option value="siege">Sièges</option>
+      <option value="agence">Agences</option>
+    </select>
+
+    <button class="btn btn-outline btn-sm" (click)="resetFilters()">Réinitialiser</button>
+
+    <span style="margin-left:auto;font-size:12px;color:var(--text-medium)">
+      {{ agences.length }} résultat{{ agences.length > 1 ? 's' : '' }}
+    </span>
   </div>
 
-  <div *ngIf="loading" class="loading">Chargement…</div>
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
 
-  <table *ngIf="!loading" class="table">
-    <thead>
-      <tr>
-        <th>Code</th><th>Nom</th><th>Siège ?</th><th>Chef d'agence</th><th>Zone</th><th>Statut</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let a of agences">
-        <td>{{ a.codeAgence }}</td>
-        <td>{{ a.nomAgence }}</td>
-        <td>{{ a.isSiege ? 'Oui' : 'Non' }}</td>
-        <td>{{ a.chefAgence ?? '—' }}</td>
-        <td>{{ a.zoneGeographique ?? '—' }}</td>
-        <td>
-          <span [class]="a.actif ? 'badge badge-success' : 'badge badge-danger'">
-            {{ a.actif ? 'Actif' : 'Inactif' }}
-          </span>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <!-- ── Formulaire ─────────────────────────────────────────── -->
+  @if (showForm()) {
+    <div class="form-card" style="margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h3 style="font-size:15px;font-weight:600;color:var(--text-dark)">
+          {{ editingCode() ? 'Modifier l\'agence' : 'Nouvelle agence' }}
+        </h3>
+        <button class="btn btn-outline btn-sm" (click)="cancel()">Annuler</button>
+      </div>
 
-  <p *ngIf="!loading && agences.length === 0" class="empty-state">Aucune agence trouvée.</p>
+      <fieldset class="form-section">
+        <legend>Identification</legend>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Code agence *</label>
+            <input [(ngModel)]="form.codeAgence" name="codeAgence"
+                   placeholder="Ex: AG001" [disabled]="!!editingCode()"/>
+          </div>
+          <div class="form-group">
+            <label>Nom *</label>
+            <input [(ngModel)]="form.nomAgence" name="nomAgence" placeholder="Nom de l'agence"/>
+          </div>
+          <div class="form-group">
+            <label>Nom court</label>
+            <input [(ngModel)]="form.nomCourt" name="nomCourt" placeholder="Abréviation"/>
+          </div>
+          <div class="form-group" style="max-width:140px">
+            <label>Statut</label>
+            <select [(ngModel)]="form.actif" name="actif">
+              <option [ngValue]="true">Active</option>
+              <option [ngValue]="false">Inactive</option>
+            </select>
+          </div>
+          <div class="form-group" style="max-width:140px">
+            <label>Type</label>
+            <select [(ngModel)]="form.isSiege" name="isSiege">
+              <option value="0">Agence</option>
+              <option value="1">Siège</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="form-section">
+        <legend>Direction & rattachement</legend>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Chef d'agence (login)</label>
+            <input [(ngModel)]="form.chefAgence" name="chefAgence" placeholder="Login"/>
+          </div>
+          <div class="form-group">
+            <label>Nom & prénom du chef</label>
+            <input [(ngModel)]="form.nomPrenomChefAgence" name="nomPrenomChefAgence"/>
+          </div>
+          <div class="form-group">
+            <label>Institution</label>
+            <input [(ngModel)]="form.institution" name="institution"/>
+          </div>
+          <div class="form-group">
+            <label>Zone géographique</label>
+            <input type="number" [(ngModel)]="form.zoneGeographique" name="zoneGeographique"/>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="form-section">
+        <legend>Comptabilité & contact</legend>
+        <div class="form-row">
+          <div class="form-group">
+            <label>N° compte</label>
+            <input [(ngModel)]="form.numCompte" name="numCompte"/>
+          </div>
+          <div class="form-group">
+            <label>Compte caisse</label>
+            <input [(ngModel)]="form.compteCaisse" name="compteCaisse"/>
+          </div>
+          <div class="form-group">
+            <label>Compte créditeur</label>
+            <input [(ngModel)]="form.compteCrediteur" name="compteCrediteur"/>
+          </div>
+          <div class="form-group">
+            <label>Numéro SMS</label>
+            <input [(ngModel)]="form.numeroSms" name="numeroSms"/>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="form-section">
+        <legend>Géolocalisation</legend>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Longitude</label>
+            <input type="number" step="0.0001" [(ngModel)]="form.longitude" name="longitude"/>
+          </div>
+          <div class="form-group">
+            <label>Latitude</label>
+            <input type="number" step="0.0001" [(ngModel)]="form.latitude" name="latitude"/>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" (click)="submit()" [disabled]="saving()">
+          {{ saving() ? 'Enregistrement…' : (editingCode() ? 'Mettre à jour' : 'Créer l\'agence') }}
+        </button>
+        <button class="btn btn-secondary" (click)="cancel()">Annuler</button>
+      </div>
+    </div>
+  }
+
+  <!-- ── Liste ──────────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Nom</th>
+            <th>Type</th>
+            <th>Chef d'agence</th>
+            <th>Zone</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of agences; track a.codeAgence) {
+            <tr>
+              <td class="mono">{{ a.codeAgence }}</td>
+              <td>
+                <div>{{ a.nomAgence }}</div>
+                @if (a.nomCourt) {
+                  <div class="sub-text">{{ a.nomCourt }}</div>
+                }
+              </td>
+              <td>
+                <span class="badge" [class]="a.isSiege === '1' ? 'badge-info' : 'badge-primary'">
+                  {{ a.isSiege === '1' ? 'Siège' : 'Agence' }}
+                </span>
+              </td>
+              <td>{{ a.nomPrenomChefAgence || a.chefAgence || '—' }}</td>
+              <td>{{ a.zoneGeographique ?? '—' }}</td>
+              <td>
+                <span [class]="a.actif ? 'badge badge-success' : 'badge badge-danger'">
+                  {{ a.actif ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td>
+                <div class="actions-cell">
+                  <button class="btn btn-outline btn-sm" (click)="openEdit(a)">Modifier</button>
+                  <button class="btn btn-danger btn-sm" (click)="delete(a.codeAgence)">Supprimer</button>
+                </div>
+              </td>
+            </tr>
+          }
+          @if (agences.length === 0) {
+            <tr><td colspan="7" class="empty-row">Aucune agence trouvée.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
 </div>

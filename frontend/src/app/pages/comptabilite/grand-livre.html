@@ -1,33 +1,84 @@
 <div class="page-container">
-  <h2 class="page-title">Grand Livre</h2>
 
-  <div class="filters">
-    <input type="text" [(ngModel)]="agence" placeholder="Agence" class="form-control" />
-    <input type="text" [(ngModel)]="compte" placeholder="N° compte" class="form-control" />
-    <button (click)="load()" class="btn btn-primary">Afficher</button>
+  <div class="page-header">
+    <h2 class="page-title">Grand livre</h2>
+    <button class="btn btn-outline btn-sm" (click)="load()" [disabled]="loading()">↻ Actualiser</button>
   </div>
 
-  <div *ngIf="loading" class="loading">Chargement…</div>
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
 
-  <table *ngIf="!loading && lignes.length > 0" class="table">
-    <thead>
-      <tr>
-        <th>Date</th><th>Pièce</th><th>Compte</th><th>Libellé</th>
-        <th>Débit</th><th>Crédit</th><th>Solde cumulé</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let l of lignes">
-        <td>{{ l.dateEcriture }}</td>
-        <td>{{ l.numPiece }}</td>
-        <td>{{ l.numCompte }}</td>
-        <td>{{ l.libelle }}</td>
-        <td class="montant">{{ l.debit | number:'1.2-2' }}</td>
-        <td class="montant">{{ l.credit | number:'1.2-2' }}</td>
-        <td class="montant">{{ l.soldeCumule | number:'1.2-2' }}</td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="filter-bar">
+    <input class="filter-input"
+           type="text"
+           placeholder="Code agence…"
+           style="max-width:200px"
+           [ngModel]="agence()" (ngModelChange)="agence.set($event)"
+           (keyup.enter)="load()"/>
 
-  <p *ngIf="!loading && lignes.length === 0" class="empty-state">Aucune ligne trouvée.</p>
+    <input class="filter-input"
+           type="text"
+           placeholder="N° compte…"
+           [ngModel]="compte()" (ngModelChange)="compte.set($event)"
+           (keyup.enter)="load()"/>
+
+    <button class="btn btn-primary btn-sm" (click)="load()">Afficher</button>
+    <button class="btn btn-outline btn-sm" (click)="reset()">Réinitialiser</button>
+
+    <span style="margin-left:auto;font-size:12px;color:var(--text-medium)">
+      {{ lignes().length }} ligne{{ lignes().length > 1 ? 's' : '' }}
+    </span>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Pièce</th>
+            <th>Compte</th>
+            <th>Libellé</th>
+            <th class="num">Débit</th>
+            <th class="num">Crédit</th>
+            <th class="num">Solde cumulé</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (l of lignes(); track $index) {
+            <tr>
+              <td>{{ l.dateEcriture | date:'dd/MM/yyyy' }}</td>
+              <td class="mono">{{ l.numPieceComptable }}</td>
+              <td class="mono">{{ l.numCompte }}</td>
+              <td>{{ l.libelle }}</td>
+              <td class="num">{{ l.debit  | number:'1.2-2' }}</td>
+              <td class="num">{{ l.credit | number:'1.2-2' }}</td>
+              <td class="num"><strong>{{ l.soldeCumule | number:'1.2-2' }}</strong></td>
+            </tr>
+          }
+          @if (lignes().length === 0) {
+            <tr><td colspan="7" class="empty-row">Aucune ligne trouvée.</td></tr>
+          }
+        </tbody>
+        @if (lignes().length > 0) {
+          <tfoot>
+            <tr style="background:var(--bg-light);font-weight:600">
+              <td colspan="4" style="text-align:right">Totaux :</td>
+              <td class="num">{{ totalDebit()  | number:'1.2-2' }}</td>
+              <td class="num">{{ totalCredit() | number:'1.2-2' }}</td>
+              <td class="num">
+                <span [style.color]="soldeNet() >= 0 ? 'inherit' : '#dc3545'">
+                  {{ soldeNet() | number:'1.2-2' }}
+                </span>
+              </td>
+            </tr>
+          </tfoot>
+        }
+      </table>
+    </div>
+  }
+
 </div>

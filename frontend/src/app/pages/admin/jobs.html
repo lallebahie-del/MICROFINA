@@ -1,0 +1,106 @@
+<div class="page-container">
+
+  <div class="page-header">
+    <h2 class="page-title">Jobs planifiés</h2>
+    <button class="btn btn-outline btn-sm" (click)="loadHistory()" [disabled]="loading()">
+      Actualiser l'historique
+    </button>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
+
+  <!-- ── Cartes de jobs ─────────────────────────────────────── -->
+  <div class="form-card" style="margin-bottom:24px">
+    <h3 style="font-size:15px;font-weight:600;color:var(--text-dark);margin:0 0 16px">
+      Déclenchement manuel
+    </h3>
+
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Job</th>
+            <th>Description</th>
+            <th>Planification</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (j of jobs; track j.code) {
+            <tr>
+              <td class="mono"><strong>{{ j.code }}</strong></td>
+              <td>
+                <div>{{ j.libelle }}</div>
+                <div class="sub-text">{{ j.description }}</div>
+              </td>
+              <td><span class="badge badge-info">{{ j.cron }}</span></td>
+              <td>
+                <button class="btn btn-primary btn-sm"
+                        (click)="run(j.code)"
+                        [disabled]="running() !== null">
+                  {{ running() === j.code ? 'En cours…' : '▶ Lancer' }}
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Historique des exécutions ──────────────────────────── -->
+  <div class="filter-bar">
+    <span style="font-weight:600;font-size:13px;color:var(--text-medium)">Historique :</span>
+    <select class="filter-select" [(ngModel)]="filtreJob">
+      <option value="">Tous les jobs</option>
+      @for (j of jobs; track j.code) {
+        <option [value]="j.code">{{ j.libelle }}</option>
+      }
+    </select>
+    <span style="margin-left:auto;font-size:12px;color:var(--text-medium)">
+      {{ filteredHistory().length }} exécution{{ filteredHistory().length > 1 ? 's' : '' }}
+    </span>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Job</th>
+            <th>Début</th>
+            <th>Fin</th>
+            <th>Durée</th>
+            <th>Statut</th>
+            <th>Déclenché par</th>
+            <th>Message</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (h of filteredHistory(); track h.idJobExecution) {
+            <tr>
+              <td class="mono">{{ h.nomJob }}</td>
+              <td>{{ h.dateDebut | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+              <td>{{ h.dateFin ? (h.dateFin | date:'HH:mm:ss') : '—' }}</td>
+              <td>{{ duree(h) }}</td>
+              <td><span [class]="badgeClass(h.statut)">{{ h.statut }}</span></td>
+              <td>{{ h.declencheur || '—' }}</td>
+              <td class="sub-text">{{ h.message || '—' }}</td>
+            </tr>
+          }
+          @if (filteredHistory().length === 0) {
+            <tr><td colspan="7" class="empty-row">Aucune exécution enregistrée.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+</div>

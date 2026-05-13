@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    changelog-phase-07.xml — Master sub-changelog du Module Caisse (Phase 7)
+    Inclut dans l'ordre strict de dépendances :
+      P7-001  OperationCaisse   (table racine — dépend : COMPTEEPS, AGENCE, comptabilite)
+      P7-002  DepotEpargne      (sous-type JOINED de OperationCaisse)
+      P7-003  RetraitEpargne    (sous-type JOINED de OperationCaisse)
+      P7-004  FraisAdhesion     (sous-type JOINED de OperationCaisse — dépend aussi : ValeurFraisMembre)
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <include file="db/changelog/phase-07-caisse/P7-001-CREATE-TABLE-OperationCaisse.xml"/>
+    <include file="db/changelog/phase-07-caisse/P7-002-CREATE-TABLE-DepotEpargne.xml"/>
+    <include file="db/changelog/phase-07-caisse/P7-003-CREATE-TABLE-RetraitEpargne.xml"/>
+    <include file="db/changelog/phase-07-caisse/P7-004-CREATE-TABLE-FraisAdhesion.xml"/>
+    <include file="db/changelog/phase-07-caisse/P7-005-SEED-minimal-comptabilite-dev.xml"/>
+
+</databaseChangeLog>

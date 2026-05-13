@@ -1,0 +1,116 @@
+<div class="page-container">
+
+  <div class="page-header">
+    <h2 class="page-title">Paramètres système</h2>
+    <button class="btn btn-primary" (click)="openNew()">+ Nouveau paramètre</button>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
+
+  <!-- ── Formulaire ─────────────────────────────────────────── -->
+  @if (showForm()) {
+    <div class="form-card" style="margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h3 style="font-size:15px;font-weight:600;color:var(--text-dark)">
+          {{ editingId() ? 'Modifier le paramètre #' + editingId() : 'Nouveau paramètre' }}
+        </h3>
+        <button class="btn btn-outline btn-sm" (click)="cancel()">Annuler</button>
+      </div>
+
+      <fieldset class="form-section">
+        <legend>Configuration</legend>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Agence</label>
+            <select [(ngModel)]="form.codeAgence" name="codeAgence">
+              <option [ngValue]="null">— Global (toutes agences) —</option>
+              @for (a of agences(); track a.codeAgence) {
+                <option [ngValue]="a.codeAgence">{{ a.codeAgence }} — {{ a.nomAgence }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group" style="max-width:200px">
+            <label>Jours max ouverts</label>
+            <input type="number" min="0" [(ngModel)]="form.maxiJourOuvert" name="maxiJourOuvert"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="max-width:200px">
+            <label>Préfixe</label>
+            <input [(ngModel)]="form.prefixe" name="prefixe" placeholder="Préfixe code"/>
+          </div>
+          <div class="form-group" style="max-width:200px">
+            <label>Suffixe</label>
+            <input [(ngModel)]="form.suffixe" name="suffixe" placeholder="Suffixe code"/>
+          </div>
+          <div class="form-group" style="max-width:200px">
+            <label>Multidevise</label>
+            <select [(ngModel)]="form.useMultidevise" name="useMultidevise">
+              <option value="N">Non</option>
+              <option value="O">Oui</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" (click)="submit()" [disabled]="saving()">
+          {{ saving() ? 'Enregistrement…' : (editingId() ? 'Mettre à jour' : 'Créer le paramètre') }}
+        </button>
+        <button class="btn btn-secondary" (click)="cancel()">Annuler</button>
+      </div>
+    </div>
+  }
+
+  <!-- ── Liste ──────────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Agence</th>
+            <th>Jours max ouverts</th>
+            <th>Préfixe</th>
+            <th>Suffixe</th>
+            <th>Multidevise</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of items(); track p.idParametre) {
+            <tr>
+              <td class="mono">#{{ p.idParametre }}</td>
+              <td>{{ agenceLabel(p.codeAgence) }}</td>
+              <td>{{ p.maxiJourOuvert ?? '—' }}</td>
+              <td class="mono">{{ p.prefixe || '—' }}</td>
+              <td class="mono">{{ p.suffixe || '—' }}</td>
+              <td>
+                <span [class]="p.useMultidevise === 'O' ? 'badge badge-success' : 'badge badge-info'">
+                  {{ p.useMultidevise === 'O' ? 'Oui' : 'Non' }}
+                </span>
+              </td>
+              <td>
+                <div class="actions-cell">
+                  <button class="btn btn-outline btn-sm" (click)="openEdit(p)">Modifier</button>
+                  <button class="btn btn-danger btn-sm" (click)="delete(p.idParametre)">Supprimer</button>
+                </div>
+              </td>
+            </tr>
+          }
+          @if (items().length === 0) {
+            <tr><td colspan="7" class="empty-row">Aucun paramètre configuré.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+</div>

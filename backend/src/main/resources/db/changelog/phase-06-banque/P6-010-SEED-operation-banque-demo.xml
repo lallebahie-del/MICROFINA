@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Données de démo — Opérations bancaires (Micro Crédit ++)
+  - Banques : BMCI, BNM, GBM
+  - Comptes CompteBanque (devise MRU) liés NKC / NDB
+  - Écritures comptables factices ID 94001–94010 (FK agence)
+  - 10 opérations : dtype alterne Virement / RetraitBanque / RemiseCheque
+  - Statuts : 7 × EN_ATTENTE, 3 × VALIDE (ordre ci-dessous)
+  - Date opération : 2026-05-09
+
+  Prérequis : AGENCE NKC et NDB existent (seed phase 1).
+
+  Pour désactiver ce jeu de données : retirer l'include de changelog-phase-06.xml.
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P6-010-seed-operation-banque-demo" author="microfina-seed" runOnChange="false">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">SELECT CASE WHEN EXISTS (SELECT 1 FROM AGENCE WHERE CODE_AGENCE = 'NKC')
+                AND EXISTS (SELECT 1 FROM AGENCE WHERE CODE_AGENCE = 'NDB') THEN 1 ELSE 0 END</sqlCheck>
+        </preConditions>
+        <comment>Seed banques, comptes, comptabilité et opérations bancaires de démonstration (SQL Server).</comment>
+
+        <sql dbms="mssql" splitStatements="false" stripComments="false"><![CDATA[
+/* ── Banques (codes PK) ─────────────────────────────────────────── */
+IF NOT EXISTS (SELECT 1 FROM Banque WHERE code_banque = 'BMCI')
+    INSERT INTO Banque (code_banque, nom, swift_bic, pays, actif, version)
+    VALUES ('BMCI', N'BMCI — Banque Mauritanienne pour le Commerce International', N'BMCIMRUM', N'Mauritanie', 1, 0);
+IF NOT EXISTS (SELECT 1 FROM Banque WHERE code_banque = 'BNM')
+    INSERT INTO Banque (code_banque, nom, swift_bic, pays, actif, version)
+    VALUES ('BNM', N'BNM — Banque Nationale de Mauritanie', N'BNMRMRUM', N'Mauritanie', 1, 0);
+IF NOT EXISTS (SELECT 1 FROM Banque WHERE code_banque = 'GBM')
+    INSERT INTO Banque (code_banque, nom, swift_bic, pays, actif, version)
+    VALUES ('GBM', N'GBM — Générale de Banque de Mauritanie', N'GBMMRUM', N'Mauritanie', 1, 0);
+
+/* ── Comptes bancaires (IDs fixes pour FK virements) ───────────── */
+IF NOT EXISTS (SELECT 1 FROM CompteBanque WHERE id = 9401)
+BEGIN
+    SET IDENTITY_INSERT CompteBanque ON;
+    INSERT INTO CompteBanque (id, numero_compte, libelle, devise, solde, actif, version, code_banque, code_agence)
+    VALUES
+        (9401, N'MRU-NKC-BMCI-001', N'Compte trésorerie siège BMCI / NKC', N'MRU', 2500000.0000, 1, 0, 'BMCI', 'NKC'),
+        (9402, N'MRU-NDB-BNM-001',  N'Compte exploitation BNM / NDB',       N'MRU', 1800000.0000, 1, 0, 'BNM',  'NDB'),
+        (9403, N'MRU-NKC-GBM-001',  N'Compte secondaire GBM / NKC',          N'MRU',  950000.0000, 1, 0, 'GBM',  'NKC');
+    SET IDENTITY_INSERT CompteBanque OFF;
+END
+
+/* ── Écritures comptables factices (une par opération) ─────────── */
+IF NOT EXISTS (SELECT 1 FROM comptabilite WHERE IDCOMPTABILITE = 94001)
+BEGIN
+    SET IDENTITY_INSERT comptabilite ON;
+    INSERT INTO comptabilite (IDCOMPTABILITE, DATEOPERATION, DEBIT, CREDIT, LIBELLE, REFERENCE, agence, ETAT, CODE_SENS, VERSION, planComptable)
+    VALUES
+        (94001, '2026-05-09', 0, 0, N'Virement salaire membre', N'VIR-2026-001', N'NKC', N'VALIDE', N'D', 0, N'512000'),
+        (94002, '2026-05-09', 0, 0, N'Provisionnement caisse agence', N'RET-2026-001', N'NDB', N'VALIDE', N'D', 0, N'512000'),
+        (94003, '2026-05-09', 0, 0, N'Remise de chèque — encaissement BMCI', N'CHQ-88291', N'NKC', N'VALIDE', N'D', 0, N'512000'),
+        (94004, '2026-05-09', 0, 0, N'Virement interne trésorerie — consolidation MRU', N'VIR-2026-002', N'NKC', N'VALIDE', N'D', 0, N'512000'),
+        (94005, '2026-05-09', 0, 0, N'Retrait espèces — dotation petite caisse', N'RET-2026-002', N'NDB', N'VALIDE', N'D', 0, N'512000'),
+        (94006, '2026-05-09', 0, 0, N'Remise chèques clientèle — lot BNM', N'CHQ-2026-104', N'NDB', N'VALIDE', N'D', 0, N'512000'),
+        (94007, '2026-05-09', 0, 0, N'Compensation interbanques — lot MRU', N'VIR-2026-003', N'NKC', N'VALIDE', N'D', 0, N'512000'),
+        (94008, '2026-05-09', 0, 0, N'Paiement fournisseur — retrait programmé', N'RET-2026-003', N'NKC', N'VALIDE', N'D', 0, N'512000'),
+        (94009, '2026-05-09', 0, 0, N'Encaissement lot chèques présentés GBM', N'CHQ-2026-305', N'NDB', N'VALIDE', N'D', 0, N'512000'),
+        (94010, '2026-05-09', 0, 0, N'Approvisionnement compte GBM depuis BMCI', N'VIR-2026-004', N'NKC', N'VALIDE', N'D', 0, N'512000');
+    SET IDENTITY_INSERT comptabilite OFF;
+END
+
+/* ── 10 opérations : 70% EN_ATTENTE (7), 30% VALIDE (3)
+      Indices 1-based : VALIDE aux positions 4, 9, 10 ───────────── */
+DECLARE @d DATE = '2026-05-09';
+
+/* 1 — Virement EN_ATTENTE */
+IF NOT EXISTS (SELECT 1 FROM OperationBanque WHERE idcomptabilite = 94001 AND dtype = N'Virement')
+BEGIN
+    INSERT INTO OperationBanque (dtype, date_operation, montant, statut, utilisateur, version, compte_banque_id, code_agence, idcomptabilite)
+    VALUES (N'Virement', @d, 50000.0000, N'EN_ATTENTE', N'admin', 0, 9401, N'NKC', 94001);
+    INSERT INTO Virement (id, compte_source_id, compte_destination_id, type_virement, reference_externe, motif)
+    VALUES (SCOPE_IDENTITY(), 9401, 9402, N'INTRA_BANQUE', N'VIR-2026-001', N'Virement salaire membre — MRU');
+END
+
+/* 2 — RetraitBanque EN_ATTENTE */
+IF NOT EXISTS (SELECT 1 FROM OperationBanque WHERE idcomptabilite = 94002 AND dtype = N'RetraitBanque')
+BEGIN
+    INSERT INTO OperationBanque (dtype, date_operation, montant, statut, utilisateur, version, compte_banque_id, code_agence, idcomptabilite)
+    VALUES (N'RetraitBanque', @d, 125000.0000, N'EN_ATTENTE', N'admin', 0, 9402, N'NDB', 94002);
+    INSERT INTO RetraitBanque (id, motif, mode_paiement)
+    VALUES (SCOPE_IDENTITY(), N'Provisionnement caisse agence Nouadhibou', N'VIREMENT');
+END
+
+/* 3 — RemiseCheque EN_ATTENTE (chèque optionnel NULL) */
+IF NOT EXISTS (SELECT 1 FROM OperationBanque WHERE idcomptabilite = 94003 AND dtype = N'RemiseCheque')
+BEGIN
+    INSERT INTO OperationBanque (dtype, date_operation, montant, statut, utilisateur, version, compte_banque_id, code_agence, idcomptabilite)
+    VALUES (N'RemiseCheque', @d, 10000.0000, N'EN_ATTENTE', N'admin', 0, 9401, N'NKC', 94003);
+    INSERT INTO RemiseCheque (id, cheque_id, banque_presentatrice, date_valeur)
+    VALUES (SCOPE_IDENTITY(), NULL, N'BMCI', @d);
+END
+
+/* 4 — Virement VALIDE */
+IF NOT EXISTS (SELECT 1 FROM OperationBanque WHERE idcomptabilite = 94004 AND dtype = N'Virement')
+BEGIN
+    INSERT INTO OperationBanque (dtype, date_operation, montant, statut, utilisateur, version, compte_banque_id, code_agence, idcomptabilite)
+    VALUES (N'Virement', @d, 75000.0000, N'VALIDE', N'admin', 0, 9403, N'NKC', 94004);
+    INSERT INTO Virement (id, compte_source_id, compte_destination_id, type_virement, reference_externe, motif)
+    VALUES (SCOPE_IDENTITY(), 9403, 9401, N'INTRA_BANQUE', N'VIR-2026-002', N'Virement interne trésorerie — consolidation MRU');
+END
+
+/* 5 — RetraitBanque EN_ATTENTE */
+IF NOT EXISTS (SELECT 1 FROM OperationBanque WHERE idcomptabilite = 94005 AND dtype = N'RetraitBanque')
+BEGIN
+    INSERT INTO OperationBanque (dtype, date_operation, montant, statut, utilisateur, version, compte_banque_id, code_agence, idcomptabilite)
+    VALUES (N'RetraitBanque', @d, 25000.0000, N'EN_ATTENTE', N'admin', 0, 9401, N'NKC', 94005);
+    INSERT INTO RetraitBanque (id, motif, mode_paiement)
+    VALUES (SCOPE_IDENTITY(), N'Retrait espèces pour dotation petite caisse', N'ESPECES');
+END
+
+/* 6 — RemiseCheque EN_ATTENTE */
+IF NOT EXISTS (SELECT 1 FROM OperationBanque WHERE idcomptabilite = 94006 AND dtype = N'RemiseCheque')
+BEGIN
+    INSERT INTO OperationBanque (dtype, date_operation, montant, statut, utilisateur, version, compte_banque_id, code_agence, idcomptabilite)
+    VALUES (N'RemiseCheque', @d, 200000.0000, N'EN_ATTENTE', N'admin', 0, 9402, N'NDB', 94006);
+    INSERT INTO RemiseCheque (id, cheque_id, banque_presentatrice, date_valeur)
+    VALUES (SCOPE_IDENTITY(), NULL, N'BNM', @d);
+END
+
+/* 7 — Virement EN_ATTENTE */
+IF NOT EXISTS (SELECT 1 FROM OperationBanque WHERE idcomptabilite = 94007 AND dtype = N'Virement')
+BEGIN
+    INSERT INTO OperationBanque (dtype, date_operation, montant, statut, utilisateur, version, compte_banque_id, code_agence, idcomptabilite)
+    VALUES (N'Virement', @d, 300000.0000, N'EN_ATTENTE', N'admin', 0, 9402, N'NDB', 94007);
+    INSERT INTO Virement (id, compte_source_id, compte_destination_id, type_virement, reference_externe, motif)
+    VALUES (SCOPE_IDENTITY(), 9402, 9403, N'INTER_BANQUE', N'VIR-2026-003', N'Compensation interbanques — lot MRU');
+END
+
+/* 8 — RetraitBanque EN_ATTENTE */
+IF NOT EXISTS (SELECT 1 FROM OperationBanque WHERE idcomptabilite = 94008 AND dtype = N'RetraitBanque')
+BEGIN
+    INSERT INTO OperationBanque (dtype, date_operation, montant, statut, utilisateur, version, compte_banque_id, code_agence, idcomptabilite)
+    VALUES (N'RetraitBanque', @d, 10000.0000, N'EN_ATTENTE', N'aminata.sow', 0, 9403, N'NKC', 94008);
+    INSERT INTO RetraitBanque (id, motif, mode_paiement)
+    VALUES (SCOPE_IDENTITY(), N'Paiement fournisseur urgent — retrait programmé', N'CHEQUE');
+END
+
+/* 9 — RemiseCheque VALIDE */
+IF NOT EXISTS (SELECT 1 FROM OperationBanque WHERE idcomptabilite = 94009 AND dtype = N'RemiseCheque')
+BEGIN
+    INSERT INTO OperationBanque (dtype, date_operation, montant, statut, utilisateur, version, compte_banque_id, code_agence, idcomptabilite)
+    VALUES (N'RemiseCheque', @d, 150000.0000, N'VALIDE', N'admin', 0, 9402, N'NDB', 94009);
+    INSERT INTO RemiseCheque (id, cheque_id, banque_presentatrice, date_valeur)
+    VALUES (SCOPE_IDENTITY(), NULL, N'GBM', @d);
+END
+
+/* 10 — Virement VALIDE */
+IF NOT EXISTS (SELECT 1 FROM OperationBanque WHERE idcomptabilite = 94010 AND dtype = N'Virement')
+BEGIN
+    INSERT INTO OperationBanque (dtype, date_operation, montant, statut, utilisateur, version, compte_banque_id, code_agence, idcomptabilite)
+    VALUES (N'Virement', @d, 88000.0000, N'VALIDE', N'admin', 0, 9401, N'NKC', 94010);
+    INSERT INTO Virement (id, compte_source_id, compte_destination_id, type_virement, reference_externe, motif)
+    VALUES (SCOPE_IDENTITY(), 9401, 9403, N'INTRA_BANQUE', N'VIR-2026-004', N'Approvisionnement compte GBM depuis BMCI');
+END
+
+        ]]></sql>
+
+        <rollback>
+            <sql dbms="mssql"><![CDATA[
+DELETE v FROM Virement v INNER JOIN OperationBanque o ON o.id = v.id WHERE o.idcomptabilite BETWEEN 94001 AND 94010;
+DELETE r FROM RetraitBanque r INNER JOIN OperationBanque o ON o.id = r.id WHERE o.idcomptabilite BETWEEN 94001 AND 94010;
+DELETE m FROM RemiseCheque m INNER JOIN OperationBanque o ON o.id = m.id WHERE o.idcomptabilite BETWEEN 94001 AND 94010;
+DELETE FROM OperationBanque WHERE idcomptabilite BETWEEN 94001 AND 94010;
+DELETE FROM comptabilite WHERE IDCOMPTABILITE BETWEEN 94001 AND 94010;
+DELETE FROM CompteBanque WHERE id IN (9401, 9402, 9403);
+/* Banque BMCI/BNM/GBM : non supprimées (réutilisables hors démo). */
+            ]]></sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

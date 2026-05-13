@@ -1,45 +1,99 @@
 <div class="page-container">
-  <h2 class="page-title">Bilan simplifié</h2>
 
-  <div *ngIf="loading" class="loading">Chargement…</div>
-
-  <div *ngIf="!loading" class="bilan-grid">
-    <div class="bilan-col">
-      <h3>ACTIF</h3>
-      <table class="table">
-        <thead><tr><th>Poste</th><th>Montant (MRU)</th></tr></thead>
-        <tbody>
-          <tr *ngFor="let l of actif">
-            <td>{{ l.libellePoste }}</td>
-            <td class="montant">{{ l.montant | number:'1.2-2' }}</td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr class="total-row">
-            <td>Total Actif</td>
-            <td class="montant">{{ total(actif) | number:'1.2-2' }}</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-
-    <div class="bilan-col">
-      <h3>PASSIF</h3>
-      <table class="table">
-        <thead><tr><th>Poste</th><th>Montant (MRU)</th></tr></thead>
-        <tbody>
-          <tr *ngFor="let l of passif">
-            <td>{{ l.libellePoste }}</td>
-            <td class="montant">{{ l.montant | number:'1.2-2' }}</td>
-          </tr>
-        </tbody>
-        <tfoot>
-          <tr class="total-row">
-            <td>Total Passif</td>
-            <td class="montant">{{ total(passif) | number:'1.2-2' }}</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
+  <div class="page-header">
+    <h2 class="page-title">Bilan simplifié</h2>
+    <button class="btn btn-outline btn-sm" (click)="load()" [disabled]="loading()">↻ Actualiser</button>
   </div>
+
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:16px">
+
+      <!-- ── ACTIF ─────────────────────────────────────────── -->
+      <div class="form-card">
+        <h3 style="font-size:14px;font-weight:600;color:var(--text-dark);margin:0 0 12px;text-transform:uppercase;letter-spacing:0.5px">
+          Actif
+        </h3>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Poste</th>
+                <th class="num">Montant (MRU)</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (l of actif(); track $index) {
+                <tr>
+                  <td>{{ l.libellePoste }}</td>
+                  <td class="num">{{ l.montant | number:'1.2-2' }}</td>
+                </tr>
+              }
+              @if (actif().length === 0) {
+                <tr><td colspan="2" class="empty-row">Aucun poste à l'actif.</td></tr>
+              }
+            </tbody>
+            @if (actif().length > 0) {
+              <tfoot>
+                <tr style="background:var(--bg-light);font-weight:600">
+                  <td>Total Actif</td>
+                  <td class="num">{{ totalActif() | number:'1.2-2' }}</td>
+                </tr>
+              </tfoot>
+            }
+          </table>
+        </div>
+      </div>
+
+      <!-- ── PASSIF ────────────────────────────────────────── -->
+      <div class="form-card">
+        <h3 style="font-size:14px;font-weight:600;color:var(--text-dark);margin:0 0 12px;text-transform:uppercase;letter-spacing:0.5px">
+          Passif
+        </h3>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Poste</th>
+                <th class="num">Montant (MRU)</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (l of passif(); track $index) {
+                <tr>
+                  <td>{{ l.libellePoste }}</td>
+                  <td class="num">{{ l.montant | number:'1.2-2' }}</td>
+                </tr>
+              }
+              @if (passif().length === 0) {
+                <tr><td colspan="2" class="empty-row">Aucun poste au passif.</td></tr>
+              }
+            </tbody>
+            @if (passif().length > 0) {
+              <tfoot>
+                <tr style="background:var(--bg-light);font-weight:600">
+                  <td>Total Passif</td>
+                  <td class="num">{{ totalPassif() | number:'1.2-2' }}</td>
+                </tr>
+              </tfoot>
+            }
+          </table>
+        </div>
+      </div>
+    </div>
+
+    @if (actif().length > 0 || passif().length > 0) {
+      <p class="sub-text" style="text-align:center;margin-top:16px">
+        Équilibre : Actif <strong>{{ totalActif() | number:'1.2-2' }}</strong>
+        — Passif <strong>{{ totalPassif() | number:'1.2-2' }}</strong>
+        — Écart <strong [style.color]="(totalActif() - totalPassif()) === 0 ? '#28a745' : '#dc3545'">{{ (totalActif() - totalPassif()) | number:'1.2-2' }}</strong>
+      </p>
+    }
+  }
+
 </div>

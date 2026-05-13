@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ============================================================
+  MICROFINA++ — Phase 11 Security & Hardening
+  ============================================================
+  11.3 — Insert PRIV_ADMIN privilege & grant to ADMIN role
+         Ce privilège était référencé par AdminJobsController et
+         AdminMonitoringController via @PreAuthorize("hasAuthority('PRIV_ADMIN')")
+         mais n'avait jamais été semé.
+  ============================================================
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P11-003-insert-priv-admin" author="microfina-phase11" runOnChange="false">
+        <comment>Insert ADMIN privilege if missing, and grant it to the ADMIN role</comment>
+
+        <sql>IF NOT EXISTS (SELECT 1 FROM Privilege WHERE code_privilege = 'ADMIN')
+INSERT INTO Privilege (code_privilege, libelle, module, version)
+VALUES ('ADMIN', 'Administration système (jobs, monitoring)', 'ADMIN', 0)</sql>
+
+        <sql>IF NOT EXISTS (
+    SELECT 1 FROM RolePrivilege rp
+    INNER JOIN Role r      ON r.id = rp.id_role
+    INNER JOIN Privilege p ON p.id = rp.id_privilege
+    WHERE r.code_role = 'ADMIN' AND p.code_privilege = 'ADMIN'
+)
+INSERT INTO RolePrivilege (id_role, id_privilege)
+SELECT r.id, p.id
+FROM Role r, Privilege p
+WHERE r.code_role = 'ADMIN' AND p.code_privilege = 'ADMIN'</sql>
+
+        <rollback>
+            <sql>DELETE rp FROM RolePrivilege rp
+INNER JOIN Privilege p ON p.id = rp.id_privilege
+WHERE p.code_privilege = 'ADMIN'</sql>
+            <sql>DELETE FROM Privilege WHERE code_privilege = 'ADMIN'</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

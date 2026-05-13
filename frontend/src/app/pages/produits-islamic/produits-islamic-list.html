@@ -1,0 +1,144 @@
+<div class="page-container">
+
+  <div class="page-header">
+    <h2 class="page-title">Produits islamiques</h2>
+    <button class="btn btn-primary" (click)="openNew()">+ Nouveau produit</button>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
+
+  <!-- ── Formulaire ─────────────────────────────────────────── -->
+  @if (showForm()) {
+    <div class="form-card" style="margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h3 style="font-size:15px;font-weight:600;color:var(--text-dark)">
+          {{ editingCode() ? 'Modifier le produit' : 'Nouveau produit islamique' }}
+        </h3>
+        <button class="btn btn-outline btn-sm" (click)="cancel()">Annuler</button>
+      </div>
+
+      <fieldset class="form-section">
+        <legend>Identification</legend>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Code *</label>
+            <input [(ngModel)]="form.codeProduit" name="codeProduit"
+                   placeholder="Ex: MOURABAHA" [disabled]="!!editingCode()"/>
+          </div>
+          <div class="form-group">
+            <label>Libellé</label>
+            <input [(ngModel)]="form.libelle" name="libelle" placeholder="Libellé du produit"/>
+          </div>
+          <div class="form-group" style="max-width:140px">
+            <label>Statut</label>
+            <select [(ngModel)]="form.actif" name="actif">
+              <option [ngValue]="1">Actif</option>
+              <option [ngValue]="0">Inactif</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Description</label>
+            <textarea [(ngModel)]="form.description" name="description" rows="2"></textarea>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="form-section">
+        <legend>Ratios financiers</legend>
+        <p class="sub-text" style="margin-bottom:12px">
+          Saisir des valeurs entre 0 et 1 (ex&nbsp;: 0.85 = 85&nbsp;%).
+        </p>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Partage bénéfice (Moucharaka)</label>
+            <input type="number" step="0.0001" min="0" max="1"
+                   [(ngModel)]="form.tauxPartageBenefice" name="tauxPartageBenefice"/>
+          </div>
+          <div class="form-group">
+            <label>Coût d'acquisition (Mourabaha)</label>
+            <input type="number" step="0.0001" min="0" max="1"
+                   [(ngModel)]="form.costPriceRatio" name="costPriceRatio"/>
+          </div>
+          <div class="form-group">
+            <label>Marge / markup (Mourabaha)</label>
+            <input type="number" step="0.0001" min="0" max="1"
+                   [(ngModel)]="form.markupRatio" name="markupRatio"/>
+          </div>
+          <div class="form-group">
+            <label>Valeur résiduelle (Ijara)</label>
+            <input type="number" step="0.0001" min="0" max="1"
+                   [(ngModel)]="form.residualValueRatio" name="residualValueRatio"/>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" (click)="submit()" [disabled]="saving()">
+          {{ saving() ? 'Enregistrement…' : (editingCode() ? 'Mettre à jour' : 'Créer le produit') }}
+        </button>
+        <button class="btn btn-secondary" (click)="cancel()">Annuler</button>
+      </div>
+    </div>
+  }
+
+  <!-- ── Liste ──────────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Libellé</th>
+            <th>Partage bénéfice</th>
+            <th>Coût acquisition</th>
+            <th>Marge</th>
+            <th>Valeur résiduelle</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of items(); track p.codeProduit) {
+            <tr>
+              <td class="mono">{{ p.codeProduit }}</td>
+              <td>
+                <div>{{ p.libelle || '—' }}</div>
+                @if (p.description) {
+                  <div class="sub-text">{{ p.description }}</div>
+                }
+              </td>
+              <td>{{ formatPct(p.tauxPartageBenefice) }}</td>
+              <td>{{ formatPct(p.costPriceRatio) }}</td>
+              <td>{{ formatPct(p.markupRatio) }}</td>
+              <td>{{ formatPct(p.residualValueRatio) }}</td>
+              <td>
+                <span [class]="p.actif === 1 ? 'badge badge-success' : 'badge badge-danger'">
+                  {{ p.actif === 1 ? 'Actif' : 'Inactif' }}
+                </span>
+              </td>
+              <td>
+                <div class="actions-cell">
+                  <button class="btn btn-outline btn-sm" (click)="openEdit(p)">Modifier</button>
+                  <button class="btn btn-danger btn-sm" (click)="delete(p.codeProduit)">Supprimer</button>
+                </div>
+              </td>
+            </tr>
+          }
+          @if (items().length === 0) {
+            <tr><td colspan="8" class="empty-row">Aucun produit islamique défini.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+</div>

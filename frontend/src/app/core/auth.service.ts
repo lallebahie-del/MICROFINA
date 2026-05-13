@@ -8,6 +8,7 @@ export interface AuthUser {
   username: string;
   role: string;
   token: string; // Raw JWT issued by POST /api/auth/login
+  privileges: string[];
 }
 
 interface LoginResponse {
@@ -59,9 +60,10 @@ export class AuthService {
     ).pipe(
       map(response => {
         const user: AuthUser = {
-          username: response.username ?? username,
-          role:     response.role     ?? 'UNKNOWN',
-          token:    response.token
+          username:   response.username ?? username,
+          role:       response.role     ?? 'UNKNOWN',
+          token:      response.token,
+          privileges: this.decodePrivileges(response.token)
         };
         return user;
       }),
@@ -98,14 +100,45 @@ export class AuthService {
     return this.authHeader();
   }
 
+  /** Returns true if the current user has ALL of the given privileges. */
+  hasPrivilege(...privs: string[]): boolean {
+    const user = this.currentUser();
+    if (!user) return false;
+    return privs.every(p => user.privileges.includes(p));
+  }
+
+  /** Returns true if the current user has AT LEAST ONE of the given privileges. */
+  hasAnyPrivilege(...privs: string[]): boolean {
+    const user = this.currentUser();
+    if (!user) return false;
+    return privs.some(p => user.privileges.includes(p));
+  }
+
   // ── Private helpers ─────────────────────────────────────────────────
 
   private loadFromSession(): AuthUser | null {
     try {
       const raw = sessionStorage.getItem(this.STORAGE_KEY);
-      return raw ? JSON.parse(raw) : null;
+      if (!raw) return null;
+      const parsed: AuthUser = JSON.parse(raw);
+      // Re-decode privileges from token in case the stored array is missing (migration)
+      if (!parsed.privileges || parsed.privileges.length === 0) {
+        parsed.privileges = this.decodePrivileges(parsed.token);
+      }
+      return parsed;
     } catch {
       return null;
+    }
+  }
+
+  /** Decodes the `roles` claim from a JWT payload (no signature check needed client-side). */
+  private decodePrivileges(token: string): string[] {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const roles: string = payload['roles'] ?? '';
+      return roles.split(',').map(r => r.trim()).filter(r => r.length > 0);
+    } catch {
+      return [];
     }
   }
 }

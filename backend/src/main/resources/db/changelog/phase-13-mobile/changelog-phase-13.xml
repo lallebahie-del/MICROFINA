@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ============================================================
+  MICROFINA++ — Phase 13 Mobile self-service
+  ============================================================
+  13.1 — Notification mobile (in-app)
+  ============================================================
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <include file="db/changelog/phase-13-mobile/P13-001-CREATE-TABLE-Notification.xml"/>
+
+</databaseChangeLog>

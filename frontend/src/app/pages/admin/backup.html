@@ -1,23 +1,65 @@
 <div class="page-container">
-  <div class="page-header"><h1>Sauvegarde Base de Données</h1></div>
-  @if (success()) { <div class="alert alert-success">{{ success() }}</div> }
-  @if (error()) { <div class="alert alert-danger">{{ error() }}</div> }
-  <div class="form-card">
-    <p>Déclenche une sauvegarde complète SQL Server (BACKUP DATABASE). Le fichier .bak est stocké sur le serveur.</p>
-    <button class="btn btn-primary" (click)="lancerBackup()" [disabled]="backupLoading()">
-      {{ backupLoading() ? 'Sauvegarde en cours...' : '🗃 Lancer une sauvegarde' }}
-    </button>
+
+  <div class="page-header">
+    <h2 class="page-title">Sauvegardes base de données</h2>
+    <button class="btn btn-outline btn-sm" (click)="load()" [disabled]="loading()">↻ Actualiser</button>
   </div>
-  <h2>Sauvegardes disponibles</h2>
-  @if (loading()) { <div class="loading">Chargement...</div> }
-  <table class="data-table">
-    <thead><tr><th>Fichier</th></tr></thead>
-    <tbody>
-      @for (s of sauvegardes(); track s) {
-        <tr><td>{{ s }}</td></tr>
-      } @empty {
-        <tr><td class="empty">Aucune sauvegarde disponible</td></tr>
-      }
-    </tbody>
-  </table>
+
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
+
+  <div class="form-card" style="margin-bottom:24px">
+    <h3 style="font-size:15px;font-weight:600;color:var(--text-dark);margin:0 0 8px">
+      Nouvelle sauvegarde
+    </h3>
+    <p class="sub-text" style="margin:0 0 16px">
+      Déclenche un <code>BACKUP DATABASE</code> complet. Le fichier <code>.bak</code> est stocké sur le serveur dans le dossier configuré (<code>app.backup.dir</code>).
+    </p>
+    <div class="form-actions">
+      <button class="btn btn-primary" (click)="lancerBackup()" [disabled]="backupLoading()">
+        {{ backupLoading() ? 'Sauvegarde en cours…' : '🗃 Lancer une sauvegarde' }}
+      </button>
+    </div>
+  </div>
+
+  <h3 style="font-size:14px;font-weight:600;color:var(--text-dark);margin:0 0 12px;text-transform:uppercase;letter-spacing:0.3px">
+    Sauvegardes disponibles
+  </h3>
+
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Fichier</th>
+            <th style="width:200px">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of sauvegardes(); track s) {
+            <tr>
+              <td class="mono">{{ s }}</td>
+              <td>
+                <button class="btn btn-warning btn-sm"
+                        (click)="restaurer(s)"
+                        [disabled]="restoringFile() !== null">
+                  {{ restoringFile() === s ? 'Restauration…' : 'Restaurer' }}
+                </button>
+              </td>
+            </tr>
+          }
+          @if (sauvegardes().length === 0) {
+            <tr><td colspan="2" class="empty-row">Aucune sauvegarde disponible.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
 </div>

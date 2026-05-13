@@ -121,4 +121,16 @@ public class ParametreService {
 
         return ParametreDTO.Response.from(parametreRepository.save(p));
     }
+
+    /**
+     * Supprime un paramètre par son identifiant.
+     */
+    @Transactional
+    @CacheEvict(value = "parametres", allEntries = true)
+    public void delete(Long id) {
+        if (!parametreRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Parametre", id);
+        }
+        parametreRepository.deleteById(id);
+    }
 }

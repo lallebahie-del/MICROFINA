@@ -7,7 +7,8 @@ import { SimulationService, SimulationResponse } from '../../services/simulation
   selector: 'app-simulation',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './simulation.html'
+  templateUrl: './simulation.html',
+  styleUrl: './simulation.css'
 })
 export class SimulationComponent {
   montantPrincipal = 100000;

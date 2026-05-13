@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { OperationsCaisseService, OperationCaisse } from '../../services/operations-caisse.service';
+import { OperationsCaisseService, OperationCaisse, OperationCaisseForm } from '../../services/operations-caisse.service';
+import { AgencesService, Agence } from '../../services/agences.service';
 
 @Component({
   selector: 'app-operations-caisse-list',
@@ -10,28 +11,116 @@ import { OperationsCaisseService, OperationCaisse } from '../../services/operati
   templateUrl: './operations-caisse-list.html'
 })
 export class OperationsCaisseListComponent implements OnInit {
-  operations: OperationCaisse[] = [];
-  agenceFilter = '';
-  page = 0;
-  totalPages = 0;
-  loading = false;
+  operations = signal<OperationCaisse[]>([]);
+  agences    = signal<Agence[]>([]);
 
-  constructor(private svc: OperationsCaisseService) {}
+  agenceFilter = signal<string>('');
+  page         = signal(0);
+  totalPages   = signal(0);
 
-  ngOnInit(): void { this.load(); }
+  loading = signal(false);
+  saving  = signal(false);
+  error   = signal<string | null>(null);
+  success = signal<string | null>(null);
+
+  showForm = signal(false);
+  form: Partial<OperationCaisseForm> = {
+    typeOperation: 'DEPOT',
+    devise: 'MRU',
+    montant: 0
+  };
+
+  readonly typesOperation = ['DEPOT', 'RETRAIT', 'VERSEMENT', 'PAIEMENT'];
+
+  constructor(
+    private svc: OperationsCaisseService,
+    private agencesSvc: AgencesService
+  ) {}
+
+  ngOnInit(): void {
+    this.load();
+    this.agencesSvc.getAll(true).subscribe({ next: list => this.agences.set(list) });
+  }
 
   load(): void {
-    this.loading = true;
-    this.svc.getAll(this.agenceFilter || undefined, this.page).subscribe({
-      next: (resp: any) => {
-        this.operations = resp.content ?? resp;
-        this.totalPages = resp.totalPages ?? 0;
-        this.loading = false;
+    this.loading.set(true);
+    this.error.set(null);
+    this.svc.getAll(this.agenceFilter() || undefined).subscribe({
+      next: (list: OperationCaisse[]) => {
+        this.operations.set(list);
+        this.totalPages.set(0);
+        this.loading.set(false);
       },
-      error: () => { this.loading = false; }
+      error: e => {
+        this.error.set('Erreur : ' + (e.error?.message ?? e.message));
+        this.loading.set(false);
+      }
     });
   }
 
-  prev(): void { if (this.page > 0) { this.page--; this.load(); } }
-  next(): void { if (this.page < this.totalPages - 1) { this.page++; this.load(); } }
+  prev(): void { if (this.page() > 0)                  { this.page.set(this.page() - 1); this.load(); } }
+  next(): void { if (this.page() < this.totalPages() - 1) { this.page.set(this.page() + 1); this.load(); } }
+
+  openNew(): void {
+    this.form = {
+      typeOperation: 'DEPOT',
+      modePaiement: 'ESPECES',
+      devise: 'MRU',
+      montant: 0,
+      dateOperation: new Date().toISOString().slice(0, 10)
+    };
+    this.showForm.set(true);
+    this.error.set(null);
+    this.success.set(null);
+  }
+
+  cancel(): void {
+    this.showForm.set(false);
+  }
+
+  submit(): void {
+    if (!this.form.typeOperation || !this.form.montant || !this.form.agence) {
+      this.error.set('Type, montant et agence sont obligatoires.');
+      return;
+    }
+    if ((this.form.montant as number) <= 0) {
+      this.error.set('Le montant doit être strictement positif.');
+      return;
+    }
+    if (!this.form.dateOperation) {
+      this.error.set('La date est obligatoire.');
+      return;
+    }
+    this.saving.set(true);
+    this.error.set(null);
+
+    this.svc.create(this.form).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.success.set('Opération enregistrée.');
+        this.showForm.set(false);
+        this.page.set(0);
+        this.load();
+      },
+      error: e => {
+        this.saving.set(false);
+        this.error.set('Erreur : ' + (e.error?.message ?? e.message));
+      }
+    });
+  }
+
+  statutClass(statut: string): string {
+    const s = (statut || '').toUpperCase();
+    if (s.includes('VALIDE') || s.includes('SUCC')) return 'badge badge-success';
+    if (s.includes('REJET') || s.includes('ECH'))   return 'badge badge-danger';
+    if (s.includes('ATTENTE') || s.includes('PEND')) return 'badge badge-warning';
+    return 'badge badge-info';
+  }
+
+  typeClass(motif: string): string {
+    const m = (motif || '').toUpperCase();
+    if (m.includes('DEPOT') || m.includes('VERSEMENT')) return 'badge badge-success';
+    if (m.includes('RETRAIT') || m.includes('PAIEMENT')) return 'badge badge-danger';
+    return 'badge badge-info';
+  }
 }

@@ -40,6 +40,9 @@ public class BackupService {
     @Value("${app.backup.dir:./backups}")
     private String backupDir;
 
+    @Value("${app.backup.sql-dir:./backups}")
+    private String backupSqlDir;
+
     @Value("${spring.datasource.url:}")
     private String datasourceUrl;
 
@@ -59,20 +62,22 @@ public class BackupService {
         }
         String dbName = extractDbName();
         String filename = "microfina_" + LocalDateTime.now().format(FMT) + ".bak";
-        Path dir = Paths.get(backupDir).toAbsolutePath();
+        Path hostDir = Paths.get(backupDir).toAbsolutePath();
 
         try {
-            Files.createDirectories(dir);
+            Files.createDirectories(hostDir);
         } catch (IOException e) {
-            throw new BusinessException("Impossible de créer le répertoire de sauvegarde: " + dir);
+            throw new BusinessException("Impossible de créer le répertoire de sauvegarde: " + hostDir);
         }
 
-        Path target = dir.resolve(filename);
+        // SQL Server runs in Docker — use the container-side path for the BACKUP command
+        String sqlPath = backupSqlDir.replace("\\", "/") + "/" + filename;
         String sql = String.format(
             "BACKUP DATABASE [%s] TO DISK = N'%s' WITH NOFORMAT, NOINIT, " +
             "NAME = N'%s-Full Backup', SKIP, NOREWIND, NOUNLOAD, STATS = 10",
-            dbName, target.toString().replace("'", "''"), dbName
+            dbName, sqlPath.replace("'", "''"), dbName
         );
+        Path target = hostDir.resolve(filename);
 
         log.info("[Backup] Démarrage sauvegarde → {}", target);
         try {
@@ -117,24 +122,25 @@ public class BackupService {
             throw new BusinessException("Backup non supporté en mode test");
         }
         String dbName = extractDbName();
-        Path source = Paths.get(backupDir).toAbsolutePath().resolve(filename);
+        Path hostSource = Paths.get(backupDir).toAbsolutePath().resolve(filename);
 
-        if (!Files.exists(source)) {
+        if (!Files.exists(hostSource)) {
             throw new BusinessException("Fichier de sauvegarde introuvable : " + filename);
         }
         if (!filename.endsWith(".bak")) {
             throw new BusinessException("Nom de fichier invalide. Extension attendue : .bak");
         }
 
-        log.warn("[Restore] RESTAURATION de {} depuis {}", dbName, source);
+        log.warn("[Restore] RESTAURATION de {} depuis {}", dbName, hostSource);
 
-        // Forcer déconnexion de toutes les sessions
+        String sqlPath = backupSqlDir.replace("\\", "/") + "/" + filename;
+
         String killSql = String.format(
             "ALTER DATABASE [%s] SET SINGLE_USER WITH ROLLBACK IMMEDIATE", dbName);
 
         String restoreSql = String.format(
             "RESTORE DATABASE [%s] FROM DISK = N'%s' WITH FILE = 1, NOUNLOAD, REPLACE, STATS = 5",
-            dbName, source.toString().replace("'", "''")
+            dbName, sqlPath.replace("'", "''")
         );
 
         String multiUser = String.format(
@@ -144,7 +150,7 @@ public class BackupService {
             jdbc.execute(killSql);
             jdbc.execute(restoreSql);
             jdbc.execute(multiUser);
-            log.info("[Restore] Restauration terminée depuis {}", source);
+            log.info("[Restore] Restauration terminée depuis {}", hostSource);
         } catch (Exception e) {
             log.error("[Restore] Échec restauration : {}", e.getMessage());
             throw new BusinessException("Échec de la restauration SQL Server : " + e.getMessage());

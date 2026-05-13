@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CreditsRepository extends JpaRepository<Credits, Long> {
@@ -31,7 +32,6 @@ public interface CreditsRepository extends JpaRepository<Credits, Long> {
         )
         AND (:statut IS NULL OR c.statut = :statut)
         AND (:numMembre IS NULL OR :numMembre = '' OR m.numMembre = :numMembre)
-        ORDER BY c.idCredit DESC
         """)
     Page<Credits> search(
         @Param("search")     String       search,
@@ -41,4 +41,19 @@ public interface CreditsRepository extends JpaRepository<Credits, Long> {
     );
 
     List<Credits> findByEtapeCourante(String etapeCourante);
+
+    /** Crédits d'un membre donné (mobile self-service). */
+    List<Credits> findByMembre_NumMembre(String numMembre);
+
+    /** Crédits d'une agence — fallback pour user mobile sans rattachement membre. */
+    List<Credits> findByAgence_CodeAgence(String codeAgence);
+
+    @Query("""
+        SELECT DISTINCT c FROM Credits c
+        LEFT JOIN FETCH c.produitCredit pc
+        LEFT JOIN FETCH pc.produitIslamic
+        LEFT JOIN FETCH c.modeDeCalculInteret
+        WHERE c.idCredit = :id
+        """)
+    Optional<Credits> findWithAmortissementContextById(@Param("id") Long id);
 }

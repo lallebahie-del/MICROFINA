@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MonitoringService, AppMetrics, DatabaseMetrics, JobStatus, SessionInfo } from '../../services/monitoring.service';
 
@@ -9,11 +9,11 @@ import { MonitoringService, AppMetrics, DatabaseMetrics, JobStatus, SessionInfo 
   templateUrl: './monitoring.html'
 })
 export class MonitoringComponent implements OnInit, OnDestroy {
-  metrics: AppMetrics | null = null;
-  database: DatabaseMetrics | null = null;
-  jobs: JobStatus[] = [];
-  sessions: SessionInfo | null = null;
-  lastRefresh: Date = new Date();
+  metrics   = signal<AppMetrics | null>(null);
+  database  = signal<DatabaseMetrics | null>(null);
+  jobs      = signal<JobStatus[]>([]);
+  sessions  = signal<SessionInfo | null>(null);
+  lastRefresh = signal<Date>(new Date());
   private intervalId: ReturnType<typeof setInterval> | null = null;
 
   constructor(private svc: MonitoringService) {}
@@ -28,20 +28,22 @@ export class MonitoringComponent implements OnInit, OnDestroy {
   }
 
   refresh(): void {
-    this.lastRefresh = new Date();
-    this.svc.getMetrics().subscribe({ next: d => (this.metrics = d) });
-    this.svc.getDatabase().subscribe({ next: d => (this.database = d) });
-    this.svc.getJobs().subscribe({ next: d => (this.jobs = d) });
-    this.svc.getSessions().subscribe({ next: d => (this.sessions = d) });
+    this.lastRefresh.set(new Date());
+    this.svc.getMetrics().subscribe({ next: d => this.metrics.set(d) });
+    this.svc.getDatabase().subscribe({ next: d => this.database.set(d) });
+    this.svc.getJobs().subscribe({ next: d => this.jobs.set(d) });
+    this.svc.getSessions().subscribe({ next: d => this.sessions.set(d) });
   }
 
   memoryPercent(): number {
-    if (!this.metrics) return 0;
-    return Math.round((this.metrics.memoryUsedMb / this.metrics.memoryMaxMb) * 100);
+    const m = this.metrics();
+    if (!m) return 0;
+    return Math.round((m.memoryUsedMb / m.memoryMaxMb) * 100);
   }
 
   dbPercent(): number {
-    if (!this.database) return 0;
-    return Math.round((this.database.activeConnections / this.database.maxConnections) * 100);
+    const d = this.database();
+    if (!d || !d.maxConnections) return 0;
+    return Math.round((d.activeConnections / d.maxConnections) * 100);
   }
 }

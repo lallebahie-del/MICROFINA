@@ -91,6 +91,48 @@
     </div>
   </div>
 
+  <!-- ── Prévisionnel échéancier (comité → déblocage) ── -->
+  <div *ngIf="['COMITE','VISA_SF','DEBLOCAGE_PENDING'].includes(etapeCourante)" class="card mt-4">
+    <div class="card-header">
+      <strong>Échéancier prévisionnel</strong>
+      <small class="text-muted ms-2">(montant demandé / accordé — non persisté)</small>
+    </div>
+    <div class="card-body">
+      <div *ngIf="echeancierPreviewLoading" class="loading">Calcul…</div>
+      <div *ngIf="echeancierPreviewError" class="alert alert-warning">{{ echeancierPreviewError }}</div>
+      <ng-container *ngIf="echeancierPreview as pv">
+        <p>
+          <strong>Principal retenu :</strong> {{ pv.montantPrincipalUtilise | number:'1.0-0' }} MRU —
+          <span>{{ pv.islamique ? 'Islamique (marge)' : 'Conventionnel' }}</span>
+        </p>
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Date</th>
+                <th>Capital</th>
+                <th>{{ pv.islamique ? 'Marge' : 'Intérêt' }}</th>
+                <th>Échéance</th>
+                <th>Solde cap.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of pv.echeances">
+                <td>{{ row.numEcheance }}</td>
+                <td>{{ row.dateEcheance | date:'dd/MM/yyyy' }}</td>
+                <td>{{ row.capital | number:'1.0-0' }}</td>
+                <td>{{ row.margeOuInteret | number:'1.0-0' }}</td>
+                <td>{{ row.totalEcheance | number:'1.0-0' }}</td>
+                <td>{{ row.soldeCapitalApres | number:'1.0-0' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
   <!-- ── Modal ── -->
   <div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
     <div class="modal-dialog" (click)="$event.stopPropagation()">
@@ -123,6 +165,23 @@
         <ng-container *ngIf="modalType === 'debloquer'">
           <label>Montant déblocage *</label>
           <input type="number" class="form-control" [(ngModel)]="montantDeblocage" />
+          <label>Canal *</label>
+          <select class="form-control" [(ngModel)]="canalDeblocage">
+            <option value="BANQUE">Banque</option>
+            <option value="CAISSE">Caisse</option>
+            <option value="WALLET">Wallet</option>
+          </select>
+
+          <ng-container *ngIf="canalDeblocage === 'BANQUE'">
+            <label>ID Compte banque (source) *</label>
+            <input type="number" class="form-control" [(ngModel)]="compteBanqueId" />
+          </ng-container>
+
+          <ng-container *ngIf="canalDeblocage === 'CAISSE'">
+            <label>N° Compte caisse (Compte EPS source) *</label>
+            <input type="text" class="form-control" [(ngModel)]="numCompteCaisse" />
+          </ng-container>
+
           <label>Date 1ère échéance *</label>
           <input type="date" class="form-control" [(ngModel)]="datePremiereEcheance" />
           <label>Périodicité *</label>

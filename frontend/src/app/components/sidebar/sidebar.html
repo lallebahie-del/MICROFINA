@@ -1,7 +1,7 @@
 <aside class="sidebar">
 
   <!-- ── CLIENT / CAISSE ── -->
-  <div class="sidebar-section">
+  <div class="sidebar-section" *ngIf="has('PRIV_OPEN_COMPTE_EPS','PRIV_DEPOSIT_EPARGNE','PRIV_WITHDRAW_EPARGNE','PRIV_BANK_OPERATION','PRIV_MANAGE_CHEQUE','PRIV_MANAGE_USERS')">
     <div class="section-header blue">
       <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
            stroke-width="1.5" width="16" height="16">
@@ -10,42 +10,42 @@
       <span>CLIENT / CAISSE</span>
     </div>
     <ul class="menu-list">
-      <li>
+      <li *ngIf="has('PRIV_OPEN_COMPTE_EPS','PRIV_DEPOSIT_EPARGNE','PRIV_WITHDRAW_EPARGNE','PRIV_MANAGE_USERS')">
         <a class="menu-item" routerLink="/membres" routerLinkActive="active">
           <span class="item-arrow">▸</span>Membres
         </a>
       </li>
-      <li>
+      <li *ngIf="has('PRIV_OPEN_COMPTE_EPS','PRIV_MANAGE_USERS')">
         <a class="menu-item" routerLink="/membres/nouveau">
           <span class="item-arrow">▸</span>Nouveau membre
         </a>
       </li>
-      <li>
+      <li *ngIf="has('PRIV_BANK_OPERATION','PRIV_MANAGE_USERS')">
         <a class="menu-item" routerLink="/operations-caisse" routerLinkActive="active">
           <span class="item-arrow">▸</span>Opérations caisse
         </a>
       </li>
-      <li>
+      <li *ngIf="has('PRIV_BANK_OPERATION','PRIV_MANAGE_USERS')">
         <a class="menu-item" routerLink="/operations-banque" routerLinkActive="active">
           <span class="item-arrow">▸</span>Opérations banque
         </a>
       </li>
-      <li>
+      <li *ngIf="has('PRIV_OPEN_COMPTE_EPS','PRIV_DEPOSIT_EPARGNE','PRIV_WITHDRAW_EPARGNE','PRIV_MANAGE_USERS')">
         <a class="menu-item" routerLink="/comptes-epargne" routerLinkActive="active">
           <span class="item-arrow">▸</span>Comptes épargne
         </a>
       </li>
-      <li>
+      <li *ngIf="has('PRIV_DEPOSIT_EPARGNE','PRIV_WITHDRAW_EPARGNE','PRIV_MANAGE_USERS')">
         <a class="menu-item" routerLink="/epargne" routerLinkActive="active">
           <span class="item-arrow">▸</span>Épargne
         </a>
       </li>
-      <li>
+      <li *ngIf="has('PRIV_OPEN_COMPTE_EPS','PRIV_MANAGE_USERS')">
         <a class="menu-item" routerLink="/garanties" routerLinkActive="active">
           <span class="item-arrow">▸</span>Garanties
         </a>
       </li>
-      <li>
+      <li *ngIf="has('PRIV_MANAGE_CHEQUE','PRIV_MANAGE_USERS')">
         <a class="menu-item" routerLink="/carnets-cheque" routerLinkActive="active">
           <span class="item-arrow">▸</span>Carnets de chèques
         </a>
@@ -54,7 +54,7 @@
   </div>
 
   <!-- ── CRÉDIT ── -->
-  <div class="sidebar-section">
+  <div class="sidebar-section" *ngIf="has('PRIV_CREATE_CREDIT','PRIV_VALIDATE_CREDIT','PRIV_DISBURSE_CREDIT','PRIV_REJECT_CREDIT','PRIV_POST_REGLEMENT','PRIV_VIEW_REPORTS','PRIV_MANAGE_USERS')">
     <div class="section-header orange">
       <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
            stroke-width="1.5" width="16" height="16">
@@ -63,27 +63,32 @@
       <span>CRÉDIT</span>
     </div>
     <ul class="menu-list">
-      <li>
+      <li *ngIf="has('PRIV_CREATE_CREDIT','PRIV_VALIDATE_CREDIT','PRIV_VIEW_REPORTS','PRIV_MANAGE_USERS')">
         <a class="menu-item" routerLink="/credits" routerLinkActive="active">
           <span class="item-arrow">▸</span>Liste des crédits
         </a>
       </li>
-      <li>
+      <li *ngIf="has('PRIV_CREATE_CREDIT','PRIV_MANAGE_USERS')">
         <a class="menu-item" routerLink="/credits/nouveau">
           <span class="item-arrow">▸</span>Nouveau crédit
         </a>
       </li>
-      <li>
+      <li *ngIf="has('PRIV_CREATE_CREDIT','PRIV_POST_REGLEMENT')">
+        <a class="menu-item" routerLink="/credits/agent" routerLinkActive="active">
+          <span class="item-arrow">▸</span>Mes dossiers (Agent)
+        </a>
+      </li>
+      <li *ngIf="has('PRIV_VALIDATE_CREDIT','PRIV_REJECT_CREDIT','PRIV_MANAGE_USERS')">
         <a class="menu-item" routerLink="/credits/comite" routerLinkActive="active">
           <span class="item-arrow">▸</span>Comité crédit
         </a>
       </li>
-      <li>
+      <li *ngIf="has('PRIV_CREATE_CREDIT','PRIV_MANAGE_USERS')">
         <a class="menu-item" routerLink="/produits-credit" routerLinkActive="active">
           <span class="item-arrow">▸</span>Produits crédit
         </a>
       </li>
-      <li>
+      <li *ngIf="has('PRIV_MANAGE_USERS')">
         <a class="menu-item" routerLink="/produits-credit/nouveau">
           <span class="item-arrow">▸</span>Nouveau produit
         </a>
@@ -92,7 +97,7 @@
   </div>
 
   <!-- ── COMPTABILITÉ ── -->
-  <div class="sidebar-section">
+  <div class="sidebar-section" *ngIf="has('PRIV_RECORD_MOVEMENT','PRIV_EXPORT_REPORTS','PRIV_VIEW_REPORTS','PRIV_MANAGE_USERS')">
     <div class="section-header green">
       <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
            stroke-width="1.5" width="16" height="16">
@@ -126,7 +131,7 @@
           <span class="item-arrow">▸</span>Bilan
         </a>
       </li>
-      <li>
+      <li *ngIf="has('PRIV_EXPORT_REPORTS','PRIV_MANAGE_USERS')">
         <a class="menu-item" routerLink="/exports" routerLinkActive="active">
           <span class="item-arrow">▸</span>Exports
         </a>
@@ -135,7 +140,7 @@
   </div>
 
   <!-- ── REPORTING BCM ── -->
-  <div class="sidebar-section">
+  <div class="sidebar-section" *ngIf="has('PRIV_VIEW_REPORTS','PRIV_EXPORT_REPORTS','PRIV_MANAGE_USERS')">
     <div class="section-header purple">
       <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
            stroke-width="1.5" width="16" height="16">
@@ -153,7 +158,7 @@
   </div>
 
   <!-- ── WALLET BANKILY ── -->
-  <div class="sidebar-section">
+  <div class="sidebar-section" *ngIf="has('PRIV_BANK_OPERATION','PRIV_MANAGE_USERS')">
     <div class="section-header teal">
       <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
            stroke-width="1.5" width="16" height="16">
@@ -171,7 +176,7 @@
   </div>
 
   <!-- ── CARTOGRAPHIE ── -->
-  <div class="sidebar-section">
+  <div class="sidebar-section" *ngIf="has('PRIV_VIEW_REPORTS','PRIV_MANAGE_USERS')">
     <div class="section-header indigo">
       <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
            stroke-width="1.5" width="16" height="16">
@@ -188,8 +193,8 @@
     </ul>
   </div>
 
-  <!-- ── BANQUE (Phase 11) ── -->
-  <div class="sidebar-section">
+  <!-- ── BANQUE ── -->
+  <div class="sidebar-section" *ngIf="has('PRIV_BANK_OPERATION','PRIV_CREATE_BUDGET','PRIV_VALIDATE_BUDGET','PRIV_MANAGE_USERS','PRIV_VIEW_REPORTS')">
     <div class="section-header teal">
       <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
         <path d="M3 10h18M3 14h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z"/>
@@ -197,32 +202,59 @@
       <span>BANQUE</span>
     </div>
     <ul class="menu-list">
-      <li><a class="menu-item" routerLink="/banques" routerLinkActive="active"><span class="item-arrow">▸</span>Banques</a></li>
-      <li><a class="menu-item" routerLink="/budgets" routerLinkActive="active"><span class="item-arrow">▸</span>Budgets</a></li>
-      <li><a class="menu-item" routerLink="/simulation" routerLinkActive="active"><span class="item-arrow">▸</span>Simulateur crédit</a></li>
+      <li *ngIf="has('PRIV_BANK_OPERATION','PRIV_MANAGE_USERS')">
+        <a class="menu-item" routerLink="/banques" routerLinkActive="active"><span class="item-arrow">▸</span>Banques</a>
+      </li>
+      <li *ngIf="has('PRIV_CREATE_BUDGET','PRIV_VALIDATE_BUDGET','PRIV_MANAGE_USERS')">
+        <a class="menu-item" routerLink="/budgets" routerLinkActive="active"><span class="item-arrow">▸</span>Budgets</a>
+      </li>
+      <li *ngIf="has('PRIV_CREATE_CREDIT','PRIV_VIEW_REPORTS','PRIV_MANAGE_USERS')">
+        <a class="menu-item" routerLink="/simulation" routerLinkActive="active"><span class="item-arrow">▸</span>Simulateur crédit</a>
+      </li>
     </ul>
   </div>
 
-  <!-- ── ADMINISTRATION (Phase 11) ── -->
-  <div class="sidebar-section">
-    <div class="section-header red">
+  <!-- ── ADMINISTRATION ── -->
+  <div class="sidebar-section" *ngIf="has('PRIV_MANAGE_USERS','PRIV_VIEW_AUDIT','PRIV_CLOSE_DAY')">
+    <div class="section-header teal">
       <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
         <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
       </svg>
       <span>ADMINISTRATION</span>
     </div>
     <ul class="menu-list">
-      <li><a class="menu-item" routerLink="/admin/utilisateurs" routerLinkActive="active"><span class="item-arrow">▸</span>Utilisateurs</a></li>
-      <li><a class="menu-item" routerLink="/admin/roles" routerLinkActive="active"><span class="item-arrow">▸</span>Rôles</a></li>
-      <li><a class="menu-item" routerLink="/admin/privileges" routerLinkActive="active"><span class="item-arrow">▸</span>Privilèges</a></li>
-      <li><a class="menu-item" routerLink="/admin/audit" routerLinkActive="active"><span class="item-arrow">▸</span>Journal d'audit</a></li>
-      <li><a class="menu-item" routerLink="/admin/monitoring" routerLinkActive="active"><span class="item-arrow">▸</span>Monitoring</a></li>
-      <li><a class="menu-item" routerLink="/admin/backup" routerLinkActive="active"><span class="item-arrow">▸</span>Sauvegardes</a></li>
+      <li *ngIf="has('PRIV_MANAGE_USERS')">
+        <a class="menu-item" routerLink="/admin/utilisateurs" routerLinkActive="active"><span class="item-arrow">▸</span>Utilisateurs</a>
+      </li>
+      <li *ngIf="has('PRIV_MANAGE_USERS')">
+        <a class="menu-item" routerLink="/admin/roles" routerLinkActive="active"><span class="item-arrow">▸</span>Rôles</a>
+      </li>
+      <li *ngIf="has('PRIV_MANAGE_USERS')">
+        <a class="menu-item" routerLink="/admin/privileges" routerLinkActive="active"><span class="item-arrow">▸</span>Privilèges</a>
+      </li>
+      <li *ngIf="has('PRIV_VIEW_AUDIT','PRIV_MANAGE_USERS')">
+        <a class="menu-item" routerLink="/admin/audit" routerLinkActive="active"><span class="item-arrow">▸</span>Journal d'audit</a>
+      </li>
+      <li *ngIf="has('PRIV_MANAGE_USERS')">
+        <a class="menu-item" routerLink="/admin/monitoring" routerLinkActive="active"><span class="item-arrow">▸</span>Monitoring</a>
+      </li>
+      <li *ngIf="has('PRIV_MANAGE_USERS')">
+        <a class="menu-item" routerLink="/admin/backup" routerLinkActive="active"><span class="item-arrow">▸</span>Sauvegardes</a>
+      </li>
+      <li *ngIf="has('PRIV_MANAGE_USERS')">
+        <a class="menu-item" routerLink="/admin/jobs" routerLinkActive="active"><span class="item-arrow">▸</span>Jobs planifiés</a>
+      </li>
+      <li *ngIf="has('PRIV_CLOSE_DAY','PRIV_MANAGE_USERS')">
+        <a class="menu-item" routerLink="/admin/cloture" routerLinkActive="active"><span class="item-arrow">▸</span>Clôture comptable</a>
+      </li>
+      <li *ngIf="has('PRIV_MANAGE_USERS')">
+        <a class="menu-item" routerLink="/admin/parametres" routerLinkActive="active"><span class="item-arrow">▸</span>Paramètres système</a>
+      </li>
     </ul>
   </div>
 
   <!-- ── PARAMÉTRAGES ── -->
-  <div class="sidebar-section">
+  <div class="sidebar-section" *ngIf="has('PRIV_MANAGE_USERS')">
     <div class="section-header gray">
       <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
            stroke-width="1.5" width="16" height="16">
@@ -233,6 +265,9 @@
     </div>
     <ul class="menu-list">
       <li><a class="menu-item" routerLink="/agences" routerLinkActive="active"><span class="item-arrow">▸</span>Agences</a></li>
+      <li><a class="menu-item" routerLink="/types-garantie" routerLinkActive="active"><span class="item-arrow">▸</span>Types de garantie</a></li>
+      <li><a class="menu-item" routerLink="/produits-islamic" routerLinkActive="active"><span class="item-arrow">▸</span>Produits islamiques</a></li>
+      <li><a class="menu-item" routerLink="/parts-sociales" routerLinkActive="active"><span class="item-arrow">▸</span>Parts sociales</a></li>
     </ul>
   </div>
 

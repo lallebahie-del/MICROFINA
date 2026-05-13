@@ -1,13 +1,16 @@
 package com.pfe.backend.service;
 
+import com.microfina.entity.Amortp;
 import com.microfina.entity.Agence;
 import com.microfina.entity.Credits;
 import com.microfina.entity.CreditStatut;
 import com.microfina.entity.Membres;
 import com.microfina.entity.ProduitCredit;
+import com.microfina.service.AmortissementService;
 import com.pfe.backend.dto.CreditDTO;
 import com.pfe.backend.exception.ResourceNotFoundException;
 import com.pfe.backend.repository.AgenceRepository;
+import com.pfe.backend.repository.AmortpRepository;
 import com.pfe.backend.repository.CreditsRepository;
 import com.pfe.backend.repository.MembresRepository;
 import com.pfe.backend.repository.ProduitCreditRepository;
@@ -19,6 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -26,19 +32,25 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 public class CreditsService {
 
-    private final CreditsRepository     repo;
-    private final MembresRepository     membresRepo;
+    private final CreditsRepository      repo;
+    private final MembresRepository      membresRepo;
     private final ProduitCreditRepository produitRepo;
-    private final AgenceRepository      agenceRepo;
+    private final AgenceRepository       agenceRepo;
+    private final AmortissementService   amortissementService;
+    private final AmortpRepository       amortpRepo;
 
     public CreditsService(CreditsRepository repo,
                           MembresRepository membresRepo,
                           ProduitCreditRepository produitRepo,
-                          AgenceRepository agenceRepo) {
-        this.repo        = repo;
-        this.membresRepo = membresRepo;
-        this.produitRepo = produitRepo;
-        this.agenceRepo  = agenceRepo;
+                          AgenceRepository agenceRepo,
+                          AmortissementService amortissementService,
+                          AmortpRepository amortpRepo) {
+        this.repo                = repo;
+        this.membresRepo         = membresRepo;
+        this.produitRepo         = produitRepo;
+        this.agenceRepo          = agenceRepo;
+        this.amortissementService = amortissementService;
+        this.amortpRepo          = amortpRepo;
     }
 
     /** Paginated search. statut may be null. */
@@ -159,7 +171,26 @@ public class CreditsService {
 
         validateTransition(credit.getStatut(), target);
         credit.setStatut(target);
-        return CreditDTO.from(repo.save(credit));
+
+        if (target == CreditStatut.DEBLOQUE) {
+            BigDecimal montant = (credit.getMontantAccorde() != null
+                    && credit.getMontantAccorde().compareTo(BigDecimal.ZERO) > 0)
+                    ? credit.getMontantAccorde()
+                    : credit.getMontantDemande();
+            credit.setMontantDebloquer(montant);
+            credit.setSoldeCapital(montant);
+            credit.setDateDeblocage(LocalDate.now());
+        }
+
+        Credits saved = repo.save(credit);
+
+        if (target == CreditStatut.DEBLOQUE) {
+            List<Amortp> rows = amortissementService.genererTableauPreview(saved);
+            rows.forEach(r -> r.setCredit(saved));
+            amortpRepo.saveAll(rows);
+        }
+
+        return CreditDTO.from(saved);
     }
 
     private void validateTransition(CreditStatut from, CreditStatut to) {

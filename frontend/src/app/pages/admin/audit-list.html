@@ -1,28 +1,127 @@
 <div class="page-container">
-  <div class="page-header"><h1>Journal d'Audit</h1></div>
-  <div class="filter-bar">
-    <input type="text" [(ngModel)]="filterUser" (input)="applyFilter()" placeholder="Filtrer par utilisateur" class="form-input">
-    <select [(ngModel)]="filterAction" (change)="applyFilter()" class="form-input">
-      @for (a of actions; track a) { <option [value]="a">{{ a || 'Toutes les actions' }}</option> }
-    </select>
+
+  <div class="page-header">
+    <h2 class="page-title">Journal d'audit</h2>
+    <button class="btn btn-outline btn-sm" (click)="load()" [disabled]="loading()">↻ Actualiser</button>
   </div>
-  @if (loading()) { <div class="loading">Chargement...</div> }
-  <table class="data-table">
-    <thead>
-      <tr><th>Date/Heure</th><th>Utilisateur</th><th>Action</th><th>Entité</th><th>ID entité</th></tr>
-    </thead>
-    <tbody>
-      @for (l of filtered(); track l.id) {
-        <tr>
-          <td>{{ l.dateAction | date:'dd/MM/yyyy HH:mm:ss' }}</td>
-          <td>{{ l.utilisateur }}</td>
-          <td><span [class]="actionClass(l.action)">{{ l.action }}</span></td>
-          <td>{{ l.entite }}</td>
-          <td>{{ l.idEntite ?? '—' }}</td>
-        </tr>
-      } @empty {
-        <tr><td colspan="5" class="empty">Aucun journal d'audit</td></tr>
+
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+
+  <div class="filter-bar">
+    <input class="filter-input"
+           type="text"
+           placeholder="Rechercher (utilisateur, entité, ID…)"
+           [ngModel]="search()" (ngModelChange)="search.set($event)"/>
+
+    <select class="filter-select"
+            [ngModel]="filterAction()" (ngModelChange)="filterAction.set($event)">
+      <option value="">Toutes les actions</option>
+      @for (a of actions(); track a) {
+        <option [value]="a">{{ a }}</option>
       }
-    </tbody>
-  </table>
+    </select>
+
+    <select class="filter-select"
+            [ngModel]="filterEntite()" (ngModelChange)="filterEntite.set($event)">
+      <option value="">Toutes les entités</option>
+      @for (e of entites(); track e) {
+        <option [value]="e">{{ e }}</option>
+      }
+    </select>
+
+    <button class="btn btn-outline btn-sm" (click)="resetFilters()">Réinitialiser</button>
+
+    <span style="margin-left:auto;font-size:12px;color:var(--text-medium)">
+      {{ filtered().length }} entrée{{ filtered().length > 1 ? 's' : '' }}
+    </span>
+  </div>
+
+  <!-- ── Détail ───────────────────────────────────────────── -->
+  @if (selected()) {
+    <div class="form-card" style="margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="font-size:15px;font-weight:600;color:var(--text-dark)">
+          Détail de l'entrée #{{ selected()!.id }}
+        </h3>
+        <button class="btn btn-outline btn-sm" (click)="closeDetail()">Fermer</button>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date/Heure</label>
+          <div>{{ selected()!.dateAction | date:'dd/MM/yyyy HH:mm:ss' }}</div>
+        </div>
+        <div class="form-group">
+          <label>Utilisateur</label>
+          <div><strong>{{ selected()!.utilisateur }}</strong></div>
+        </div>
+        <div class="form-group">
+          <label>Action</label>
+          <div><span [class]="actionClass(selected()!.action)">{{ selected()!.action }}</span></div>
+        </div>
+        <div class="form-group">
+          <label>IP</label>
+          <div class="mono">{{ selected()!.adresseIp || '—' }}</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Entité</label>
+          <div class="mono">{{ selected()!.entite }} — ID {{ selected()!.idEntite || '—' }}</div>
+        </div>
+      </div>
+      @if (selected()!.ancienneValeur || selected()!.nouvelleValeur) {
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ancienne valeur</label>
+            <pre style="background:#f8f9fa;border:1px solid var(--border-color);border-radius:4px;padding:8px;font-size:12px;max-height:200px;overflow:auto">{{ selected()!.ancienneValeur || '—' }}</pre>
+          </div>
+          <div class="form-group">
+            <label>Nouvelle valeur</label>
+            <pre style="background:#f8f9fa;border:1px solid var(--border-color);border-radius:4px;padding:8px;font-size:12px;max-height:200px;overflow:auto">{{ selected()!.nouvelleValeur || '—' }}</pre>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date/Heure</th>
+            <th>Utilisateur</th>
+            <th>Action</th>
+            <th>Entité</th>
+            <th>ID entité</th>
+            <th>IP</th>
+            <th>Détail</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (l of filtered(); track l.id) {
+            <tr>
+              <td>{{ l.dateAction | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+              <td><strong>{{ l.utilisateur }}</strong></td>
+              <td><span [class]="actionClass(l.action)">{{ l.action }}</span></td>
+              <td class="mono">{{ l.entite }}</td>
+              <td class="mono">{{ l.idEntite || '—' }}</td>
+              <td class="sub-text">{{ l.adresseIp || '—' }}</td>
+              <td>
+                <button class="btn btn-outline btn-sm" (click)="showDetail(l)">Voir</button>
+              </td>
+            </tr>
+          }
+          @if (filtered().length === 0) {
+            <tr><td colspan="7" class="empty-row">Aucune entrée d'audit trouvée.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
 </div>

@@ -1,41 +1,119 @@
 <div class="page-container">
-  <h2 class="page-title">Carnets de chèques</h2>
 
-  <div class="filters">
-    <input type="text" [(ngModel)]="agenceFilter" placeholder="Agence" class="form-control" />
-    <button (click)="load()" class="btn btn-primary">Filtrer</button>
+  <div class="page-header">
+    <h2 class="page-title">Carnets de chèques</h2>
+    <button class="btn btn-primary" (click)="openNew()">+ Émettre un carnet</button>
   </div>
 
-  <div *ngIf="loading" class="loading">Chargement…</div>
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
 
-  <table *ngIf="!loading && carnets.length > 0" class="table">
-    <thead>
-      <tr>
-        <th>N° Carnet</th><th>Membre</th><th>Premier chèque</th>
-        <th>Dernier chèque</th><th>Feuillets</th><th>Date émission</th><th>Statut</th><th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let c of carnets">
-        <td>{{ c.numCarnet }}</td>
-        <td>{{ c.nomMembre ?? c.numMembre }}</td>
-        <td>{{ c.numeroPremierCheque }}</td>
-        <td>{{ c.numeroDernierCheque }}</td>
-        <td>{{ c.nbFeuillets }}</td>
-        <td>{{ c.dateEmission }}</td>
-        <td>
-          <span [class]="c.statut === 'ACTIF' ? 'badge badge-success' : 'badge badge-secondary'">
-            {{ c.statut }}
-          </span>
-        </td>
-        <td>
-          <button *ngIf="c.statut === 'ACTIF'" (click)="bloquer(c.id)" class="btn btn-sm btn-warning">
-            Bloquer
-          </button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="filter-bar">
+    <input class="filter-input"
+           type="text"
+           placeholder="Rechercher (n° carnet, membre…)"
+           [ngModel]="search()" (ngModelChange)="search.set($event)"/>
 
-  <p *ngIf="!loading && carnets.length === 0" class="empty-state">Aucun carnet de chèques.</p>
+    <select class="filter-select"
+            [ngModel]="filtreStatut()" (ngModelChange)="filtreStatut.set($event)">
+      <option value="">Tous statuts</option>
+      <option value="DEMANDE">Demande</option>
+      <option value="IMPRIME">Imprimé</option>
+      <option value="REMIS">Remis</option>
+      <option value="EPUISE">Épuisé</option>
+      <option value="PERDU">Perdu</option>
+      <option value="OPPOSITION">Opposition</option>
+    </select>
+
+    <button class="btn btn-outline btn-sm" (click)="resetFilters()">Réinitialiser</button>
+
+    <span style="margin-left:auto;font-size:12px;color:var(--text-medium)">
+      {{ carnets().length }} carnet{{ carnets().length > 1 ? 's' : '' }}
+    </span>
+  </div>
+
+  @if (showForm()) {
+    <div class="form-card" style="margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h3 style="font-size:15px;font-weight:600;color:var(--text-dark)">Émettre un carnet de chèques</h3>
+        <button class="btn btn-outline btn-sm" (click)="cancel()">Annuler</button>
+      </div>
+
+      <fieldset class="form-section">
+        <legend>Identification</legend>
+        <div class="form-row">
+          <div class="form-group">
+            <label>N° carnet *</label>
+            <input [(ngModel)]="form.numCarnet" name="numCarnet" placeholder="Ex: C-2026-001"/>
+          </div>
+          <div class="form-group">
+            <label>N° membre *</label>
+            <input [(ngModel)]="form.numMembre" name="numMembre" placeholder="Ex: M-001"/>
+          </div>
+          <div class="form-group" style="max-width:200px">
+            <label>Nombre de feuillets</label>
+            <input type="number" min="1" [(ngModel)]="form.nbFeuillets" name="nbFeuillets"/>
+          </div>
+          <div class="form-group" style="max-width:200px">
+            <label>Date demande</label>
+            <input type="date" [(ngModel)]="form.dateEmission" name="dateEmission"/>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" (click)="submit()" [disabled]="saving()">
+          {{ saving() ? 'Émission…' : 'Émettre le carnet' }}
+        </button>
+        <button class="btn btn-secondary" (click)="cancel()">Annuler</button>
+      </div>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>N° carnet</th>
+            <th>Membre</th>
+            <th class="num">Feuillets</th>
+            <th>Date demande</th>
+            <th>Date remise</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of carnets(); track c.id) {
+            <tr>
+              <td class="mono"><strong>{{ c.numeroCarnet }}</strong></td>
+              <td class="mono">{{ c.numMembre }}</td>
+              <td class="num">{{ c.nombreCheques ?? '—' }}</td>
+              <td>{{ c.dateDemande ? (c.dateDemande | date:'dd/MM/yyyy') : '—' }}</td>
+              <td>{{ c.dateRemise  ? (c.dateRemise  | date:'dd/MM/yyyy') : '—' }}</td>
+              <td><span [class]="statutClass(c.statut)">{{ c.statut }}</span></td>
+              <td>
+                <div class="actions-cell">
+                  @if (c.statut !== 'OPPOSITION' && c.statut !== 'PERDU' && c.statut !== 'EPUISE') {
+                    <button class="btn btn-warning btn-sm" (click)="bloquer(c.id, c.numeroCarnet)">Opposition</button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+          @if (carnets().length === 0) {
+            <tr><td colspan="7" class="empty-row">Aucun carnet de chèques.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
 </div>

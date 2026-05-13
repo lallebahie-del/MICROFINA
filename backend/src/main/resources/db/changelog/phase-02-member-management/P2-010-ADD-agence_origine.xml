@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  MICROFINA++ – Phase 2: Member Management
+
+  Fix for schema drift:
+  - Liquibase initially created members.agenceOrigine (camelCase)
+  - Hibernate mapping (naming strategy) looks for members.agence_origine (snake_case)
+
+  This changeset adds the missing column agence_origine and backfills it
+  from agenceOrigine so existing data remains accessible.
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P2-010-ADD-agence_origine" author="microfina">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="membres" columnName="agence_origine"/>
+            </not>
+        </preConditions>
+
+        <addColumn tableName="membres">
+            <column name="agence_origine" type="NVARCHAR(25)"/>
+        </addColumn>
+
+        <sql>
+            UPDATE membres
+            SET agence_origine = agenceOrigine
+            WHERE agence_origine IS NULL;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
+

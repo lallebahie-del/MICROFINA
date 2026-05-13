@@ -1,88 +1,154 @@
 <div class="page-container">
+
   <div class="page-header">
     <h2 class="page-title">Monitoring système</h2>
-    <span class="text-muted small">Dernière mise à jour : {{ lastRefresh | date:'HH:mm:ss' }} — rafraîchissement auto 10 s</span>
-    <button (click)="refresh()" class="btn btn-sm btn-outline-secondary ms-3">↻ Rafraîchir</button>
+    <button (click)="refresh()" class="btn btn-outline btn-sm">↻ Rafraîchir</button>
   </div>
 
-  <!-- Métriques applicatives -->
-  <div class="monitoring-grid">
+  <p class="sub-text" style="margin:0 0 16px">
+    Dernière mise à jour : <strong>{{ lastRefresh() | date:'HH:mm:ss' }}</strong> — rafraîchissement automatique toutes les 10 s.
+  </p>
 
-    <div class="card monitoring-card">
-      <h4>Application</h4>
-      <ng-container *ngIf="metrics; else noData">
-        <div class="metric-row">
-          <span>Mémoire utilisée</span>
-          <span>{{ metrics.memoryUsedMb }} Mo / {{ metrics.memoryMaxMb }} Mo</span>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px">
+
+    <!-- ── Application ─────────────────────────────────────── -->
+    <div class="form-card">
+      <h3 style="font-size:14px;font-weight:600;color:var(--text-dark);margin:0 0 12px;text-transform:uppercase;letter-spacing:0.3px">
+        Application
+      </h3>
+      @if (metrics(); as m) {
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f2f5">
+          <span class="sub-text">Mémoire</span>
+          <strong>{{ m.memoryUsedMb }} / {{ m.memoryMaxMb }} Mo</strong>
         </div>
-        <div class="progress mb-2">
-          <div class="progress-bar" [style.width.%]="memoryPercent()">{{ memoryPercent() }}%</div>
+        <div style="margin:8px 0;height:8px;background:#eef1f5;border-radius:4px;overflow:hidden">
+          <div [style.width.%]="memoryPercent()"
+               [style.background]="memoryPercent() > 80 ? '#dc3545' : memoryPercent() > 60 ? '#ffc107' : '#1970c2'"
+               style="height:100%;transition:width 0.3s"></div>
         </div>
-        <div class="metric-row"><span>Uptime</span><span>{{ metrics.uptime }}</span></div>
-        <div class="metric-row"><span>Threads actifs</span><span>{{ metrics.activeThreads }}</span></div>
-        <div class="metric-row"><span>Req/min</span><span>{{ metrics.requestsPerMinute }}</span></div>
-      </ng-container>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f2f5">
+          <span class="sub-text">Uptime</span><strong>{{ m.uptime }}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f2f5">
+          <span class="sub-text">Threads actifs</span><strong>{{ m.activeThreads }}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0">
+          <span class="sub-text">Requêtes / min</span><strong>{{ m.requestsPerMinute }}</strong>
+        </div>
+      } @else {
+        <p class="sub-text">Données indisponibles.</p>
+      }
     </div>
 
-    <div class="card monitoring-card">
-      <h4>Base de données</h4>
-      <ng-container *ngIf="database; else noData">
-        <div class="metric-row">
-          <span>Statut</span>
-          <span [class]="database.status === 'UP' ? 'badge badge-success' : 'badge badge-danger'">
-            {{ database.status }}
+    <!-- ── Base de données ─────────────────────────────────── -->
+    <div class="form-card">
+      <h3 style="font-size:14px;font-weight:600;color:var(--text-dark);margin:0 0 12px;text-transform:uppercase;letter-spacing:0.3px">
+        Base de données
+      </h3>
+      @if (database(); as db) {
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f2f5">
+          <span class="sub-text">Statut</span>
+          <span [class]="db.status === 'UP' ? 'badge badge-success' : 'badge badge-danger'">
+            {{ db.status }}
           </span>
         </div>
-        <div class="metric-row">
-          <span>Connexions</span>
-          <span>{{ database.activeConnections }} / {{ database.maxConnections }}</span>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f2f5">
+          <span class="sub-text">Connexions</span>
+          <strong>{{ db.activeConnections }} / {{ db.maxConnections }}</strong>
         </div>
-        <div class="progress mb-2">
-          <div class="progress-bar" [style.width.%]="dbPercent()">{{ dbPercent() }}%</div>
+        <div style="margin:8px 0;height:8px;background:#eef1f5;border-radius:4px;overflow:hidden">
+          <div [style.width.%]="dbPercent()"
+               [style.background]="dbPercent() > 80 ? '#dc3545' : '#1970c2'"
+               style="height:100%;transition:width 0.3s"></div>
         </div>
-        <div class="metric-row"><span>Requêtes en attente</span><span>{{ database.pendingQueries }}</span></div>
-        <div class="metric-row"><span>Taille BD</span><span>{{ database.dbSizeMb }} Mo</span></div>
-      </ng-container>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f2f5">
+          <span class="sub-text">Requêtes en attente</span><strong>{{ db.pendingQueries }}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0">
+          <span class="sub-text">Taille BD</span><strong>{{ db.dbSizeMb }} Mo</strong>
+        </div>
+      } @else {
+        <p class="sub-text">Données indisponibles.</p>
+      }
     </div>
 
-    <div class="card monitoring-card">
-      <h4>Jobs planifiés</h4>
-      <ng-container *ngIf="jobs.length > 0; else noData">
-        <table class="table table-sm">
-          <thead><tr><th>Job</th><th>Dernier run</th><th>Statut</th><th>Traités</th></tr></thead>
-          <tbody>
-            <tr *ngFor="let j of jobs">
-              <td>{{ j.nomJob }}</td>
-              <td>{{ j.dernierExecution ?? '—' }}</td>
-              <td>
-                <span [class]="j.statut === 'SUCCES' ? 'badge badge-success' : j.statut === 'ECHEC' ? 'badge badge-danger' : 'badge badge-info'">
-                  {{ j.statut ?? '—' }}
-                </span>
-              </td>
-              <td>{{ j.nbTraites ?? '—' }}</td>
+    <!-- ── Jobs planifiés ──────────────────────────────────── -->
+    <div class="form-card" style="grid-column:1/-1">
+      <h3 style="font-size:14px;font-weight:600;color:var(--text-dark);margin:0 0 12px;text-transform:uppercase;letter-spacing:0.3px">
+        Jobs planifiés
+      </h3>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Job</th>
+              <th>Dernière exécution</th>
+              <th>Statut</th>
+              <th>Traités</th>
             </tr>
+          </thead>
+          <tbody>
+            @for (j of jobs(); track j.nomJob) {
+              <tr>
+                <td class="mono">{{ j.nomJob }}</td>
+                <td>{{ j.dernierExecution ? (j.dernierExecution | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
+                <td>
+                  <span [class]="j.statut === 'SUCCES' ? 'badge badge-success' : j.statut === 'ECHEC' ? 'badge badge-danger' : 'badge badge-info'">
+                    {{ j.statut || '—' }}
+                  </span>
+                </td>
+                <td>{{ j.nbTraites ?? '—' }}</td>
+              </tr>
+            }
+            @if (jobs().length === 0) {
+              <tr><td colspan="4" class="empty-row">Aucun job exécuté.</td></tr>
+            }
           </tbody>
         </table>
-      </ng-container>
+      </div>
     </div>
 
-    <div class="card monitoring-card">
-      <h4>Sessions actives</h4>
-      <ng-container *ngIf="sessions; else noData">
-        <div class="metric-row"><strong>{{ sessions.activeUsers }} utilisateur(s) connecté(s)</strong></div>
-        <table class="table table-sm mt-2">
-          <thead><tr><th>Login</th><th>Créée le</th><th>Activité</th></tr></thead>
-          <tbody>
-            <tr *ngFor="let s of sessions.sessions">
-              <td>{{ s.login }}</td>
-              <td>{{ s.createdAt }}</td>
-              <td>{{ s.lastActivity }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </ng-container>
+    <!-- ── Sessions actives ────────────────────────────────── -->
+    <div class="form-card" style="grid-column:1/-1">
+      <h3 style="font-size:14px;font-weight:600;color:var(--text-dark);margin:0 0 12px;text-transform:uppercase;letter-spacing:0.3px">
+        Sessions actives
+      </h3>
+      @if (sessions(); as sess) {
+        <p class="sub-text" style="margin:0 0 12px">
+          <strong>{{ sess.activeUsers }}</strong> utilisateur{{ sess.activeUsers > 1 ? 's' : '' }} connecté{{ sess.activeUsers > 1 ? 's' : '' }}.
+        </p>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Login</th>
+                <th>Dernière activité</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (s of sess.sessions; track s.sessionId || s.login) {
+                <tr>
+                  <td><strong>{{ s.login }}</strong></td>
+                  <td>{{ s.lastActivity | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+                  <td>
+                    <span [class]="s.expired ? 'badge badge-danger' : 'badge badge-success'">
+                      {{ s.expired ? 'Expirée' : 'Active' }}
+                    </span>
+                  </td>
+                </tr>
+              }
+              @if (sess.sessions.length === 0) {
+                <tr><td colspan="3" class="empty-row">Aucune session active.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p class="sub-text">Données indisponibles.</p>
+      }
     </div>
+
   </div>
 
-  <ng-template #noData><p class="text-muted">Données indisponibles.</p></ng-template>
 </div>

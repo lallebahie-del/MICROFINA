@@ -73,6 +73,9 @@ export interface DeblocageRequest {
   periodicite:           string;
   nombreEcheance:        number;
   delaiGrace?:           number;
+  canal:                 'CAISSE' | 'BANQUE' | 'WALLET';
+  compteBanqueId?:       number;
+  numCompteCaisse?:      string;
 }
 
 export interface WorkflowCreditSummary {
@@ -80,4 +83,29 @@ export interface WorkflowCreditSummary {
   numCredit:      string;
   statut:         string;
   etapeCourante:  Etape;
+  // ── Champs enrichis (DTO backend WorkflowCreditSummaryDTO) ──
+  numMembre?:     string;
+  nomMembre?:     string;
+  prenomMembre?:  string;
+  montantDemande?: number;
+  montantAccorde?: number;
+  codeAgence?:    string;
+  nomAgence?:     string;
+  codeAgent?:     string;
+  dateDemande?:   string;
+  joursDansEtape?: number;
+}
+
+export interface WorkflowStats {
+  SAISIE?:             number;
+  COMPLETUDE?:         number;
+  ANALYSE_FINANCIERE?: number;
+  VISA_RC?:            number;
+  COMITE?:             number;
+  VISA_SF?:            number;
+  DEBLOCAGE_PENDING?:  number;
+  DEBLOQUE?:           number;
+  REJETE?:             number;
+  CLOTURE?:            number;
+  [key: string]: number | undefined;
 }

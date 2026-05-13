@@ -133,3 +133,18 @@
   border-radius: 4px; font-size: 13px; box-sizing: border-box;
 }
 .form-group input:focus { outline: none; border-color: var(--active-blue); }
+
+.phone-input-wrap {
+  display: flex; align-items: center;
+  border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;
+}
+.phone-prefix {
+  padding: 7px 10px; background: #f4f6fa;
+  font-size: 13px; color: var(--text-medium);
+  border-right: 1px solid var(--border-color); white-space: nowrap;
+}
+.phone-input-wrap input {
+  flex: 1; border: none; border-radius: 0; padding: 7px 10px;
+  font-size: 13px; width: auto;
+}
+.phone-input-wrap input:focus { outline: none; box-shadow: none; }

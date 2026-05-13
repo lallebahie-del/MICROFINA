@@ -30,6 +30,8 @@ class CreditWorkflowServiceTest {
     @Mock HistoriqueVisaCreditRepository historiqueRepo;
     @Mock AmortpRepository               amortpRepo;
     @Mock AmortissementService           amortissementService;
+    @Mock CreditDisbursementService      disbursementService;
+    @Mock CreditAccountingService        accountingService;
 
     @InjectMocks CreditWorkflowService service;
 

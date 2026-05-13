@@ -19,6 +19,13 @@ export const routes: Routes = [
     children: [
       { path: '', component: HomeComponent },
 
+      // ── Profil utilisateur courant ───────────────────────────────
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./pages/profile/profile').then(m => m.ProfileComponent)
+      },
+
       // ── Membres ──────────────────────────────────────────────────
       {
         path: 'membres',
@@ -63,6 +70,11 @@ export const routes: Routes = [
         path: 'credits/nouveau',
         loadComponent: () =>
           import('./pages/credits/credit-form').then(m => m.CreditFormComponent)
+      },
+      {
+        path: 'credits/agent',
+        loadComponent: () =>
+          import('./pages/credits/credits-agent-page.component').then(m => m.CreditsAgentPageComponent)
       },
       {
         path: 'credits/comite',
@@ -200,6 +212,32 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/budget/budget-list').then(m => m.BudgetListComponent)
       },
+      {
+        path: 'budgets/:id',
+        loadComponent: () =>
+          import('./pages/budget/budget-detail').then(m => m.BudgetDetailComponent)
+      },
+
+      // ── Parts sociales ────────────────────────────────────────────
+      {
+        path: 'parts-sociales',
+        loadComponent: () =>
+          import('./pages/parts-sociales/parts-sociales').then(m => m.PartsSocialesComponent)
+      },
+
+      // ── Types de garantie ─────────────────────────────────────────
+      {
+        path: 'types-garantie',
+        loadComponent: () =>
+          import('./pages/types-garantie/types-garantie-list').then(m => m.TypesGarantieListComponent)
+      },
+
+      // ── Produits islamiques ───────────────────────────────────────
+      {
+        path: 'produits-islamic',
+        loadComponent: () =>
+          import('./pages/produits-islamic/produits-islamic-list').then(m => m.ProduitsIslamicListComponent)
+      },
 
       // ── Simulation crédit ─────────────────────────────────────────
       {
@@ -238,6 +276,21 @@ export const routes: Routes = [
         path: 'admin/monitoring',
         loadComponent: () =>
           import('./pages/admin/monitoring').then(m => m.MonitoringComponent)
+      },
+      {
+        path: 'admin/jobs',
+        loadComponent: () =>
+          import('./pages/admin/jobs').then(m => m.AdminJobsComponent)
+      },
+      {
+        path: 'admin/cloture',
+        loadComponent: () =>
+          import('./pages/admin/cloture').then(m => m.AdminClotureComponent)
+      },
+      {
+        path: 'admin/parametres',
+        loadComponent: () =>
+          import('./pages/admin/parametres').then(m => m.AdminParametresComponent)
       },
     ]
   },

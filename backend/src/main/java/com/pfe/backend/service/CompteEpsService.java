@@ -10,6 +10,7 @@ import com.pfe.backend.repository.MembresRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -149,6 +150,47 @@ public class CompteEpsService {
         }
 
         return CompteEpsDTO.Response.from(compteEpsRepository.save(compte));
+    }
+
+    @Transactional
+    public CompteEpsDTO.MouvementResponse depot(String numCompte, CompteEpsDTO.MouvementRequest req) {
+        CompteEps compte = compteEpsRepository.findById(numCompte)
+                .orElseThrow(() -> new ResourceNotFoundException("CompteEps", numCompte));
+        if ("O".equals(compte.getBloque())) {
+            throw new BusinessException("COMPTE_BLOQUE", "Ce compte est bloqué.");
+        }
+        if ("O".equals(compte.getFerme())) {
+            throw new BusinessException("COMPTE_FERME", "Ce compte est fermé.");
+        }
+        BigDecimal actuel = compte.getMontantDepot() != null ? compte.getMontantDepot() : BigDecimal.ZERO;
+        compte.setMontantDepot(actuel.add(req.montant()));
+        compteEpsRepository.save(compte);
+        BigDecimal ouvert = compte.getMontantOuvert() != null ? compte.getMontantOuvert() : BigDecimal.ZERO;
+        return new CompteEpsDTO.MouvementResponse(numCompte, "DEPOT", req.montant(),
+                ouvert.add(compte.getMontantDepot()));
+    }
+
+    @Transactional
+    public CompteEpsDTO.MouvementResponse retrait(String numCompte, CompteEpsDTO.MouvementRequest req) {
+        CompteEps compte = compteEpsRepository.findById(numCompte)
+                .orElseThrow(() -> new ResourceNotFoundException("CompteEps", numCompte));
+        if ("O".equals(compte.getBloque())) {
+            throw new BusinessException("COMPTE_BLOQUE", "Ce compte est bloqué.");
+        }
+        if ("O".equals(compte.getFerme())) {
+            throw new BusinessException("COMPTE_FERME", "Ce compte est fermé.");
+        }
+        BigDecimal ouvert = compte.getMontantOuvert() != null ? compte.getMontantOuvert() : BigDecimal.ZERO;
+        BigDecimal depot  = compte.getMontantDepot()  != null ? compte.getMontantDepot()  : BigDecimal.ZERO;
+        BigDecimal soldeActuel = ouvert.add(depot);
+        if (req.montant().compareTo(soldeActuel) > 0) {
+            throw new BusinessException("SOLDE_INSUFFISANT",
+                    "Solde insuffisant : " + soldeActuel + " MRU disponible.");
+        }
+        compte.setMontantDepot(depot.subtract(req.montant()));
+        compteEpsRepository.save(compte);
+        return new CompteEpsDTO.MouvementResponse(numCompte, "RETRAIT", req.montant(),
+                ouvert.add(compte.getMontantDepot()));
     }
 
     /**

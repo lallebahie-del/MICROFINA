@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!-- Phase 9 – Sécurité : RBAC, journal d'audit et données initiales -->
+
+    <include file="db/changelog/phase-09-securite/P9-001-CREATE-TABLE-Role.xml"
+             relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/phase-09-securite/P9-002-CREATE-TABLE-Privilege.xml"
+             relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/phase-09-securite/P9-003-CREATE-TABLE-Utilisateur.xml"
+             relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/phase-09-securite/P9-004-CREATE-TABLE-UtilisateurRole.xml"
+             relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/phase-09-securite/P9-005-CREATE-TABLE-RolePrivilege.xml"
+             relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/phase-09-securite/P9-006-CREATE-TABLE-JournalAudit.xml"
+             relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/phase-09-securite/P9-007-seed-roles-privileges.xml"
+             relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/phase-09-securite/P9-008-sync-Utilisateur-password-from-AGENT_CREDIT.xml"
+             relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/phase-09-securite/P9-009-seed-utilisateurs-aminata-oumar.xml"
+             relativeToChangelogFile="false"/>
+
+    <include file="db/changelog/phase-09-securite/P9-010-renumber-utilisateurs-ids.xml"
+             relativeToChangelogFile="false"/>
+
+</databaseChangeLog>

@@ -1,40 +1,144 @@
 <div class="page-container">
-  <h2 class="page-title">Comptes épargne</h2>
 
-  <div class="filters">
-    <input type="text" [(ngModel)]="agenceFilter" placeholder="Agence" class="form-control" />
-    <button (click)="load()" class="btn btn-primary">Filtrer</button>
+  <div class="page-header">
+    <h2 class="page-title">Comptes épargne</h2>
+    <button class="btn btn-primary" (click)="openNew()">+ Ouvrir un compte</button>
   </div>
 
-  <div *ngIf="loading" class="loading">Chargement…</div>
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
 
-  <table *ngIf="!loading && comptes.length > 0" class="table">
-    <thead>
-      <tr>
-        <th>N° Compte</th><th>Membre</th><th>Solde (MRU)</th>
-        <th>Taux (%)</th><th>Date ouv.</th><th>Statut</th><th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let c of comptes">
-        <td>{{ c.numCompte }}</td>
-        <td>{{ c.nomMembre ?? c.numMembre }}</td>
-        <td class="montant">{{ c.solde | number:'1.2-2' }}</td>
-        <td>{{ c.tauxInteret }}</td>
-        <td>{{ c.dateOuverture }}</td>
-        <td>
-          <span [class]="c.statut === 'ACTIF' ? 'badge badge-success' : 'badge badge-danger'">
-            {{ c.statut }}
-          </span>
-        </td>
-        <td>
-          <button *ngIf="c.statut === 'ACTIF'" (click)="bloquer(c.id)" class="btn btn-sm btn-warning">
-            Bloquer
-          </button>
-        </td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="filter-bar">
+    <input class="filter-input"
+           type="text"
+           placeholder="Rechercher (n° compte, membre…)"
+           [ngModel]="search()" (ngModelChange)="search.set($event)"/>
 
-  <p *ngIf="!loading && comptes.length === 0" class="empty-state">Aucun compte épargne.</p>
+    <select class="filter-select"
+            [ngModel]="agenceFilter()" (ngModelChange)="agenceFilter.set($event); load()">
+      <option value="">Toutes agences</option>
+      @for (a of agences(); track a.codeAgence) {
+        <option [value]="a.codeAgence">{{ a.codeAgence }} — {{ a.nomAgence }}</option>
+      }
+    </select>
+
+    <select class="filter-select"
+            [ngModel]="filtreStatut()" (ngModelChange)="filtreStatut.set($event)">
+      <option value="">Tous statuts</option>
+      <option value="ACTIF">Actifs</option>
+      <option value="BLOQUE">Bloqués</option>
+      <option value="FERME">Fermés</option>
+    </select>
+
+    <button class="btn btn-outline btn-sm" (click)="resetFilters()">Réinitialiser</button>
+
+    <span style="margin-left:auto;font-size:12px;color:var(--text-medium)">
+      {{ comptes().length }} compte{{ comptes().length > 1 ? 's' : '' }}
+      — Total : <strong>{{ totalSolde() | number:'1.2-2' }} MRU</strong>
+    </span>
+  </div>
+
+  @if (showForm()) {
+    <div class="form-card" style="margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h3 style="font-size:15px;font-weight:600;color:var(--text-dark)">Ouvrir un compte épargne</h3>
+        <button class="btn btn-outline btn-sm" (click)="cancel()">Annuler</button>
+      </div>
+
+      <fieldset class="form-section">
+        <legend>Compte</legend>
+        <div class="form-row">
+          <div class="form-group">
+            <label>N° compte *</label>
+            <input [(ngModel)]="form.numCompte" name="numCompte" placeholder="Ex: EPS-000123"/>
+          </div>
+          <div class="form-group">
+            <label>N° membre *</label>
+            <input [(ngModel)]="form.numMembre" name="numMembre"/>
+          </div>
+          <div class="form-group">
+            <label>Agence *</label>
+            <select [(ngModel)]="form.agence" name="agence">
+              <option [ngValue]="null">— Sélectionner —</option>
+              @for (a of agences(); track a.codeAgence) {
+                <option [ngValue]="a.codeAgence">{{ a.codeAgence }} — {{ a.nomAgence }}</option>
+              }
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" style="max-width:200px">
+            <label>Solde initial (MRU)</label>
+            <input type="number" step="0.01" min="0"
+                   [(ngModel)]="form.solde" name="solde"/>
+          </div>
+          <div class="form-group" style="max-width:200px">
+            <label>Taux d'intérêt (%)</label>
+            <input type="number" step="0.01"
+                   [(ngModel)]="form.tauxInteret" name="tauxInteret"/>
+          </div>
+          <div class="form-group" style="max-width:200px">
+            <label>Date d'ouverture</label>
+            <input type="date" [(ngModel)]="form.dateOuverture" name="dateOuverture"/>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" (click)="submit()" [disabled]="saving()">
+          {{ saving() ? 'Ouverture…' : 'Ouvrir le compte' }}
+        </button>
+        <button class="btn btn-secondary" (click)="cancel()">Annuler</button>
+      </div>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>N° compte</th>
+            <th>Membre</th>
+            <th>Agence</th>
+            <th class="num">Solde (MRU)</th>
+            <th class="num">Taux %</th>
+            <th>Ouverture</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of comptes(); track c.numCompte) {
+            <tr>
+              <td class="mono"><strong>{{ c.numCompte }}</strong></td>
+              <td>{{ c.nomMembre || c.numMembre }}</td>
+              <td class="mono">{{ c.agence || '—' }}</td>
+              <td class="num">{{ c.solde | number:'1.2-2' }}</td>
+              <td class="num">{{ c.tauxInteret | number:'1.2-2' }}</td>
+              <td>{{ c.dateOuverture ? (c.dateOuverture | date:'dd/MM/yyyy') : '—' }}</td>
+              <td><span [class]="statutClass(c.statut)">{{ c.statut || '—' }}</span></td>
+              <td>
+                <div class="actions-cell">
+                  @if (c.statut === 'ACTIF') {
+                    <button class="btn btn-warning btn-sm" (click)="bloquer(c.numCompte)">Bloquer</button>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+          @if (comptes().length === 0) {
+            <tr><td colspan="8" class="empty-row">Aucun compte épargne trouvé.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
 </div>

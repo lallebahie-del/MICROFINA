@@ -10,8 +10,7 @@
            → Phase 7 (opérations de caisse)
            → Phase 8 (module budget)
            → Phase 9 (sécurité – RBAC, journal d'audit)
-           → Phase 10 (complétion cahier — TypeGarantie, API REST, exports, vues, cartographie, wallet)
-           → Phase 11 (sécurité et durcissement)
+           → Phase 10 (complétion cahier — TypeGarantie, API REST, exports, vues, cartographie, wallet).
   Add future phases here in order.
   ============================================================
 -->
@@ -34,5 +33,11 @@
 
     <!-- ── Phase 11 – Sécurité et durcissement ──────────────────── -->
     <include file="db/changelog/phase-11-security/changelog-phase-11.xml"/>
+
+    <!-- ── Phase 12 – Workflow d'approbation crédit (6 étapes) ──── -->
+    <include file="db/changelog/phase-12-credit-workflow/changelog-phase-12.xml"/>
+
+    <!-- ── Phase 13 – Mobile self-service (notifications, register) ──── -->
+    <include file="db/changelog/phase-13-mobile/changelog-phase-13.xml"/>
 
 </databaseChangeLog>

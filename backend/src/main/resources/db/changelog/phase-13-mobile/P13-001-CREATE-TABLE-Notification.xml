@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ============================================================
+  MICROFINA++ — Phase 13 Mobile self-service
+  ============================================================
+  13.1 — Table Notification (notifications poussées vers l'app mobile)
+  ============================================================
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P13-001-create-table-notification" author="microfina-phase13">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="Notification"/></not>
+        </preConditions>
+
+        <comment>Notifications mobile (push, in-app)</comment>
+
+        <createTable tableName="Notification">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_login" type="NVARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="titre" type="NVARCHAR(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message" type="NVARCHAR(1000)"/>
+            <column name="type" type="NVARCHAR(50)"
+                    defaultValue="INFO">
+                <constraints nullable="false"/>
+            </column>
+            <column name="lu" type="BIT" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_creation" type="DATETIME2"
+                    defaultValueComputed="GETDATE()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_lecture" type="DATETIME2"/>
+            <column name="lien" type="NVARCHAR(500)"/>
+            <column name="version" type="INT" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex indexName="IX_Notification_user_login_lu_date"
+                     tableName="Notification">
+            <column name="user_login"/>
+            <column name="lu"/>
+            <column name="date_creation"/>
+        </createIndex>
+
+        <rollback>
+            <dropTable tableName="Notification"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ComptesEpargneService, CompteEpargne } from '../../services/comptes-epargne.service';
+import { AgencesService, Agence } from '../../services/agences.service';
 
 @Component({
   selector: 'app-comptes-epargne-list',
@@ -10,24 +11,112 @@ import { ComptesEpargneService, CompteEpargne } from '../../services/comptes-epa
   templateUrl: './comptes-epargne-list.html'
 })
 export class ComptesEpargneListComponent implements OnInit {
-  comptes: CompteEpargne[] = [];
-  agenceFilter = '';
-  loading = false;
+  private all = signal<CompteEpargne[]>([]);
+  agences = signal<Agence[]>([]);
 
-  constructor(private svc: ComptesEpargneService) {}
+  search       = signal('');
+  agenceFilter = signal<string>('');
+  filtreStatut = signal<string>('');
 
-  ngOnInit(): void { this.load(); }
+  comptes = computed<CompteEpargne[]>(() => {
+    const q = this.search().trim().toLowerCase();
+    const fS = this.filtreStatut();
+    return this.all().filter(c => {
+      if (fS && c.statut !== fS) return false;
+      if (!q) return true;
+      return (c.numCompte?.toLowerCase().includes(q))
+          || (c.numMembre?.toLowerCase().includes(q))
+          || (c.nomMembre?.toLowerCase().includes(q) ?? false);
+    });
+  });
+
+  totalSolde = computed<number>(() => this.comptes().reduce((s, c) => s + (c.solde ?? 0), 0));
+
+  loading = signal(false);
+  saving  = signal(false);
+  error   = signal<string | null>(null);
+  success = signal<string | null>(null);
+
+  showForm = signal(false);
+  form: Partial<CompteEpargne> = { tauxInteret: 0, solde: 0 };
+
+  constructor(
+    private svc: ComptesEpargneService,
+    private agencesSvc: AgencesService
+  ) {}
+
+  ngOnInit(): void {
+    this.load();
+    this.agencesSvc.getAll(true).subscribe({ next: list => this.agences.set(list) });
+  }
 
   load(): void {
-    this.loading = true;
-    this.svc.getAll(this.agenceFilter || undefined).subscribe({
-      next: data => { this.comptes = data; this.loading = false; },
-      error: () => { this.loading = false; }
+    this.loading.set(true);
+    this.error.set(null);
+    this.svc.getAll(this.agenceFilter() || undefined).subscribe({
+      next: data => { this.all.set(data); this.loading.set(false); },
+      error: e   => { this.error.set('Erreur : ' + (e.error?.message ?? e.message)); this.loading.set(false); }
     });
   }
 
-  bloquer(id: number): void {
-    if (!confirm('Bloquer ce compte épargne ?')) return;
-    this.svc.bloquer(id).subscribe({ next: () => this.load() });
+  resetFilters(): void {
+    this.search.set('');
+    this.agenceFilter.set('');
+    this.filtreStatut.set('');
+    this.load();
+  }
+
+  openNew(): void {
+    this.form = {
+      tauxInteret: 0,
+      solde: 0,
+      agence: '',
+      dateOuverture: new Date().toISOString().slice(0, 10),
+    };
+    this.showForm.set(true);
+    this.error.set(null);
+    this.success.set(null);
+  }
+
+  cancel(): void {
+    this.showForm.set(false);
+  }
+
+  submit(): void {
+    const codeAgence = (this.form.agence ?? '').toString().trim();
+    if (!this.form.numCompte?.trim() || !this.form.numMembre?.trim() || !codeAgence) {
+      this.error.set('N° compte, N° membre et agence sont obligatoires.');
+      return;
+    }
+    this.saving.set(true);
+    this.error.set(null);
+
+    this.svc.ouvrir(this.form).subscribe({
+      next: () => {
+        this.saving.set(false);
+        this.success.set('Compte épargne ouvert.');
+        this.showForm.set(false);
+        this.load();
+      },
+      error: e => {
+        this.saving.set(false);
+        this.error.set('Erreur : ' + (e.error?.message ?? e.message));
+      }
+    });
+  }
+
+  bloquer(numCompte: string): void {
+    if (!confirm(`Bloquer le compte ${numCompte} ?`)) return;
+    this.svc.bloquer(numCompte).subscribe({
+      next: () => { this.success.set('Compte bloqué.'); this.load(); },
+      error: e => this.error.set('Erreur : ' + (e.error?.message ?? e.message))
+    });
+  }
+
+  statutClass(s: string): string {
+    if (s === 'ACTIF')  return 'badge badge-success';
+    if (s === 'BLOQUE') return 'badge badge-warning';
+    if (s === 'FERME')  return 'badge badge-danger';
+    return 'badge badge-info';
   }
 }

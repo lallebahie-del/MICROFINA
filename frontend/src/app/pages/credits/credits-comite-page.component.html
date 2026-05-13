@@ -1,37 +1,247 @@
 <div class="page-container">
+
   <div class="page-header">
-    <h1>Comité de crédit — Dossiers en attente</h1>
-    <button class="btn btn-secondary" (click)="charger()">↻ Rafraîchir</button>
+    <h2 class="page-title">Comité de crédit — Dossiers en attente</h2>
+    <button class="btn btn-outline btn-sm" (click)="charger()" [disabled]="loading()">↻ Rafraîchir</button>
   </div>
 
-  <div *ngIf="error"   class="alert alert-danger">{{ error }}</div>
-  <div *ngIf="loading" class="loading">Chargement…</div>
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
+  @if (success()) {
+    <div class="alert alert-success">{{ success() }}</div>
+  }
 
-  <table *ngIf="!loading" class="table table-hover">
-    <thead>
-      <tr>
-        <th>N° crédit</th>
-        <th>Membre</th>
-        <th>Montant demandé</th>
-        <th>Étape</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let d of dossiers">
-        <td>{{ d.numCredit }}</td>
-        <td>—</td>
-        <td>—</td>
-        <td>{{ etapeLabel(d.etapeCourante) }}</td>
-        <td>
-          <button class="btn btn-sm btn-primary" (click)="ouvrir(d.idCredit)">
-            Ouvrir
-          </button>
-        </td>
-      </tr>
-      <tr *ngIf="dossiers.length === 0">
-        <td colspan="5" class="text-center">Aucun dossier en attente de décision comité.</td>
-      </tr>
-    </tbody>
-  </table>
+  <!-- ── Bandeau stats ──────────────────────────────────────────── -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px">
+    <div class="form-card" style="padding:14px">
+      <div style="font-size:11px;color:var(--text-medium);text-transform:uppercase;letter-spacing:0.4px;font-weight:600">Dossiers en attente</div>
+      <div style="font-size:24px;font-weight:700;color:var(--text-dark);margin-top:4px">{{ totalDossiers() }}</div>
+    </div>
+    <div class="form-card" style="padding:14px">
+      <div style="font-size:11px;color:var(--text-medium);text-transform:uppercase;letter-spacing:0.4px;font-weight:600">Montant cumulé</div>
+      <div style="font-size:24px;font-weight:700;color:var(--text-dark);margin-top:4px">{{ fmt(montantCumule()) }} <span style="font-size:13px;font-weight:500;color:var(--text-medium)">MRU</span></div>
+    </div>
+    <div class="form-card" style="padding:14px">
+      <div style="font-size:11px;color:var(--text-medium);text-transform:uppercase;letter-spacing:0.4px;font-weight:600">Agences impactées</div>
+      <div style="font-size:24px;font-weight:700;color:var(--text-dark);margin-top:4px">{{ agencesUniques().length }}</div>
+    </div>
+  </div>
+
+  <!-- ── Filtres ────────────────────────────────────────────────── -->
+  <div class="filter-bar">
+    <input class="filter-input"
+           type="text"
+           placeholder="Rechercher (n° crédit, membre, n° membre…)"
+           [ngModel]="search()" (ngModelChange)="search.set($event)"/>
+
+    <select class="filter-select"
+            [ngModel]="filtreAgence()" (ngModelChange)="filtreAgence.set($event)">
+      <option value="">Toutes agences</option>
+      @for (a of agencesUniques(); track a) {
+        <option [value]="a">{{ a }}</option>
+      }
+    </select>
+
+    <input class="filter-select"
+           type="number"
+           placeholder="Montant min"
+           style="max-width:160px"
+           [ngModel]="filtreMontantMin()" (ngModelChange)="filtreMontantMin.set($event)"/>
+
+    <button class="btn btn-outline btn-sm" (click)="resetFilters()">Réinitialiser</button>
+
+    <span style="margin-left:auto;font-size:12px;color:var(--text-medium)">
+      {{ dossiers().length }} dossier{{ dossiers().length > 1 ? 's' : '' }}
+    </span>
+  </div>
+
+  <!-- ── Décision ───────────────────────────────────────────────── -->
+  @if (decisionDossier()) {
+    <div class="form-card" style="margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="font-size:15px;font-weight:600;color:var(--text-dark)">
+          {{ decisionDossier()!.type === 'approuver' ? 'Approuver' : 'Rejeter' }} le dossier #{{ decisionDossier()!.id }}
+        </h3>
+        <button class="btn btn-outline btn-sm" (click)="cancelDecision()">Annuler</button>
+      </div>
+
+      <fieldset class="form-section">
+        <legend>{{ decisionDossier()!.type === 'rejeter' ? 'Motif (obligatoire)' : 'Commentaire (optionnel)' }}</legend>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Commentaire</label>
+            <textarea [(ngModel)]="commentaire" name="commentaire" rows="3"
+                      placeholder="Justification de la décision…"></textarea>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-actions">
+        <button [class]="decisionDossier()!.type === 'approuver' ? 'btn btn-success' : 'btn btn-danger'"
+                (click)="submitDecision()" [disabled]="saving() !== null">
+          {{ saving() !== null ? 'Enregistrement…' : (decisionDossier()!.type === 'approuver' ? '✓ Confirmer l\'approbation' : '✗ Confirmer le rejet') }}
+        </button>
+        <button class="btn btn-secondary" (click)="cancelDecision()">Annuler</button>
+      </div>
+    </div>
+  }
+
+  <!-- ── Liste enrichie ─────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>N° Crédit</th>
+            <th>Membre</th>
+            <th>Agence</th>
+            <th class="num">Montant demandé</th>
+            <th>Date demande</th>
+            <th>Délai</th>
+            <th>Étape</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (d of dossiers(); track d.idCredit) {
+            <tr>
+              <td class="mono"><strong>{{ d.numCredit }}</strong></td>
+              <td>
+                <div>{{ d.nomMembre }} {{ d.prenomMembre }}</div>
+                @if (d.numMembre) {
+                  <div class="sub-text">{{ d.numMembre }}</div>
+                }
+              </td>
+              <td>{{ d.nomAgence || d.codeAgence || '—' }}</td>
+              <td class="num"><strong>{{ fmt(d.montantDemande) }} MRU</strong></td>
+              <td>{{ d.dateDemande ? (d.dateDemande | date:'dd/MM/yyyy') : '—' }}</td>
+              <td>
+                @if (d.joursDansEtape != null) {
+                  <span [class]="joursClass(d.joursDansEtape)">{{ d.joursDansEtape }}j</span>
+                } @else {
+                  <span class="sub-text">—</span>
+                }
+              </td>
+              <td><span class="badge badge-warning">{{ etapeLabel(d.etapeCourante) }}</span></td>
+              <td>
+                <div class="actions-cell">
+                  <button class="btn btn-outline btn-sm" (click)="togglePanel(d)">
+                    {{ panelFor(d.idCredit) ? '▴ Fermer' : '▾ Détails' }}
+                  </button>
+                  <button class="btn btn-outline btn-sm" (click)="ouvrirWorkflow(d.idCredit)">Workflow</button>
+                  <button class="btn btn-success btn-sm" (click)="openApprouver(d.idCredit)" [disabled]="saving() !== null">✓ Approuver</button>
+                  <button class="btn btn-danger btn-sm"  (click)="openRejeter(d.idCredit)"  [disabled]="saving() !== null">✗ Rejeter</button>
+                </div>
+              </td>
+            </tr>
+
+            @if (panelFor(d.idCredit); as p) {
+              <tr>
+                <td colspan="8" style="background:#fafbfc;padding:18px">
+                  @if (p.loading) {
+                    <div class="loading-indicator"><div class="spinner"></div> Chargement détail…</div>
+                  } @else {
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px">
+
+                      <!-- ── Analyse financière ─────────────────────────── -->
+                      <div class="form-card" style="padding:14px">
+                        <h4 style="font-size:12px;font-weight:600;color:var(--text-medium);margin:0 0 10px;text-transform:uppercase;letter-spacing:0.4px">
+                          Analyse financière
+                        </h4>
+                        @if (p.analyse) {
+                          <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #f0f2f5">
+                            <span class="sub-text">Revenus mensuels</span><strong>{{ fmt(p.analyse.revenusMensuels) }} MRU</strong>
+                          </div>
+                          <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #f0f2f5">
+                            <span class="sub-text">Charges mensuelles</span><strong>{{ fmt(p.analyse.chargesMensuelles) }} MRU</strong>
+                          </div>
+                          <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #f0f2f5">
+                            <span class="sub-text">Total actif</span><strong>{{ fmt(p.analyse.totalActif) }} MRU</strong>
+                          </div>
+                          <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #f0f2f5">
+                            <span class="sub-text">Total passif</span><strong>{{ fmt(p.analyse.totalPassif) }} MRU</strong>
+                          </div>
+                          <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0">
+                            <span class="sub-text">Capacité de remb.</span>
+                            <span [class]="capaciteClass(p.analyse)">{{ capaciteRemb(p.analyse) }}</span>
+                          </div>
+                          @if (p.analyse.avisAgent) {
+                            <div style="margin-top:8px;padding:8px;background:var(--bg-light);border-radius:4px;font-size:12px">
+                              <strong>Avis agent :</strong> {{ p.analyse.avisAgent }}
+                            </div>
+                          }
+                          @if (p.analyse.commentaire) {
+                            <div style="margin-top:6px;padding:8px;background:var(--bg-light);border-radius:4px;font-size:12px">
+                              <strong>Commentaire :</strong> {{ p.analyse.commentaire }}
+                            </div>
+                          }
+                        } @else {
+                          <p class="sub-text" style="margin:0">Aucune analyse financière saisie.</p>
+                        }
+                      </div>
+
+                      <!-- ── Garanties ───────────────────────────────────── -->
+                      <div class="form-card" style="padding:14px">
+                        <h4 style="font-size:12px;font-weight:600;color:var(--text-medium);margin:0 0 10px;text-transform:uppercase;letter-spacing:0.4px">
+                          Garanties ({{ p.garanties?.length ?? 0 }})
+                        </h4>
+                        @if (p.garanties && p.garanties.length > 0) {
+                          @for (g of p.garanties; track g.idGarantie) {
+                            <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid #f0f2f5">
+                              <span>{{ g.libelleTypeGarantie || g.codeTypeGarantie }}</span>
+                              <strong>{{ fmt(g.valeurEstimee) }} MRU</strong>
+                            </div>
+                          }
+                          <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0 0;font-weight:600">
+                            <span>Total estimé</span>
+                            <strong>{{ fmt(totalGaranties(p.garanties)) }} MRU</strong>
+                          </div>
+                          <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;color:var(--text-medium)">
+                            <span>Couverture</span>
+                            <strong>{{ tauxCouverture(p) }}</strong>
+                          </div>
+                        } @else {
+                          <p class="sub-text" style="margin:0">Aucune garantie attachée.</p>
+                        }
+                      </div>
+
+                      <!-- ── Timeline ────────────────────────────────────── -->
+                      <div class="form-card" style="padding:14px">
+                        <h4 style="font-size:12px;font-weight:600;color:var(--text-medium);margin:0 0 10px;text-transform:uppercase;letter-spacing:0.4px">
+                          Historique ({{ p.timeline?.length ?? 0 }})
+                        </h4>
+                        @if (p.timeline && p.timeline.length > 0) {
+                          @for (t of p.timeline; track $index) {
+                            <div style="display:flex;flex-direction:column;font-size:12px;padding:6px 0;border-bottom:1px solid #f0f2f5">
+                              <div style="display:flex;justify-content:space-between">
+                                <span class="mono"><strong>{{ t.etape }}</strong></span>
+                                <span class="sub-text">{{ t.dateVisa | date:'dd/MM HH:mm' }}</span>
+                              </div>
+                              <div class="sub-text">{{ t.utilisateur || '—' }} → {{ t.decision || t.statutApres }}</div>
+                              @if (t.commentaire) {
+                                <div class="sub-text" style="font-style:italic">"{{ t.commentaire }}"</div>
+                              }
+                            </div>
+                          }
+                        } @else {
+                          <p class="sub-text" style="margin:0">Aucun historique.</p>
+                        }
+                      </div>
+                    </div>
+                  }
+                </td>
+              </tr>
+            }
+          }
+          @if (dossiers().length === 0) {
+            <tr><td colspan="8" class="empty-row">Aucun dossier en attente de décision comité.</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
 </div>

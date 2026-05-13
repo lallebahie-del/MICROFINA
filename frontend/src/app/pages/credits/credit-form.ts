@@ -50,11 +50,11 @@ export class CreditFormComponent implements OnInit {
     // Load dropdowns in parallel
     this.produitsService.listActifs().subscribe({
       next: list => this.produits.set(list),
-      error: () => {}
+      error: e => this.error.set('Impossible de charger les produits : ' + (e.error?.message ?? e.message ?? 'Erreur réseau'))
     });
-    this.membresService.search('', 'ACTIF', 'ACTIF', 0, 100).subscribe({
+    this.membresService.search('', '', '', 0, 200).subscribe({
       next: r => this.membres.set(r.content),
-      error: () => {}
+      error: e => this.error.set('Impossible de charger les membres : ' + (e.error?.message ?? e.message ?? 'Erreur réseau'))
     });
 
     if (!this.isNew && this.creditId) {
@@ -63,6 +63,14 @@ export class CreditFormComponent implements OnInit {
         next:  c => { this.form = { ...c }; this.loading.set(false); },
         error: e => { this.error.set('Erreur : ' + e.message); this.loading.set(false); }
       });
+    }
+  }
+
+  // When member is selected, auto-fill agenceCode from member's agency
+  onMembreChange(): void {
+    const m = this.membres().find(m => m.numMembre === this.form.membreNum);
+    if (m?.agenceCode) {
+      this.form = { ...this.form, agenceCode: m.agenceCode };
     }
   }
 
@@ -87,26 +95,62 @@ export class CreditFormComponent implements OnInit {
     this.saving.set(true);
     this.error.set(null);
 
-    // Map form's flat FK fields to the entity shape the backend expects
-    const payload: any = { ...this.form };
-    if (payload.membreNum)  { payload.membre    = { numMembre: payload.membreNum }; }
-    if (payload.produitCode){ payload.produitCredit = { numProduit: payload.produitCode }; }
-
-    const call = this.isNew
-      ? this.creditsService.create(payload)
-      : this.creditsService.update(this.creditId!, payload);
-
-    call.subscribe({
-      next: saved => {
-        this.saving.set(false);
-        this.success.set(this.isNew ? 'Crédit créé avec succès.' : 'Crédit mis à jour.');
-        setTimeout(() => this.router.navigate(['/credits', saved.idCredit]), 1200);
-      },
-      error: e => {
-        this.saving.set(false);
-        this.error.set('Erreur : ' + (e.error?.message ?? e.message ?? e));
-      }
-    });
+    if (this.isNew) {
+      // Build flat CreateRequest matching the backend record
+      const payload = {
+        numMembre:     this.form.membreNum,
+        numProduit:    this.form.produitCode,
+        codeAgence:    this.form.agenceCode ?? 'NKC',
+        montantDemande: this.form.montantDemande,
+        periodicite:   this.form.periodicite,
+        duree:         this.form.duree,
+        nombreEcheance: this.form.nombreEcheance,
+        delaiGrace:    this.form.delaiGrace ?? 0,
+        objetCredit:   this.form.objetCredit,
+        dateDemande:   this.form.dateDemande,
+        tauxInteret:   this.form.tauxInteret,
+        tauxPenalite:  this.form.tauxPenalite,
+        tauxCommission: this.form.tauxCommission,
+        tauxAssurance:  this.form.tauxAssurance,
+      };
+      this.creditsService.create(payload).subscribe({
+        next: saved => {
+          this.saving.set(false);
+          this.success.set('Crédit créé avec succès.');
+          setTimeout(() => this.router.navigate(['/credits', saved.idCredit]), 1200);
+        },
+        error: e => {
+          this.saving.set(false);
+          this.error.set('Erreur : ' + (e.error?.message ?? e.message ?? e));
+        }
+      });
+    } else {
+      // UpdateRequest — montant, schedule, taux only
+      const payload = {
+        montantDemande:  this.form.montantDemande,
+        periodicite:     this.form.periodicite,
+        duree:           this.form.duree,
+        nombreEcheance:  this.form.nombreEcheance,
+        delaiGrace:      this.form.delaiGrace ?? 0,
+        objetCredit:     this.form.objetCredit,
+        dateDemande:     this.form.dateDemande,
+        tauxInteret:     this.form.tauxInteret,
+        tauxPenalite:    this.form.tauxPenalite,
+        tauxCommission:  this.form.tauxCommission,
+        tauxAssurance:   this.form.tauxAssurance,
+      };
+      this.creditsService.update(this.creditId!, payload).subscribe({
+        next: saved => {
+          this.saving.set(false);
+          this.success.set('Crédit mis à jour.');
+          setTimeout(() => this.router.navigate(['/credits', saved.idCredit]), 1200);
+        },
+        error: e => {
+          this.saving.set(false);
+          this.error.set('Erreur : ' + (e.error?.message ?? e.message ?? e));
+        }
+      });
+    }
   }
 
   annuler(): void {

@@ -14,7 +14,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -38,18 +40,24 @@ public class CreditWorkflowService {
     private final HistoriqueVisaCreditRepository historiqueRepo;
     private final AmortpRepository               amortpRepo;
     private final AmortissementService           amortissementService;
+    private final CreditDisbursementService      disbursementService;
+    private final CreditAccountingService        accountingService;
 
     public CreditWorkflowService(
             CreditsRepository              creditsRepo,
             AnalyseFinanciereRepository    analyseRepo,
             HistoriqueVisaCreditRepository historiqueRepo,
             AmortpRepository               amortpRepo,
-            AmortissementService           amortissementService) {
+            AmortissementService           amortissementService,
+            CreditDisbursementService      disbursementService,
+            CreditAccountingService        accountingService) {
         this.creditsRepo          = creditsRepo;
         this.analyseRepo          = analyseRepo;
         this.historiqueRepo       = historiqueRepo;
         this.amortpRepo           = amortpRepo;
         this.amortissementService = amortissementService;
+        this.disbursementService  = disbursementService;
+        this.accountingService    = accountingService;
     }
 
     // =========================================================================
@@ -184,13 +192,12 @@ public class CreditWorkflowService {
      * DEBLOCAGE_PENDING → DEBLOQUE.
      *
      * Avec effets de bord :
-     *   1. Re-fetch with pessimistic lock (avoid double-disbursement).
-     *   2. Sets MONTANT_DEBLOQUER, DATE_DEBLOCAGE, SOLDE_CAPITAL, SOLDE_INTERET = 0, SOLDE_PENALITE = 0.
-     *   3. Generates and persists Amortp rows via AmortissementService.
-     *   4. Appends historique row.
-     *
-     * TODO §3.1.x: post comptabilité entries (debit COMPTE_CAPITAL / credit COMPTE_DEBLOCAGE)
-     * TODO §3.1.x: lock guarantees (Garantie.statut <- ACTIVE)
+     *   1. Charge le crédit et vérifie l'étape {@code DEBLOCAGE_PENDING}.
+     *   2. Décaissement ({@link CreditDisbursementService}) — impact solde caisse / banque.
+     *   3. Écriture comptable de déblocage ({@link CreditAccountingService#ecritureDeblocage}).
+     *   4. Met à jour montants, dates, soldes et statut {@code DEBLOQUE}.
+     *   5. Génère et persiste les lignes {@link Amortp} via {@link AmortissementService}.
+     *   6. Ajoute une ligne d'historique.
      */
     public Credits debloquer(Long idCredit, DeblocageRequest req) {
         // 1. Pessimistic lock to avoid double-disbursement
@@ -201,7 +208,19 @@ public class CreditWorkflowService {
 
         CreditStatut avant = c.getStatut();
 
-        // 2. Set disbursement fields
+        // 2. Matérialiser le mouvement de fonds (impact solde caisse/banque)
+        disbursementService.debloquerFonds(req);
+
+        // 3. Comptabiliser le déblocage (écriture minimale)
+        accountingService.ecritureDeblocage(
+                c,
+                req.montantDeblocage(),
+                currentUser(),
+                "DEBLOCAGE_CREDIT#" + idCredit,
+                "CR-DEB-" + idCredit + "-" + LocalDate.now()
+        );
+
+        // 4. Set disbursement fields
         c.setMontantDebloquer(req.montantDeblocage());
         c.setDateDeblocage(req.datePremiereEcheance());  // date déblocage = date 1ère échéance context
         c.setDatePremièreEcheance(req.datePremiereEcheance());
@@ -216,13 +235,13 @@ public class CreditWorkflowService {
 
         Credits saved = creditsRepo.save(c);
 
-        // 3. Generate amortization schedule
+        // 5. Generate amortization schedule
         if (saved.getModeDeCalculInteret() != null) {
             List<Amortp> tableau = amortissementService.genererTableau(saved);
             amortpRepo.saveAll(tableau);
         }
 
-        // 4. Append historique
+        // 6. Append historique
         appendHistorique(saved, "DEBLOQUE", avant, CreditStatut.DEBLOQUE, "APPROUVE", null);
 
         return saved;
@@ -269,6 +288,39 @@ public class CreditWorkflowService {
     @Transactional(readOnly = true)
     public List<Credits> getComitePending() {
         return creditsRepo.findByEtapeCourante("COMITE");
+    }
+
+    /** Dossiers en attente d'action agent (complétude + analyse + visa RC). */
+    @Transactional(readOnly = true)
+    public List<Credits> getAgentPending() {
+        List<Credits> all = creditsRepo.findByEtapeCourante("COMPLETUDE");
+        all.addAll(creditsRepo.findByEtapeCourante("ANALYSE_FINANCIERE"));
+        all.addAll(creditsRepo.findByEtapeCourante("VISA_RC"));
+        return all;
+    }
+
+    /** Dossiers à une étape précise (paramétrable). */
+    @Transactional(readOnly = true)
+    public List<Credits> getQueueByEtape(String etape) {
+        if (etape == null || etape.isBlank()) {
+            throw new IllegalArgumentException("Étape requise.");
+        }
+        return creditsRepo.findByEtapeCourante(etape.toUpperCase());
+    }
+
+    /** Compteurs de dossiers par étape (workflow stats). */
+    @Transactional(readOnly = true)
+    public Map<String, Long> getWorkflowStats() {
+        String[] etapes = {
+            "SAISIE", "COMPLETUDE", "ANALYSE_FINANCIERE",
+            "VISA_RC", "COMITE", "VISA_SF",
+            "DEBLOCAGE_PENDING", "DEBLOQUE", "REJETE", "CLOTURE"
+        };
+        Map<String, Long> stats = new HashMap<>();
+        for (String e : etapes) {
+            stats.put(e, (long) creditsRepo.findByEtapeCourante(e).size());
+        }
+        return stats;
     }
 
     // =========================================================================

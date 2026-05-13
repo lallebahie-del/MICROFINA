@@ -1,15 +1,21 @@
 package com.pfe.backend.controller;
 
 import com.pfe.backend.dto.GarantieDTO;
+import com.pfe.backend.dto.GarantieDocumentDTO;
+import com.pfe.backend.service.GarantieDocumentService;
 import com.pfe.backend.service.GarantieService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
 import java.util.List;
@@ -34,9 +40,11 @@ import java.util.List;
 public class GarantieController {
 
     private final GarantieService service;
+    private final GarantieDocumentService documentService;
 
-    public GarantieController(GarantieService service) {
+    public GarantieController(GarantieService service, GarantieDocumentService documentService) {
         this.service = service;
+        this.documentService = documentService;
     }
 
     // ── POST /api/v1/garanties ────────────────────────────────────────────
@@ -93,5 +101,38 @@ public class GarantieController {
             @PathVariable Long id,
             @Valid @RequestBody GarantieDTO.MainleveeRequest req) {
         return ResponseEntity.ok(service.liberer(id, req));
+    }
+
+    // ── Documents justificatifs ────────────────────────────────────────────
+
+    @Operation(summary = "Uploader une preuve (document) pour une garantie")
+    @PostMapping(value = "/{id}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('PRIV_POST_REGLEMENT')")
+    public ResponseEntity<GarantieDocumentDTO> uploadDocument(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file,
+            Authentication auth) {
+        GarantieDocumentDTO dto = documentService.upload(id, file, auth != null ? auth.getName() : "SYSTEM");
+        return ResponseEntity.status(201).body(dto);
+    }
+
+    @Operation(summary = "Lister les documents d'une garantie")
+    @GetMapping("/{id}/documents")
+    @PreAuthorize("hasAuthority('PRIV_VIEW_REPORTS')")
+    public ResponseEntity<List<GarantieDocumentDTO>> listDocuments(@PathVariable Long id) {
+        return ResponseEntity.ok(documentService.list(id));
+    }
+
+    @Operation(summary = "Télécharger un document d'une garantie")
+    @GetMapping("/{id}/documents/{docId}")
+    @PreAuthorize("hasAuthority('PRIV_VIEW_REPORTS')")
+    public ResponseEntity<Resource> downloadDocument(
+            @PathVariable Long id,
+            @PathVariable Long docId) {
+        var dl = documentService.download(id, docId);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + dl.filename() + "\"")
+                .contentType(MediaType.parseMediaType(dl.contentType()))
+                .body(dl.resource());
     }
 }

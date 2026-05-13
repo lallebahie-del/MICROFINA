@@ -38,7 +38,7 @@ public final class OperationCaisseDTO {
      * @param idComptabilite  FK vers l'écriture comptable (obligatoire)
      */
     public record CreateRequest(
-            @NotBlank String numPiece,
+                      String numPiece,
             @NotNull  LocalDate dateOperation,
             @NotNull  BigDecimal montant,
                       String modePaiement,
@@ -46,7 +46,7 @@ public final class OperationCaisseDTO {
                       String utilisateur,
                       String numCompte,
                       String codeAgence,
-            @NotNull  Long idComptabilite
+                      Long idComptabilite
     ) { }
 
     // ── Update ────────────────────────────────────────────────────────────────

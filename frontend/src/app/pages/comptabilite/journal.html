@@ -1,33 +1,78 @@
 <div class="page-container">
-  <h2 class="page-title">Journal comptable</h2>
 
-  <div class="filters">
-    <input type="text"  [(ngModel)]="agence" placeholder="Agence" class="form-control" />
-    <input type="date"  [(ngModel)]="date"   class="form-control" />
-    <button (click)="load()" class="btn btn-primary">Filtrer</button>
+  <div class="page-header">
+    <h2 class="page-title">Journal comptable</h2>
+    <button class="btn btn-outline btn-sm" (click)="load()" [disabled]="loading()">↻ Actualiser</button>
   </div>
 
-  <div *ngIf="loading" class="loading">Chargement…</div>
+  @if (error()) {
+    <div class="alert alert-error">{{ error() }}</div>
+  }
 
-  <table *ngIf="!loading && lignes.length > 0" class="table">
-    <thead>
-      <tr>
-        <th>Date</th><th>Code journal</th><th>N° pièce</th><th>Compte</th>
-        <th>Libellé</th><th>Débit</th><th>Crédit</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngFor="let l of lignes">
-        <td>{{ l.dateEcriture }}</td>
-        <td>{{ l.codeJournal }}</td>
-        <td>{{ l.numPiece }}</td>
-        <td>{{ l.numCompte }}</td>
-        <td>{{ l.libelle }}</td>
-        <td class="montant">{{ l.debit | number:'1.2-2' }}</td>
-        <td class="montant">{{ l.credit | number:'1.2-2' }}</td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="filter-bar">
+    <input class="filter-input"
+           type="text"
+           placeholder="Code agence…"
+           [ngModel]="agence()" (ngModelChange)="agence.set($event)"
+           (keyup.enter)="load()"/>
 
-  <p *ngIf="!loading && lignes.length === 0" class="empty-state">Aucune écriture pour ce filtre.</p>
+    <input class="filter-select"
+           type="date"
+           style="max-width:180px"
+           [ngModel]="date()" (ngModelChange)="date.set($event)"
+           (change)="load()"/>
+
+    <button class="btn btn-primary btn-sm" (click)="load()">Filtrer</button>
+    <button class="btn btn-outline btn-sm" (click)="reset()">Réinitialiser</button>
+
+    <span style="margin-left:auto;font-size:12px;color:var(--text-medium)">
+      {{ lignes().length }} ligne{{ lignes().length > 1 ? 's' : '' }}
+    </span>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Journal</th>
+            <th>N° pièce</th>
+            <th>Compte</th>
+            <th>Libellé</th>
+            <th class="num">Débit</th>
+            <th class="num">Crédit</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (l of lignes(); track $index) {
+            <tr>
+              <td>{{ l.dateEcriture | date:'dd/MM/yyyy' }}</td>
+              <td class="mono">{{ l.codeJournal }}</td>
+              <td class="mono">{{ l.numPiece }}</td>
+              <td class="mono">{{ l.numCompte }}</td>
+              <td>{{ l.libelle }}</td>
+              <td class="num">{{ l.debit  | number:'1.2-2' }}</td>
+              <td class="num">{{ l.credit | number:'1.2-2' }}</td>
+            </tr>
+          }
+          @if (lignes().length === 0) {
+            <tr><td colspan="7" class="empty-row">Aucune écriture pour ce filtre.</td></tr>
+          }
+        </tbody>
+        @if (lignes().length > 0) {
+          <tfoot>
+            <tr style="background:var(--bg-light);font-weight:600">
+              <td colspan="5" style="text-align:right">Totaux :</td>
+              <td class="num">{{ totalDebit()  | number:'1.2-2' }}</td>
+              <td class="num">{{ totalCredit() | number:'1.2-2' }}</td>
+            </tr>
+          </tfoot>
+        }
+      </table>
+    </div>
+  }
+
 </div>

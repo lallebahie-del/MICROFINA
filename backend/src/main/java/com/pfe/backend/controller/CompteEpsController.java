@@ -102,6 +102,28 @@ public class CompteEpsController {
         return ResponseEntity.ok(compteEpsService.update(numCompte, req));
     }
 
+    // ── POST /api/v1/comptes-epargne/{numCompte}/depot ───────────────
+
+    @Operation(summary = "Enregistrer un dépôt sur un compte épargne")
+    @PostMapping("/{numCompte}/depot")
+    @PreAuthorize("hasAuthority('PRIV_DEPOSIT_EPARGNE') or hasAuthority('PRIV_ADMIN')")
+    public ResponseEntity<CompteEpsDTO.MouvementResponse> depot(
+            @PathVariable String numCompte,
+            @Valid @RequestBody CompteEpsDTO.MouvementRequest req) {
+        return ResponseEntity.ok(compteEpsService.depot(numCompte, req));
+    }
+
+    // ── POST /api/v1/comptes-epargne/{numCompte}/retrait ─────────────
+
+    @Operation(summary = "Enregistrer un retrait sur un compte épargne")
+    @PostMapping("/{numCompte}/retrait")
+    @PreAuthorize("hasAuthority('PRIV_WITHDRAW_EPARGNE') or hasAuthority('PRIV_ADMIN')")
+    public ResponseEntity<CompteEpsDTO.MouvementResponse> retrait(
+            @PathVariable String numCompte,
+            @Valid @RequestBody CompteEpsDTO.MouvementRequest req) {
+        return ResponseEntity.ok(compteEpsService.retrait(numCompte, req));
+    }
+
     // ── DELETE /api/v1/comptes-epargne/{numCompte} ────────────────────
 
     @Operation(summary = "Supprimer un compte épargne")

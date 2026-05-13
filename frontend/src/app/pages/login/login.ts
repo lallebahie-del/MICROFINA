@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/auth.service';
@@ -10,7 +10,7 @@ import { AuthService } from '../../core/auth.service';
   templateUrl: './login.html',
   styleUrl:    './login.css'
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   username  = '';
   password  = '';
   loading   = signal(false);
@@ -18,6 +18,14 @@ export class LoginComponent {
   showPass  = signal(false);
 
   constructor(private authService: AuthService) {}
+
+  ngOnInit(): void {
+    // S'assure que les champs sont vides à chaque arrivée sur la page
+    // (utile après une déconnexion : on évite que le navigateur ait gardé
+    // les valeurs précédentes au niveau du modèle Angular).
+    this.username = '';
+    this.password = '';
+  }
 
   onSubmit(): void {
     if (!this.username.trim() || !this.password.trim()) {
@@ -28,7 +36,7 @@ export class LoginComponent {
     this.loading.set(true);
     this.errorMsg.set(null);
 
-    this.authService.login(this.username.trim(), this.password).subscribe({
+    this.authService.login(this.username.trim(), this.password.trim()).subscribe({
       next:  ()    => this.loading.set(false),
       error: (err) => {
         this.loading.set(false);

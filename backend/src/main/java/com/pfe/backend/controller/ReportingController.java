@@ -251,12 +251,13 @@ public class ReportingController {
             @RequestParam(required = false) String date) {
 
         StringBuilder sql = new StringBuilder("""
-            SELECT idcomptabilite, dateoperation, num_piece, libelle,
+            SELECT idcomptabilite,
+                   dateoperation AS date_ecriture,
+                   num_piece, libelle,
                    num_compte, compte_contrepartie, sens, debit, credit,
-                   code_agence, nom_agence, agent_saisie, type_operation,
-                   montant_net, idreglement, date_reglement,
-                   montant_reglement, mode_paiement, statut_reglement,
-                   numcredit_reglement
+                   type_operation AS code_journal,
+                   code_agence, nom_agence, agent_saisie,
+                   montant_net, mode_paiement, statut_reglement
             FROM vue_journal_comptable
             WHERE 1=1
             """);
@@ -318,11 +319,20 @@ public class ReportingController {
             @RequestParam(required = false) String compte) {
 
         StringBuilder sql = new StringBuilder("""
-            SELECT idcomptabilite, dateoperation, num_piece_comptable,
-                   num_compte, compte_auxiliaire, compte_tiers, compte_contrepartie,
-                   sens, ref_credit_comptable, lettrage, etat_ecriture, marque_validation,
-                   agence_ecriture, agent_saisie, statut_reglement, num_credit,
-                   solde_capital_credit, date_echeance_credit, total_revenus_ecriture
+            SELECT idcomptabilite,
+                   dateoperation         AS date_ecriture,
+                   num_piece_comptable,
+                   num_compte,
+                   LIBELLE               AS libelle,
+                   DEBIT                 AS debit,
+                   CREDIT                AS credit,
+                   SUM(COALESCE(DEBIT,0) - COALESCE(CREDIT,0))
+                       OVER (PARTITION BY num_compte
+                             ORDER BY dateoperation, idcomptabilite
+                             ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+                                         AS solde_cumule,
+                   compte_auxiliaire, lettrage, etat_ecriture,
+                   agence_ecriture, agent_saisie
             FROM vue_grand_livre
             WHERE 1=1
             """);

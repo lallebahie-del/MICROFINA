@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Code banque tel que choisi dans le formulaire (ex. 001 / 002 / 003).
+  Indépendant du CompteBanque : permet d'afficher la banque même si aucun compte
+  ne correspond à la paire (code banque + agence) en base.
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P6-012-add-code-banque-saisie-OperationBanque" author="microfina">
+        <addColumn tableName="OperationBanque">
+            <column name="code_banque_saisie" type="NVARCHAR(20)" remarks="Banque sélectionnée à la saisie (réf. référentiel Banque)"/>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="OperationBanque" columnName="code_banque_saisie"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

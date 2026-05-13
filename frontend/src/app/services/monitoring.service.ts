@@ -28,7 +28,7 @@ export interface JobStatus {
 
 export interface SessionInfo {
   activeUsers: number;
-  sessions: { login: string; createdAt: string; lastActivity: string }[];
+  sessions: { login: string; sessionId?: string; lastActivity: string; expired?: boolean }[];
 }
 
 @Injectable({ providedIn: 'root' })

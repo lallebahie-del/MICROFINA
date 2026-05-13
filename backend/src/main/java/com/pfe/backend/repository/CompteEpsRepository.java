@@ -1,6 +1,7 @@
 package com.pfe.backend.repository;
 
 import com.microfina.entity.CompteEps;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,6 +12,10 @@ import java.util.List;
  */
 @Repository
 public interface CompteEpsRepository extends JpaRepository<CompteEps, String> {
+
+    @EntityGraph(attributePaths = {"membre", "agence", "membre.agence"})
+    @Override
+    List<CompteEps> findAll();
 
     /** Retourne tous les comptes épargne d'un membre donné. */
     List<CompteEps> findByMembre_NumMembre(String numMembre);

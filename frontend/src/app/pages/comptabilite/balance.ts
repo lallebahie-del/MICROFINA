@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ComptabiliteService, BalanceCompte } from '../../services/comptabilite.service';
@@ -10,27 +10,33 @@ import { ComptabiliteService, BalanceCompte } from '../../services/comptabilite.
   templateUrl: './balance.html'
 })
 export class BalanceComponent implements OnInit {
-  balance: BalanceCompte[] = [];
-  agence = '';
-  loading = false;
+  balance = signal<BalanceCompte[]>([]);
+  agence  = signal<string>('');
+  loading = signal(false);
+  error   = signal<string | null>(null);
+
+  totalDebit  = computed<number>(() =>
+    this.balance().reduce((s, l) => s + (l.totalDebit  ?? 0), 0)
+  );
+  totalCredit = computed<number>(() =>
+    this.balance().reduce((s, l) => s + (l.totalCredit ?? 0), 0)
+  );
 
   constructor(private svc: ComptabiliteService) {}
 
   ngOnInit(): void { this.load(); }
 
   load(): void {
-    this.loading = true;
-    this.svc.getBalance(this.agence || undefined).subscribe({
-      next: data => { this.balance = data; this.loading = false; },
-      error: () => { this.loading = false; }
+    this.loading.set(true);
+    this.error.set(null);
+    this.svc.getBalance(this.agence() || undefined).subscribe({
+      next: data => { this.balance.set(data); this.loading.set(false); },
+      error: e   => { this.error.set('Erreur : ' + (e.error?.message ?? e.message)); this.loading.set(false); }
     });
   }
 
-  get totalDebit(): number {
-    return this.balance.reduce((s, l) => s + (l.totalDebit ?? 0), 0);
-  }
-
-  get totalCredit(): number {
-    return this.balance.reduce((s, l) => s + (l.totalCredit ?? 0), 0);
+  reset(): void {
+    this.agence.set('');
+    this.load();
   }
 }

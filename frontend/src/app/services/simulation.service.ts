@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface SimulationRequest {
   montantPrincipal: number;
@@ -32,6 +33,6 @@ export interface SimulationResponse {
 export class SimulationService {
   private readonly http = inject(HttpClient);
   simuler(req: SimulationRequest): Observable<SimulationResponse> {
-    return this.http.post<SimulationResponse>('/api/v1/simulations/credit', req);
+    return this.http.post<SimulationResponse>(`${environment.apiUrl}/api/v1/simulations/credit`, req);
   }
 }

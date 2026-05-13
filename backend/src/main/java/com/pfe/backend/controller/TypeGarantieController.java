@@ -1,58 +1,89 @@
 package com.pfe.backend.controller;
 
 import com.microfina.entity.TypeGarantie;
+import com.pfe.backend.exception.ResourceNotFoundException;
 import com.pfe.backend.repository.TypeGarantieRepository;
+import com.pfe.backend.service.TypeGarantieService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
 
 /**
- * TypeGarantieController — référentiel des types de garantie en lecture seule.
+ * TypeGarantieController — référentiel des types de garantie (lecture + administration).
  *
  * <pre>
- *   GET /api/v1/referentiel/types-garantie        — liste des types actifs (pour les dropdowns)
- *   GET /api/v1/referentiel/types-garantie/{code} — détail d'un type
+ *   GET    /api/v1/referentiel/types-garantie        — liste actifs (dropdowns)
+ *   GET    /api/v1/referentiel/types-garantie/all    — liste complète (admin)
+ *   GET    /api/v1/referentiel/types-garantie/{code} — détail
+ *   POST   /api/v1/referentiel/types-garantie        — création (PRIV_MANAGE_PARAMS)
+ *   PUT    /api/v1/referentiel/types-garantie/{code} — mise à jour (PRIV_MANAGE_PARAMS)
+ *   DELETE /api/v1/referentiel/types-garantie/{code} — suppression (PRIV_MANAGE_PARAMS)
  * </pre>
- *
- * <p>Aucune écriture exposée : le référentiel est géré par Liquibase (P10-001b).</p>
  */
 @Tag(name = "Référentiel — Types de garantie", description = "Liste des types de garantie acceptés")
 @RestController
 @RequestMapping("/api/v1/referentiel/types-garantie")
-@PreAuthorize("hasAuthority('PRIV_VIEW_REPORTS')")
 public class TypeGarantieController {
 
     private final TypeGarantieRepository repo;
+    private final TypeGarantieService service;
 
-    public TypeGarantieController(TypeGarantieRepository repo) {
+    public TypeGarantieController(TypeGarantieRepository repo, TypeGarantieService service) {
         this.repo = repo;
+        this.service = service;
     }
 
-    /**
-     * Retourne tous les types de garantie actifs triés par libellé.
-     * Utilisé pour alimenter les dropdowns du formulaire de saisie de garantie.
-     */
     @Operation(summary = "Lister les types de garantie actifs")
     @GetMapping
+    @PreAuthorize("hasAnyAuthority('PRIV_VIEW_REPORTS','PRIV_MANAGE_PARAMS')")
     public ResponseEntity<List<TypeGarantie>> listActifs() {
         return ResponseEntity.ok(repo.findAllActifsOrdonnes());
     }
 
-    /**
-     * Retourne le détail d'un type de garantie par son code.
-     */
+    @Operation(summary = "Lister tous les types de garantie (actifs + archivés)")
+    @GetMapping("/all")
+    @PreAuthorize("hasAuthority('PRIV_MANAGE_PARAMS')")
+    public ResponseEntity<List<TypeGarantie>> listAll() {
+        return ResponseEntity.ok(repo.findAll());
+    }
+
     @Operation(summary = "Obtenir un type de garantie par code")
     @GetMapping("/{code}")
+    @PreAuthorize("hasAnyAuthority('PRIV_VIEW_REPORTS','PRIV_MANAGE_PARAMS')")
     public ResponseEntity<TypeGarantie> getByCode(@PathVariable String code) {
         return repo.findById(code)
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+                .orElseThrow(() -> new ResourceNotFoundException("TypeGarantie", code));
+    }
+
+    @Operation(summary = "Créer un type de garantie")
+    @PostMapping
+    @PreAuthorize("hasAuthority('PRIV_MANAGE_PARAMS')")
+    public ResponseEntity<TypeGarantie> create(@RequestBody TypeGarantie input) {
+        TypeGarantie created = service.create(input);
+        return ResponseEntity
+            .created(URI.create("/api/v1/referentiel/types-garantie/" + created.getCode()))
+            .body(created);
+    }
+
+    @Operation(summary = "Mettre à jour un type de garantie")
+    @PutMapping("/{code}")
+    @PreAuthorize("hasAuthority('PRIV_MANAGE_PARAMS')")
+    public ResponseEntity<TypeGarantie> update(@PathVariable String code,
+                                               @RequestBody TypeGarantie input) {
+        return ResponseEntity.ok(service.update(code, input));
+    }
+
+    @Operation(summary = "Supprimer un type de garantie")
+    @DeleteMapping("/{code}")
+    @PreAuthorize("hasAuthority('PRIV_MANAGE_PARAMS')")
+    public ResponseEntity<Void> delete(@PathVariable String code) {
+        service.delete(code);
+        return ResponseEntity.noContent().build();
     }
 }

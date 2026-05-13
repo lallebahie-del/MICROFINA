@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,13 +40,10 @@ public class AdminMonitoringController {
 
     private static final Instant START_TIME = Instant.now();
 
-    private final JdbcTemplate       jdbc;
-    private final SessionRegistry    sessionRegistry;
+    private final JdbcTemplate jdbc;
 
-    public AdminMonitoringController(JdbcTemplate jdbc,
-                                     SessionRegistry sessionRegistry) {
-        this.jdbc            = jdbc;
-        this.sessionRegistry = sessionRegistry;
+    public AdminMonitoringController(JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
     }
 
     // =========================================================================
@@ -94,20 +90,17 @@ public class AdminMonitoringController {
         Map<String, Object> result = new HashMap<>();
         try {
             Integer activeConns = jdbc.queryForObject(
-                "SELECT count(*) FROM pg_stat_activity WHERE state = 'active'",
+                "SELECT COUNT(*) FROM sys.dm_exec_sessions WHERE is_user_process = 1",
                 Integer.class);
-            Integer maxConns = jdbc.queryForObject(
-                "SELECT setting::int FROM pg_settings WHERE name = 'max_connections'",
-                Integer.class);
-            Long dbSizeBytes = jdbc.queryForObject(
-                "SELECT pg_database_size(current_database())",
+            Long dbSizeMb = jdbc.queryForObject(
+                "SELECT ISNULL(SUM(CAST(size AS BIGINT)) * 8 / 1024, 0) FROM sys.database_files",
                 Long.class);
 
             result.put("status",            "UP");
-            result.put("activeConnections", activeConns   != null ? activeConns : 0);
-            result.put("maxConnections",    maxConns      != null ? maxConns    : 100);
+            result.put("activeConnections", activeConns != null ? activeConns : 0);
+            result.put("maxConnections",    32767);
             result.put("pendingQueries",    0);
-            result.put("dbSizeMb",          dbSizeBytes   != null ? dbSizeBytes / (1024 * 1024) : 0);
+            result.put("dbSizeMb",          dbSizeMb != null ? dbSizeMb : 0);
         } catch (Exception e) {
             result.put("status",            "DOWN");
             result.put("error",             e.getMessage());
@@ -133,13 +126,17 @@ public class AdminMonitoringController {
     public List<Map<String, Object>> getJobs() {
         return jdbc.queryForList(
             """
-            SELECT DISTINCT ON (nom_job)
-                   nom_job          AS "nomJob",
-                   date_debut       AS "dernierExecution",
+            SELECT nom_job          AS nomJob,
+                   date_debut       AS dernierExecution,
                    statut,
-                   nb_traites       AS "nbTraites"
-            FROM   job_execution
-            ORDER BY nom_job, date_debut DESC
+                   nb_traites       AS nbTraites
+            FROM (
+                SELECT nom_job, date_debut, statut, nb_traites,
+                       ROW_NUMBER() OVER (PARTITION BY nom_job ORDER BY date_debut DESC) AS rn
+                FROM   job_execution
+            ) ranked
+            WHERE  rn = 1
+            ORDER BY nom_job
             """);
     }
 
@@ -156,25 +153,26 @@ public class AdminMonitoringController {
     @Operation(summary = "Utilisateurs connectés (sessions actives)")
     @GetMapping("/sessions")
     public Map<String, Object> getSessions() {
-        List<Object> principals = sessionRegistry.getAllPrincipals();
-        int activeUsers = (int) principals.stream()
-                .filter(p -> !sessionRegistry.getAllSessions(p, false).isEmpty())
-                .count();
-
-        List<Map<String, Object>> sessionList = principals.stream()
-                .flatMap(p -> sessionRegistry.getAllSessions(p, false).stream()
-                        .map(s -> {
-                            Map<String, Object> m = new HashMap<>();
-                            m.put("login",        p.toString());
-                            m.put("sessionId",    s.getSessionId());
-                            m.put("lastActivity", s.getLastRequest());
-                            m.put("expired",      s.isExpired());
-                            return m;
-                        }))
-                .toList();
+        // JWT is stateless — derive active sessions from audit log:
+        // users who logged in within the last 8 hours (token validity) with no logout after that login.
+        List<Map<String, Object>> sessionList = jdbc.queryForList("""
+            SELECT l.utilisateur AS login,
+                   l.date_action AS lastActivity,
+                   0             AS expired
+            FROM   JournalAudit l
+            WHERE  l.action = 'LOGIN'
+              AND  l.date_action >= DATEADD(HOUR, -8, GETDATE())
+              AND  NOT EXISTS (
+                       SELECT 1 FROM JournalAudit lo
+                       WHERE  lo.utilisateur = l.utilisateur
+                         AND  lo.action      = 'LOGOUT'
+                         AND  lo.date_action > l.date_action
+                   )
+            ORDER BY l.date_action DESC
+            """);
 
         Map<String, Object> result = new HashMap<>();
-        result.put("activeUsers", activeUsers);
+        result.put("activeUsers", sessionList.size());
         result.put("sessions",    sessionList);
         return result;
     }

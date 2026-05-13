@@ -5,11 +5,20 @@ import { environment } from '../../environments/environment';
 
 export interface Agence {
   codeAgence: string;
-  nomAgence: string;
-  actif: boolean;
-  isSiege: boolean;
+  nomAgence?: string;
+  nomCourt?: string;
+  actif?: boolean;
+  isSiege?: string;
   chefAgence?: string;
-  zoneGeographique?: string;
+  nomPrenomChefAgence?: string;
+  institution?: string;
+  zoneGeographique?: number;
+  numCompte?: string;
+  compteCaisse?: string;
+  compteCrediteur?: string;
+  numeroSms?: string;
+  longitude?: number;
+  latitude?: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -30,5 +39,17 @@ export class AgencesService {
 
   getSieges(): Observable<Agence[]> {
     return this.http.get<Agence[]>(`${this.base}/sieges`);
+  }
+
+  create(a: Agence): Observable<Agence> {
+    return this.http.post<Agence>(this.base, a);
+  }
+
+  update(code: string, a: Agence): Observable<Agence> {
+    return this.http.put<Agence>(`${this.base}/${code}`, a);
+  }
+
+  delete(code: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${code}`);
   }
 }
