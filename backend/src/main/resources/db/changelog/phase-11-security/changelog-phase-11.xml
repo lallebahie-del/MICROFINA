@@ -16,5 +16,8 @@
     <include file="db/changelog/phase-11-security/P11-002-INSERT-privileges-phase11.xml"/>
     <include file="db/changelog/phase-11-security/P11-003-INSERT-priv-admin.xml"/>
     <include file="db/changelog/phase-11-security/P11-701-CREATE-TABLE-job_execution.xml"/>
+    <include file="db/changelog/phase-11-security/P11-004-seed-demo-users.xml"/>
+    <include file="db/changelog/phase-11-security/P11-005-seed-role-privileges.xml"/>
+    <include file="db/changelog/phase-11-security/P11-006-islamic-products-only.xml"/>
 
 </databaseChangeLog>

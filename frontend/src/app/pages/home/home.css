@@ -23,6 +23,20 @@
   font-weight: 700;
   color: var(--text-dark);
   letter-spacing: -0.6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.role-pill {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--brand-teal-soft);
+  color: var(--brand-teal-dark);
+  letter-spacing: 0;
 }
 
 .db-subtitle {

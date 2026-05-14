@@ -26,6 +26,22 @@ export class CreditFormComponent implements OnInit {
   produits = signal<ProduitCredit[]>([]);
   membres  = signal<Membre[]>([]);
 
+  // Selected product (for Islamic mode detection)
+  selectedProduit = signal<ProduitCredit | null>(null);
+
+  get isIslamic(): boolean {
+    return this.selectedProduit()?.familleProduitCode === 'FAM_ISL';
+  }
+
+  get islamicType(): 'MOURABAHA' | 'MOUCHARAKA' | 'IJARA' | null {
+    const code = this.selectedProduit()?.codeProduitIslamic ?? this.selectedProduit()?.numProduit;
+    if (!code) return null;
+    if (code.includes('ISL_01') || code.includes('MOURABAHA')) return 'MOURABAHA';
+    if (code.includes('ISL_02') || code.includes('MOUCHARAKA')) return 'MOUCHARAKA';
+    if (code.includes('ISL_03') || code.includes('IJARA')) return 'IJARA';
+    return null;
+  }
+
   form: Partial<Credit> = {
     periodicite: 'M',
     duree:        12,
@@ -77,16 +93,17 @@ export class CreditFormComponent implements OnInit {
   // When product is selected, prefill rates from the product
   onProduitChange(): void {
     const p = this.produits().find(p => p.numProduit === this.form.produitCode);
-    if (!p) return;
+    if (!p) { this.selectedProduit.set(null); return; }
+    this.selectedProduit.set(p);
     this.form = {
       ...this.form,
-      tauxInteret:    p.tauxInteret,
-      tauxPenalite:   p.tauxPenalite,
-      tauxCommission: p.tauxCommission,
-      tauxAssurance:  p.tauxAssurance,
+      tauxInteret:    p.tauxInteret    ?? 0,
+      tauxPenalite:   p.tauxPenalite   ?? 0,
+      tauxCommission: p.tauxCommission ?? 0,
+      tauxAssurance:  p.tauxAssurance  ?? 0,
       duree:          p.dureeMin,
       nombreEcheance: p.nombreEcheance,
-      delaiGrace:     p.delaiGrace,
+      delaiGrace:     p.delaiGrace     ?? 0,
       periodicite:    p.periodiciteRemboursement
     };
   }

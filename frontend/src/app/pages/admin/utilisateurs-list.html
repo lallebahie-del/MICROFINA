@@ -107,6 +107,26 @@
         </div>
       </fieldset>
 
+      <fieldset class="form-section">
+        <legend>Rôles</legend>
+        <div class="role-checkbox-grid">
+          @for (r of allRoles(); track r.id) {
+            <label class="role-checkbox-item">
+              <input type="checkbox"
+                     [checked]="isRoleSelected(r.codeRole)"
+                     (change)="toggleRole(r.codeRole)"/>
+              <span class="role-label">
+                <strong>{{ r.codeRole }}</strong>
+                <small>{{ r.libelle }}</small>
+              </span>
+            </label>
+          }
+          @if (allRoles().length === 0) {
+            <span style="font-size:13px;color:var(--text-medium)">Chargement des rôles…</span>
+          }
+        </div>
+      </fieldset>
+
       <div class="form-actions">
         <button class="btn btn-primary" (click)="submit()" [disabled]="saving()">
           {{ saving() ? 'Enregistrement…' : (editingId() ? 'Mettre à jour' : 'Créer l\'utilisateur') }}
@@ -148,6 +168,7 @@
             <th>Nom complet</th>
             <th>Email</th>
             <th>Agence</th>
+            <th>Rôles</th>
             <th>Statut</th>
             <th>Dernière connexion</th>
             <th>Actions</th>
@@ -161,6 +182,16 @@
               <td>{{ u.nomComplet || '—' }}</td>
               <td>{{ u.email || '—' }}</td>
               <td>{{ u.codeAgence || '—' }}</td>
+              <td>
+                <div class="role-badges">
+                  @for (role of (u.roles ?? []); track role) {
+                    <span class="badge badge-role">{{ role }}</span>
+                  }
+                  @if (!u.roles || u.roles.length === 0) {
+                    <span style="color:var(--text-light);font-size:12px">—</span>
+                  }
+                </div>
+              </td>
               <td>
                 <span [class]="u.actif ? 'badge badge-success' : 'badge badge-danger'">
                   {{ u.actif ? 'Actif' : 'Inactif' }}
@@ -204,7 +235,7 @@
             </tr>
           }
           @if (utilisateurs().length === 0) {
-            <tr><td colspan="8" class="empty-row">Aucun utilisateur trouvé.</td></tr>
+            <tr><td colspan="9" class="empty-row">Aucun utilisateur trouvé.</td></tr>
           }
         </tbody>
       </table>

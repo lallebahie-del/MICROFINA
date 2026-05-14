@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  P11-004 — Seed des 5 comptes démo (manager, accountant, cashier, credit.committee, loan.agent).
+  Chaque INSERT est gardé par IF NOT EXISTS → opération idempotente.
+  Mot de passe commun : Admin@1234
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P11-004-seed-demo-users" author="microfina">
+        <comment>Créer 5 comptes démo avec rôles si absents (mot de passe : Admin@1234)</comment>
+        <sql dbms="mssql" splitStatements="false"><![CDATA[
+-- ── manager → SUPERVISEUR ──────────────────────────────────────────────────
+IF NOT EXISTS (SELECT 1 FROM Utilisateur WHERE LOWER(LTRIM(RTRIM(login))) = N'manager')
+BEGIN
+    INSERT INTO Utilisateur (login, mot_de_passe_hash, nom_complet, email, telephone, actif, nombre_echecs, version, code_agence)
+    VALUES (N'manager', N'$2b$12$qQcLK3GrGfDTsfJROQn5JuyEsj7re6AR3WKldnwvILxQf9eWXcCsi',
+            N'Manager Général', N'manager@microfina.com', N'22260301', 1, 0, 0, N'NKC');
+END;
+
+INSERT INTO UtilisateurRole (id_utilisateur, id_role)
+SELECT u.id, r.id
+FROM Utilisateur u CROSS JOIN Role r
+WHERE LOWER(LTRIM(RTRIM(u.login))) = N'manager'
+  AND r.code_role = N'SUPERVISEUR'
+  AND NOT EXISTS (SELECT 1 FROM UtilisateurRole ur WHERE ur.id_utilisateur = u.id AND ur.id_role = r.id);
+
+-- ── accountant → COMPTABLE ─────────────────────────────────────────────────
+IF NOT EXISTS (SELECT 1 FROM Utilisateur WHERE LOWER(LTRIM(RTRIM(login))) = N'accountant')
+BEGIN
+    INSERT INTO Utilisateur (login, mot_de_passe_hash, nom_complet, email, telephone, actif, nombre_echecs, version, code_agence)
+    VALUES (N'accountant', N'$2b$12$qQcLK3GrGfDTsfJROQn5JuyEsj7re6AR3WKldnwvILxQf9eWXcCsi',
+            N'Comptable Général', N'accountant@microfina.com', N'22260302', 1, 0, 0, N'NKC');
+END;
+
+INSERT INTO UtilisateurRole (id_utilisateur, id_role)
+SELECT u.id, r.id
+FROM Utilisateur u CROSS JOIN Role r
+WHERE LOWER(LTRIM(RTRIM(u.login))) = N'accountant'
+  AND r.code_role = N'COMPTABLE'
+  AND NOT EXISTS (SELECT 1 FROM UtilisateurRole ur WHERE ur.id_utilisateur = u.id AND ur.id_role = r.id);
+
+-- ── cashier → CAISSIER ─────────────────────────────────────────────────────
+IF NOT EXISTS (SELECT 1 FROM Utilisateur WHERE LOWER(LTRIM(RTRIM(login))) = N'cashier')
+BEGIN
+    INSERT INTO Utilisateur (login, mot_de_passe_hash, nom_complet, email, telephone, actif, nombre_echecs, version, code_agence)
+    VALUES (N'cashier', N'$2b$12$qQcLK3GrGfDTsfJROQn5JuyEsj7re6AR3WKldnwvILxQf9eWXcCsi',
+            N'Caissier Principal', N'cashier@microfina.com', N'22260303', 1, 0, 0, N'NKC');
+END;
+
+INSERT INTO UtilisateurRole (id_utilisateur, id_role)
+SELECT u.id, r.id
+FROM Utilisateur u CROSS JOIN Role r
+WHERE LOWER(LTRIM(RTRIM(u.login))) = N'cashier'
+  AND r.code_role = N'CAISSIER'
+  AND NOT EXISTS (SELECT 1 FROM UtilisateurRole ur WHERE ur.id_utilisateur = u.id AND ur.id_role = r.id);
+
+-- ── credit.committee → COMITE_CREDIT ──────────────────────────────────────
+IF NOT EXISTS (SELECT 1 FROM Utilisateur WHERE LOWER(LTRIM(RTRIM(login))) = N'credit.committee')
+BEGIN
+    INSERT INTO Utilisateur (login, mot_de_passe_hash, nom_complet, email, telephone, actif, nombre_echecs, version, code_agence)
+    VALUES (N'credit.committee', N'$2b$12$qQcLK3GrGfDTsfJROQn5JuyEsj7re6AR3WKldnwvILxQf9eWXcCsi',
+            N'Comité de Crédit', N'credit.committee@microfina.com', N'22260304', 1, 0, 0, N'NKC');
+END;
+
+INSERT INTO UtilisateurRole (id_utilisateur, id_role)
+SELECT u.id, r.id
+FROM Utilisateur u CROSS JOIN Role r
+WHERE LOWER(LTRIM(RTRIM(u.login))) = N'credit.committee'
+  AND r.code_role = N'COMITE_CREDIT'
+  AND NOT EXISTS (SELECT 1 FROM UtilisateurRole ur WHERE ur.id_utilisateur = u.id AND ur.id_role = r.id);
+
+-- ── loan.agent → AGENT_CREDIT ──────────────────────────────────────────────
+IF NOT EXISTS (SELECT 1 FROM Utilisateur WHERE LOWER(LTRIM(RTRIM(login))) = N'loan.agent')
+BEGIN
+    INSERT INTO Utilisateur (login, mot_de_passe_hash, nom_complet, email, telephone, actif, nombre_echecs, version, code_agence)
+    VALUES (N'loan.agent', N'$2b$12$qQcLK3GrGfDTsfJROQn5JuyEsj7re6AR3WKldnwvILxQf9eWXcCsi',
+            N'Agent de Crédit', N'loan.agent@microfina.com', N'22260305', 1, 0, 0, N'NKC');
+END;
+
+INSERT INTO UtilisateurRole (id_utilisateur, id_role)
+SELECT u.id, r.id
+FROM Utilisateur u CROSS JOIN Role r
+WHERE LOWER(LTRIM(RTRIM(u.login))) = N'loan.agent'
+  AND r.code_role = N'AGENT_CREDIT'
+  AND NOT EXISTS (SELECT 1 FROM UtilisateurRole ur WHERE ur.id_utilisateur = u.id AND ur.id_role = r.id);
+        ]]></sql>
+    </changeSet>
+
+</databaseChangeLog>

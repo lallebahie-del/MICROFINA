@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  P11-005 — Assign privileges to non-ADMIN roles.
+  Each INSERT is guarded by NOT EXISTS → idempotent.
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P11-005-role-privileges" author="microfina">
+        <comment>Assign privileges to AGENT_CREDIT, CAISSIER, COMPTABLE, COMITE_CREDIT, SUPERVISEUR, AUDITEUR</comment>
+        <sql dbms="mssql" splitStatements="false"><![CDATA[
+
+-- ── AGENT_CREDIT ─────────────────────────────────────────────────────────────
+INSERT INTO RolePrivilege (id_role, id_privilege)
+SELECT r.id, p.id
+FROM Role r CROSS JOIN Privilege p
+WHERE r.code_role = N'AGENT_CREDIT'
+  AND p.code_privilege IN (
+      N'CREATE_CREDIT', N'COMPLETUDE_DOSSIER', N'ANALYSE_FINANCIERE', N'VISA_SF',
+      N'DEBLOQUER_CREDIT', N'DISBURSE_CREDIT',
+      N'POST_REGLEMENT', N'OPEN_COMPTE_EPS', N'DEPOSIT_EPARGNE', N'WITHDRAW_EPARGNE',
+      N'MANAGE_SAVINGS',
+      N'VIEW_REPORTS', N'EXPORT_REPORTS'
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM RolePrivilege rp
+      WHERE rp.id_role = r.id AND rp.id_privilege = p.id
+  );
+
+-- ── CAISSIER ──────────────────────────────────────────────────────────────────
+INSERT INTO RolePrivilege (id_role, id_privilege)
+SELECT r.id, p.id
+FROM Role r CROSS JOIN Privilege p
+WHERE r.code_role = N'CAISSIER'
+  AND p.code_privilege IN (
+      N'POST_REGLEMENT', N'OPEN_COMPTE_EPS',
+      N'DEPOSIT_EPARGNE', N'WITHDRAW_EPARGNE',
+      N'MANAGE_CASH', N'MANAGE_SAVINGS',
+      N'VIEW_REPORTS'
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM RolePrivilege rp
+      WHERE rp.id_role = r.id AND rp.id_privilege = p.id
+  );
+
+-- ── COMPTABLE ─────────────────────────────────────────────────────────────────
+INSERT INTO RolePrivilege (id_role, id_privilege)
+SELECT r.id, p.id
+FROM Role r CROSS JOIN Privilege p
+WHERE r.code_role = N'COMPTABLE'
+  AND p.code_privilege IN (
+      N'CREATE_BUDGET', N'VALIDATE_BUDGET', N'RECORD_MOVEMENT', N'MANAGE_BUDGET',
+      N'BANK_OPERATION', N'MANAGE_BANK', N'MANAGE_BANK_OP', N'MANAGE_CHEQUE',
+      N'VIEW_REPORTS', N'EXPORT_REPORTS'
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM RolePrivilege rp
+      WHERE rp.id_role = r.id AND rp.id_privilege = p.id
+  );
+
+-- ── COMITE_CREDIT ────────────────────────────────────────────────────────────
+INSERT INTO RolePrivilege (id_role, id_privilege)
+SELECT r.id, p.id
+FROM Role r CROSS JOIN Privilege p
+WHERE r.code_role = N'COMITE_CREDIT'
+  AND p.code_privilege IN (
+      N'VALIDATE_CREDIT', N'REJECT_CREDIT', N'COMITE_CREDIT', N'VISA_RC',
+      N'VIEW_REPORTS', N'EXPORT_REPORTS'
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM RolePrivilege rp
+      WHERE rp.id_role = r.id AND rp.id_privilege = p.id
+  );
+
+-- ── SUPERVISEUR ──────────────────────────────────────────────────────────────
+INSERT INTO RolePrivilege (id_role, id_privilege)
+SELECT r.id, p.id
+FROM Role r CROSS JOIN Privilege p
+WHERE r.code_role = N'SUPERVISEUR'
+  AND p.code_privilege IN (
+      N'CLOSE_DAY', N'VIEW_AUDIT', N'MANAGE_PARAMS',
+      N'VIEW_REPORTS', N'EXPORT_REPORTS',
+      N'CREATE_CREDIT', N'VALIDATE_CREDIT', N'REJECT_CREDIT',
+      N'DISBURSE_CREDIT', N'DEBLOQUER_CREDIT',
+      N'POST_REGLEMENT', N'OPEN_COMPTE_EPS', N'DEPOSIT_EPARGNE', N'WITHDRAW_EPARGNE',
+      N'BANK_OPERATION', N'MANAGE_BANK', N'MANAGE_BUDGET', N'MANAGE_SAVINGS'
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM RolePrivilege rp
+      WHERE rp.id_role = r.id AND rp.id_privilege = p.id
+  );
+
+-- ── AUDITEUR ─────────────────────────────────────────────────────────────────
+INSERT INTO RolePrivilege (id_role, id_privilege)
+SELECT r.id, p.id
+FROM Role r CROSS JOIN Privilege p
+WHERE r.code_role = N'AUDITEUR'
+  AND p.code_privilege IN (
+      N'VIEW_AUDIT', N'VIEW_REPORTS', N'EXPORT_REPORTS'
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM RolePrivilege rp
+      WHERE rp.id_role = r.id AND rp.id_privilege = p.id
+  );
+        ]]></sql>
+    </changeSet>
+
+</databaseChangeLog>

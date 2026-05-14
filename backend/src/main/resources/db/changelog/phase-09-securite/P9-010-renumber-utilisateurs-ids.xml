@@ -85,15 +85,21 @@ SET IDENTITY_INSERT Utilisateur OFF;
 -- 5) Recaler le compteur pour que les prochaines créations reprennent à 4
 DBCC CHECKIDENT('Utilisateur', RESEED, 3);
 
--- 6) Recréer les liaisons UtilisateurRole
+-- 6) Recréer les liaisons UtilisateurRole (login-based, safe when users are absent)
 INSERT INTO UtilisateurRole (id_utilisateur, id_role)
-SELECT 1, r.id FROM Role r WHERE r.code_role = N'ADMIN';
+SELECT u.id, r.id FROM Utilisateur u CROSS JOIN Role r
+WHERE LOWER(LTRIM(RTRIM(u.login))) = N'admin' AND r.code_role = N'ADMIN'
+  AND NOT EXISTS (SELECT 1 FROM UtilisateurRole ur WHERE ur.id_utilisateur = u.id AND ur.id_role = r.id);
 
 INSERT INTO UtilisateurRole (id_utilisateur, id_role)
-SELECT 2, r.id FROM Role r WHERE r.code_role = N'AGENT_CREDIT';
+SELECT u.id, r.id FROM Utilisateur u CROSS JOIN Role r
+WHERE LOWER(LTRIM(RTRIM(u.login))) = N'aminata.sow' AND r.code_role = N'AGENT_CREDIT'
+  AND NOT EXISTS (SELECT 1 FROM UtilisateurRole ur WHERE ur.id_utilisateur = u.id AND ur.id_role = r.id);
 
 INSERT INTO UtilisateurRole (id_utilisateur, id_role)
-SELECT 3, r.id FROM Role r WHERE r.code_role = N'COMITE_CREDIT';
+SELECT u.id, r.id FROM Utilisateur u CROSS JOIN Role r
+WHERE LOWER(LTRIM(RTRIM(u.login))) = N'oumar.ba' AND r.code_role = N'COMITE_CREDIT'
+  AND NOT EXISTS (SELECT 1 FROM UtilisateurRole ur WHERE ur.id_utilisateur = u.id AND ur.id_role = r.id);
 
 -- Nettoyage
 DROP TABLE #SaveUsers;

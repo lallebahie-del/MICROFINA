@@ -1,7 +1,7 @@
 import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AdminService, Utilisateur, UtilisateurCreate, UtilisateurUpdate } from '../../services/admin.service';
+import { AdminService, Utilisateur, UtilisateurCreate, UtilisateurUpdate, Role } from '../../services/admin.service';
 import { AgencesService, Agence } from '../../services/agences.service';
 
 @Component({
@@ -13,16 +13,17 @@ import { AgencesService, Agence } from '../../services/agences.service';
 export class UtilisateursListComponent implements OnInit {
 
   private all = signal<Utilisateur[]>([]);
-  agences = signal<Agence[]>([]);
+  agences    = signal<Agence[]>([]);
+  allRoles   = signal<Role[]>([]);
 
-  search = signal('');
+  search      = signal('');
   filtreActif = signal<string>('');
   filtreAgence = signal<string>('');
 
   utilisateurs = computed<Utilisateur[]>(() => {
-    const q = this.search().trim().toLowerCase();
+    const q    = this.search().trim().toLowerCase();
     const fActif = this.filtreActif();
-    const fAg = this.filtreAgence();
+    const fAg    = this.filtreAgence();
     return this.all().filter(u => {
       if (fActif !== '' && (fActif === 'true') !== !!u.actif) return false;
       if (fAg && u.codeAgence !== fAg) return false;
@@ -38,12 +39,13 @@ export class UtilisateursListComponent implements OnInit {
   error   = signal<string | null>(null);
   success = signal<string | null>(null);
 
-  showForm   = signal(false);
-  editingId  = signal<number | null>(null);
+  showForm    = signal(false);
+  editingId   = signal<number | null>(null);
   showResetMdp = signal<number | null>(null);
   newMdp = '';
 
   form: UtilisateurCreate = { login: '', motDePasse: '', actif: true };
+  selectedRoles: string[] = [];
 
   constructor(
     private adminService: AdminService,
@@ -53,6 +55,7 @@ export class UtilisateursListComponent implements OnInit {
   ngOnInit(): void {
     this.load();
     this.agencesSvc.getAll(true).subscribe({ next: list => this.agences.set(list) });
+    this.adminService.getRoles().subscribe({ next: list => this.allRoles.set(list) });
   }
 
   load(): void {
@@ -71,6 +74,7 @@ export class UtilisateursListComponent implements OnInit {
 
   openNew(): void {
     this.form = { login: '', motDePasse: '', actif: true };
+    this.selectedRoles = [];
     this.editingId.set(null);
     this.showForm.set(true);
     this.error.set(null);
@@ -88,6 +92,7 @@ export class UtilisateursListComponent implements OnInit {
       dateExpirationCompte: u.dateExpirationCompte,
       codeAgence: u.codeAgence
     };
+    this.selectedRoles = u.roles ? [...u.roles] : [];
     this.editingId.set(u.id);
     this.showForm.set(true);
     this.error.set(null);
@@ -97,6 +102,20 @@ export class UtilisateursListComponent implements OnInit {
   cancel(): void {
     this.showForm.set(false);
     this.form = { login: '', motDePasse: '', actif: true };
+    this.selectedRoles = [];
+  }
+
+  toggleRole(code: string): void {
+    const idx = this.selectedRoles.indexOf(code);
+    if (idx >= 0) {
+      this.selectedRoles.splice(idx, 1);
+    } else {
+      this.selectedRoles.push(code);
+    }
+  }
+
+  isRoleSelected(code: string): boolean {
+    return this.selectedRoles.includes(code);
   }
 
   submit(): void {
@@ -113,14 +132,15 @@ export class UtilisateursListComponent implements OnInit {
     this.error.set(null);
 
     const call = id
-      ? this.adminService.updateUtilisateur(id, this.form as UtilisateurUpdate)
-      : this.adminService.createUtilisateur(this.form);
+      ? this.adminService.updateUtilisateur(id, { ...this.form as UtilisateurUpdate, roles: this.selectedRoles })
+      : this.adminService.createUtilisateur({ ...this.form, roles: this.selectedRoles });
 
     call.subscribe({
       next: () => {
         this.saving.set(false);
         this.success.set(id ? 'Utilisateur mis à jour.' : 'Utilisateur créé.');
         this.showForm.set(false);
+        this.selectedRoles = [];
         this.load();
       },
       error: e => {

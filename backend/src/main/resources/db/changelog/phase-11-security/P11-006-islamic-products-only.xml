@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  P11-006 – Islamic-only credit product catalog
+  1. Deactivate CRED_DEG_01 (standard degressive – non-Islamic)
+  2. Seed ISL_MOUCHARAKA and ISL_IJARA in produit_islamic
+  3. Ensure FAM_ISL family exists in FAMILLEPRODUITCREDIT
+  4. Seed ISL_MOURABAHA in produit_islamic
+  5. Seed CRED_ISL_01/02/03 (Mourabaha, Moucharaka, Ijara) in produitcredit
+-->
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!-- ── 1. Deactivate the standard (non-Islamic) product ─────────────── -->
+    <changeSet id="P11-006-deactivate-cred-deg-01" author="microfina">
+        <comment>Set ACTIF=0 on CRED_DEG_01 so it no longer appears in the product dropdown</comment>
+        <sql dbms="mssql">
+            UPDATE produitcredit SET ACTIF = 0 WHERE NUMPRODUIT = N'CRED_DEG_01';
+        </sql>
+        <rollback>
+            <sql>UPDATE produitcredit SET ACTIF = 1 WHERE NUMPRODUIT = N'CRED_DEG_01';</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ── 2a. Seed ISL_MOUCHARAKA in produit_islamic ────────────────────── -->
+    <changeSet id="P11-006-seed-isl-moucharaka" author="microfina">
+        <comment>Add Moucharaka Islamic product type</comment>
+        <sql dbms="mssql" splitStatements="false"><![CDATA[
+IF NOT EXISTS (SELECT 1 FROM produit_islamic WHERE code_produit = N'ISL_MOUCHARAKA')
+    INSERT INTO produit_islamic (
+        code_produit, libelle, description, actif,
+        taux_partage_benefice,
+        cost_price_ratio, markup_ratio, residual_value_ratio,
+        VERSION
+    ) VALUES (
+        N'ISL_MOUCHARAKA',
+        N'Moucharaka – Partenariat de Financement',
+        N'Contrat de participation aux bénéfices et aux pertes – conforme charia',
+        1,
+        50.0000,
+        NULL, NULL, NULL,
+        0
+    );
+        ]]></sql>
+        <rollback>
+            <sql>DELETE FROM produit_islamic WHERE code_produit = N'ISL_MOUCHARAKA';</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ── 2b. Seed ISL_IJARA in produit_islamic ─────────────────────────── -->
+    <changeSet id="P11-006-seed-isl-ijara" author="microfina">
+        <comment>Add Ijara Islamic product type</comment>
+        <sql dbms="mssql" splitStatements="false"><![CDATA[
+IF NOT EXISTS (SELECT 1 FROM produit_islamic WHERE code_produit = N'ISL_IJARA')
+    INSERT INTO produit_islamic (
+        code_produit, libelle, description, actif,
+        taux_partage_benefice,
+        cost_price_ratio, markup_ratio, residual_value_ratio,
+        VERSION
+    ) VALUES (
+        N'ISL_IJARA',
+        N'Ijara – Crédit-bail Islamique',
+        N'Contrat de location avec option d''achat, sans intérêt – conforme charia',
+        1,
+        NULL,
+        NULL, NULL, 0.1000,
+        0
+    );
+        ]]></sql>
+        <rollback>
+            <sql>DELETE FROM produit_islamic WHERE code_produit = N'ISL_IJARA';</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ── 2c. Add missing ACTIF column to FAMILLEPRODUITCREDIT ─────────── -->
+    <!-- ── 2d. Add missing ACTIF column to mode_de_calcul_interet ────────── -->
+    <changeSet id="P11-006-add-actif-to-mode-calcul" author="microfina">
+        <comment>mode_de_calcul_interet is missing ACTIF – required by the Hibernate entity</comment>
+        <sql dbms="mssql" splitStatements="false"><![CDATA[
+IF NOT EXISTS (
+    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = 'mode_de_calcul_interet' AND COLUMN_NAME = 'ACTIF'
+)
+    ALTER TABLE mode_de_calcul_interet ADD ACTIF BIT NOT NULL DEFAULT 1;
+        ]]></sql>
+        <rollback>
+            <sql>ALTER TABLE mode_de_calcul_interet DROP COLUMN ACTIF;</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ── 2c. Add missing ACTIF column to FAMILLEPRODUITCREDIT ─────────── -->
+    <changeSet id="P11-006-add-actif-to-famille" author="microfina">
+        <comment>FAMILLEPRODUITCREDIT is missing ACTIF – required by the Hibernate entity</comment>
+        <sql dbms="mssql" splitStatements="false"><![CDATA[
+IF NOT EXISTS (
+    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = 'FAMILLEPRODUITCREDIT' AND COLUMN_NAME = 'ACTIF'
+)
+    ALTER TABLE FAMILLEPRODUITCREDIT ADD ACTIF BIT NOT NULL DEFAULT 1;
+        ]]></sql>
+        <rollback>
+            <sql>ALTER TABLE FAMILLEPRODUITCREDIT DROP COLUMN ACTIF;</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ── 3. Ensure FAM_ISL family exists ───────────────────────────────── -->
+    <changeSet id="P11-006-seed-fam-isl" author="microfina">
+        <comment>Ensure FAM_ISL product family exists (idempotent)</comment>
+        <sql dbms="mssql" splitStatements="false"><![CDATA[
+IF NOT EXISTS (SELECT 1 FROM FAMILLEPRODUITCREDIT WHERE CODEFAMILLEPRODUITCREDIT = N'FAM_ISL')
+    INSERT INTO FAMILLEPRODUITCREDIT (CODEFAMILLEPRODUITCREDIT, nomfamilleProduitCredit, VERSION)
+    VALUES (N'FAM_ISL', N'Produits Islamiques (Mourabaha / Moucharaka / Ijara)', 0);
+        ]]></sql>
+        <rollback>
+            <sql>DELETE FROM FAMILLEPRODUITCREDIT WHERE CODEFAMILLEPRODUITCREDIT = N'FAM_ISL';</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ── 4. Seed ISL_MOURABAHA in produit_islamic ───────────────────────── -->
+    <changeSet id="P11-006-seed-isl-mourabaha" author="microfina">
+        <comment>Add Mourabaha Islamic product type (idempotent)</comment>
+        <sql dbms="mssql" splitStatements="false"><![CDATA[
+IF NOT EXISTS (SELECT 1 FROM produit_islamic WHERE code_produit = N'ISL_MOURABAHA')
+    INSERT INTO produit_islamic (
+        code_produit, libelle, description, actif,
+        taux_partage_benefice,
+        cost_price_ratio, markup_ratio, residual_value_ratio,
+        VERSION
+    ) VALUES (
+        N'ISL_MOURABAHA',
+        N'Mourabaha – Financement Commercial',
+        N'Contrat de vente à terme avec marge bénéficiaire déclarée – conforme charia',
+        1,
+        30.0000,
+        0.7000, 0.3000, 0.0000,
+        0
+    );
+        ]]></sql>
+        <rollback>
+            <sql>DELETE FROM produit_islamic WHERE code_produit = N'ISL_MOURABAHA';</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ── 5a. Seed CRED_ISL_01 – Mourabaha ──────────────────────────────── -->
+    <changeSet id="P11-006-seed-cred-isl-01-mourabaha" author="microfina">
+        <comment>Add credit product CRED_ISL_01 linked to ISL_MOURABAHA (idempotent)</comment>
+        <sql dbms="mssql" splitStatements="false"><![CDATA[
+IF NOT EXISTS (SELECT 1 FROM produitcredit WHERE NUMPRODUIT = N'CRED_ISL_01')
+    INSERT INTO produitcredit (
+        NUMPRODUIT, NOMPRODUIT, DESCRIPTION, ACTIF,
+        MONTANTMIN, MONTANTMAX,
+        DUREEMIN,   DUREEMAX,
+        TAUXINTERET, PERIODICITEREMBOURSEMENT,
+        DELAIGRACE, INTERETPENDANTGRACE, TYPEGRACE,
+        TAUXPENALITE, TAUXCOMMISSION, TAUXASSURANCE,
+        DECAISSEMENT_NET,
+        COMPTE_CAPITAL, COMPTE_INTERET,
+        COMPTE_INTERET_COURU, COMPTE_DEBLOCAGE,
+        AUTORISER_RENEG, AUTORISER_REMBOURSEMENT_ANTICIPE,
+        TYPE_CLIENT, TYPE_CREDIT,
+        GARANTIE_REQUISE,
+        codefamilleproduitcredit,
+        codemode,
+        code_produit_islamic,
+        VERSION
+    ) VALUES (
+        N'CRED_ISL_01',
+        N'Mourabaha – Financement Commercial Islamique',
+        N'Financement islamique Mourabaha: achat + revente à terme, sans intérêt (marge bénéficiaire déclarée)',
+        1,
+        50000.0000, 10000000.0000,
+        3,          24,
+        0.0000,     N'M',
+        0,          0,  N'P',
+        0.0000,     0.0000,  0.0000,
+        0,
+        N'162200',  N'702200',
+        N'174200',  N'162200',
+        0,          0,
+        N'INDIVIDUEL', N'INDIVIDUEL',
+        1,
+        N'FAM_ISL',
+        2,
+        N'ISL_MOURABAHA',
+        0
+    );
+        ]]></sql>
+        <rollback>
+            <sql>DELETE FROM produitcredit WHERE NUMPRODUIT = N'CRED_ISL_01';</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ── 5b. Seed CRED_ISL_02 – Moucharaka ─────────────────────────────── -->
+    <changeSet id="P11-006-seed-cred-isl-02-moucharaka" author="microfina">
+        <comment>Add credit product CRED_ISL_02 linked to ISL_MOUCHARAKA</comment>
+        <sql dbms="mssql" splitStatements="false"><![CDATA[
+IF NOT EXISTS (SELECT 1 FROM produitcredit WHERE NUMPRODUIT = N'CRED_ISL_02')
+    INSERT INTO produitcredit (
+        NUMPRODUIT, NOMPRODUIT, DESCRIPTION, ACTIF,
+        MONTANTMIN, MONTANTMAX,
+        DUREEMIN,   DUREEMAX,
+        TAUXINTERET, PERIODICITEREMBOURSEMENT,
+        DELAIGRACE, INTERETPENDANTGRACE, TYPEGRACE,
+        TAUXPENALITE, TAUXCOMMISSION, TAUXASSURANCE,
+        DECAISSEMENT_NET,
+        COMPTE_CAPITAL, COMPTE_INTERET,
+        COMPTE_INTERET_COURU, COMPTE_DEBLOCAGE,
+        AUTORISER_RENEG, AUTORISER_REMBOURSEMENT_ANTICIPE,
+        TYPE_CLIENT, TYPE_CREDIT,
+        GARANTIE_REQUISE,
+        codefamilleproduitcredit,
+        codemode,
+        code_produit_islamic,
+        VERSION
+    ) VALUES (
+        N'CRED_ISL_02',
+        N'Moucharaka – Partenariat de Financement',
+        N'Financement islamique Moucharaka: participation aux bénéfices et pertes, sans intérêt fixe',
+        1,
+        100000.0000, 50000000.0000,
+        6,           60,
+        0.0000,      N'M',
+        0,           0,  N'P',
+        0.0000,      0.0000,  0.0000,
+        0,
+        N'162300',  N'702300',
+        N'174300',  N'162300',
+        0,          0,
+        N'INDIVIDUEL', N'INDIVIDUEL',
+        1,
+        N'FAM_ISL',
+        2,
+        N'ISL_MOUCHARAKA',
+        0
+    );
+        ]]></sql>
+        <rollback>
+            <sql>DELETE FROM produitcredit WHERE NUMPRODUIT = N'CRED_ISL_02';</sql>
+        </rollback>
+    </changeSet>
+
+    <!-- ── 5c. Seed CRED_ISL_03 – Ijara ──────────────────────────────────── -->
+    <changeSet id="P11-006-seed-cred-isl-03-ijara" author="microfina">
+        <comment>Add credit product CRED_ISL_03 linked to ISL_IJARA</comment>
+        <sql dbms="mssql" splitStatements="false"><![CDATA[
+IF NOT EXISTS (SELECT 1 FROM produitcredit WHERE NUMPRODUIT = N'CRED_ISL_03')
+    INSERT INTO produitcredit (
+        NUMPRODUIT, NOMPRODUIT, DESCRIPTION, ACTIF,
+        MONTANTMIN, MONTANTMAX,
+        DUREEMIN,   DUREEMAX,
+        TAUXINTERET, PERIODICITEREMBOURSEMENT,
+        DELAIGRACE, INTERETPENDANTGRACE, TYPEGRACE,
+        TAUXPENALITE, TAUXCOMMISSION, TAUXASSURANCE,
+        DECAISSEMENT_NET,
+        COMPTE_CAPITAL, COMPTE_INTERET,
+        COMPTE_INTERET_COURU, COMPTE_DEBLOCAGE,
+        AUTORISER_RENEG, AUTORISER_REMBOURSEMENT_ANTICIPE,
+        TYPE_CLIENT, TYPE_CREDIT,
+        GARANTIE_REQUISE,
+        codefamilleproduitcredit,
+        codemode,
+        code_produit_islamic,
+        VERSION
+    ) VALUES (
+        N'CRED_ISL_03',
+        N'Ijara – Crédit-bail Islamique',
+        N'Financement islamique Ijara: location avec option d''achat, sans intérêt',
+        1,
+        200000.0000, 100000000.0000,
+        12,          84,
+        0.0000,      N'M',
+        0,           0,  N'P',
+        0.0000,      0.0000,  0.0000,
+        0,
+        N'162400',  N'702400',
+        N'174400',  N'162400',
+        0,          1,
+        N'INDIVIDUEL', N'INDIVIDUEL',
+        1,
+        N'FAM_ISL',
+        2,
+        N'ISL_IJARA',
+        0
+    );
+        ]]></sql>
+        <rollback>
+            <sql>DELETE FROM produitcredit WHERE NUMPRODUIT = N'CRED_ISL_03';</sql>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

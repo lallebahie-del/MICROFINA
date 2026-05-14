@@ -25,8 +25,24 @@ interface BarItem {
 export class HomeComponent implements OnInit {
 
   private auth = inject(AuthService);
-  user = this.auth.currentUser;
+  user  = this.auth.currentUser;
   today = new Date();
+
+  can = (...privs: string[]) => this.auth.hasAnyPrivilege(...privs);
+
+  roleLabel = computed(() => {
+    const map: Record<string, string> = {
+      ADMIN:         'Administrateur système',
+      SUPERVISEUR:   'Manager',
+      COMPTABLE:     'Comptable',
+      CAISSIER:      'Caissier',
+      COMITE_CREDIT: 'Comité de crédit',
+      AGENT_CREDIT:  'Agent de crédit',
+      AUDITEUR:      'Auditeur interne',
+    };
+    const role = this.user()?.role ?? '';
+    return map[role] ?? role;
+  });
 
   indicateurs = signal<Indicateur[]>([]);
   ratios      = signal<RatiosBcm[]>([]);

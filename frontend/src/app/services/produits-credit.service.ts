@@ -32,6 +32,7 @@ export interface ProduitCredit {
   familleProduitLibelle?: string;
   modeCalculCode?: string;
   modeCalculLibelle?: string;
+  codeProduitIslamic?: string;
 }
 
 export interface PageResult<T> {

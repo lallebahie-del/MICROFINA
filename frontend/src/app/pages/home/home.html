@@ -3,12 +3,19 @@
   <!-- ── Header ──────────────────────────────────────────────────────── -->
   <div class="db-header">
     <div>
-      <div class="db-greeting">Bonjour, {{ user()?.username || 'utilisateur' }} 👋</div>
+      <div class="db-greeting">
+        Bonjour, {{ user()?.username || 'utilisateur' }} 👋
+        @if (roleLabel()) {
+          <span class="role-pill">{{ roleLabel() }}</span>
+        }
+      </div>
       <div class="db-subtitle">{{ today | date:'EEEE d MMMM y' }} — Tableau de bord MicroFina++</div>
     </div>
     <div class="db-header-actions">
       <button class="btn btn-outline btn-sm" (click)="refresh()" [disabled]="loading()">↻ Actualiser</button>
-      <a class="btn btn-primary btn-sm" routerLink="/reporting">Reporting BCM →</a>
+      @if (can('PRIV_VIEW_REPORTS', 'PRIV_EXPORT_REPORTS')) {
+        <a class="btn btn-primary btn-sm" routerLink="/reporting">Reporting BCM →</a>
+      }
     </div>
   </div>
 
@@ -201,30 +208,54 @@
         <h3>Raccourcis</h3>
       </div>
       <div class="shortcuts">
-        <a routerLink="/credits/comite" class="shortcut">
-          <span class="shortcut-icon">📋</span>
-          <span class="shortcut-label">Comité crédit</span>
-        </a>
-        <a routerLink="/credits/nouveau" class="shortcut">
-          <span class="shortcut-icon">➕</span>
-          <span class="shortcut-label">Nouveau crédit</span>
-        </a>
-        <a routerLink="/operations-caisse" class="shortcut">
-          <span class="shortcut-icon">💰</span>
-          <span class="shortcut-label">Caisse</span>
-        </a>
-        <a routerLink="/operations-banque" class="shortcut">
-          <span class="shortcut-icon">🏦</span>
-          <span class="shortcut-label">Banque</span>
-        </a>
-        <a routerLink="/comptabilite" class="shortcut">
-          <span class="shortcut-icon">📊</span>
-          <span class="shortcut-label">Comptabilité</span>
-        </a>
-        <a routerLink="/exports" class="shortcut">
-          <span class="shortcut-icon">📥</span>
-          <span class="shortcut-label">Exports</span>
-        </a>
+        @if (can('PRIV_COMITE_CREDIT', 'PRIV_VALIDATE_CREDIT', 'PRIV_REJECT_CREDIT')) {
+          <a routerLink="/credits/comite" class="shortcut">
+            <span class="shortcut-icon">📋</span>
+            <span class="shortcut-label">Comité crédit</span>
+          </a>
+        }
+        @if (can('PRIV_CREATE_CREDIT')) {
+          <a routerLink="/credits/nouveau" class="shortcut">
+            <span class="shortcut-icon">➕</span>
+            <span class="shortcut-label">Nouveau crédit</span>
+          </a>
+        }
+        @if (can('PRIV_POST_REGLEMENT', 'PRIV_MANAGE_CASH', 'PRIV_DEPOSIT_EPARGNE')) {
+          <a routerLink="/operations-caisse" class="shortcut">
+            <span class="shortcut-icon">💰</span>
+            <span class="shortcut-label">Caisse</span>
+          </a>
+        }
+        @if (can('PRIV_BANK_OPERATION', 'PRIV_MANAGE_BANK', 'PRIV_MANAGE_BANK_OP')) {
+          <a routerLink="/operations-banque" class="shortcut">
+            <span class="shortcut-icon">🏦</span>
+            <span class="shortcut-label">Banque</span>
+          </a>
+        }
+        @if (can('PRIV_CREATE_BUDGET', 'PRIV_RECORD_MOVEMENT', 'PRIV_MANAGE_BUDGET')) {
+          <a routerLink="/comptabilite" class="shortcut">
+            <span class="shortcut-icon">📊</span>
+            <span class="shortcut-label">Comptabilité</span>
+          </a>
+        }
+        @if (can('PRIV_EXPORT_REPORTS')) {
+          <a routerLink="/exports" class="shortcut">
+            <span class="shortcut-icon">📥</span>
+            <span class="shortcut-label">Exports</span>
+          </a>
+        }
+        @if (can('PRIV_MANAGE_USERS', 'PRIV_ADMIN')) {
+          <a routerLink="/admin/utilisateurs" class="shortcut">
+            <span class="shortcut-icon">⚙️</span>
+            <span class="shortcut-label">Administration</span>
+          </a>
+        }
+        @if (can('PRIV_VIEW_AUDIT')) {
+          <a routerLink="/admin/audit" class="shortcut">
+            <span class="shortcut-icon">🔍</span>
+            <span class="shortcut-label">Journal d'audit</span>
+          </a>
+        }
       </div>
     </div>
   </div>

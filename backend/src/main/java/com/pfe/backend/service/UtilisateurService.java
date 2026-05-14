@@ -1,12 +1,17 @@
 package com.pfe.backend.service;
 
 import com.microfina.entity.Agence;
+import com.microfina.entity.Role;
 import com.microfina.entity.Utilisateur;
+import com.microfina.entity.UtilisateurRole;
+import com.microfina.entity.UtilisateurRoleId;
 import com.pfe.backend.dto.UtilisateurDTO;
 import com.pfe.backend.exception.BusinessException;
 import com.pfe.backend.exception.ResourceNotFoundException;
 import com.pfe.backend.repository.AgenceRepository;
+import com.pfe.backend.repository.RoleRepository;
 import com.pfe.backend.repository.UtilisateurRepository;
+import com.pfe.backend.repository.UtilisateurRoleRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,58 +28,41 @@ public class UtilisateurService {
     private final UtilisateurRepository utilisateurRepository;
     private final AgenceRepository agenceRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UtilisateurRoleRepository utilisateurRoleRepository;
+    private final RoleRepository roleRepository;
 
     public UtilisateurService(UtilisateurRepository utilisateurRepository,
                                AgenceRepository agenceRepository,
-                               PasswordEncoder passwordEncoder) {
+                               PasswordEncoder passwordEncoder,
+                               UtilisateurRoleRepository utilisateurRoleRepository,
+                               RoleRepository roleRepository) {
         this.utilisateurRepository = utilisateurRepository;
         this.agenceRepository = agenceRepository;
         this.passwordEncoder = passwordEncoder;
+        this.utilisateurRoleRepository = utilisateurRoleRepository;
+        this.roleRepository = roleRepository;
     }
 
-    /**
-     * Retourne la liste de tous les utilisateurs.
-     */
     public List<UtilisateurDTO.Response> findAll() {
         return utilisateurRepository.findAll()
             .stream()
-            .map(UtilisateurDTO.Response::from)
+            .map(u -> UtilisateurDTO.Response.from(u, getRoles(u.getId())))
             .toList();
     }
 
-    /**
-     * Retourne un utilisateur par son identifiant technique.
-     *
-     * @param id identifiant technique
-     * @return DTO Response
-     * @throws ResourceNotFoundException si introuvable
-     */
     public UtilisateurDTO.Response findById(Long id) {
         Utilisateur u = utilisateurRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Utilisateur", id));
-        return UtilisateurDTO.Response.from(u);
+        return UtilisateurDTO.Response.from(u, getRoles(u.getId()));
     }
 
-    /**
-     * Retourne les utilisateurs rattachés à une agence donnée.
-     *
-     * @param codeAgence code de l'agence
-     * @return liste de DTOs Response
-     */
     public List<UtilisateurDTO.Response> findByAgence(String codeAgence) {
         return utilisateurRepository.findByAgence_CodeAgence(codeAgence)
             .stream()
-            .map(UtilisateurDTO.Response::from)
+            .map(u -> UtilisateurDTO.Response.from(u, getRoles(u.getId())))
             .toList();
     }
 
-    /**
-     * Crée un nouvel utilisateur. Le mot de passe est BCrypt-encodé avant persistance.
-     *
-     * @param req données de création
-     * @return DTO Response de l'utilisateur créé
-     * @throws BusinessException si le login est déjà utilisé
-     */
     @Transactional
     public UtilisateurDTO.Response create(UtilisateurDTO.CreateRequest req) {
         if (utilisateurRepository.existsByLogin(req.login())) {
@@ -97,17 +85,15 @@ public class UtilisateurService {
             u.setAgence(agence);
         }
 
-        return UtilisateurDTO.Response.from(utilisateurRepository.save(u));
+        Utilisateur saved = utilisateurRepository.save(u);
+
+        if (req.roles() != null && !req.roles().isEmpty()) {
+            assignRoles(saved, req.roles());
+        }
+
+        return UtilisateurDTO.Response.from(saved, getRoles(saved.getId()));
     }
 
-    /**
-     * Met à jour partiellement un utilisateur (patch — seuls les champs non-null sont appliqués).
-     *
-     * @param id  identifiant technique
-     * @param req champs à mettre à jour
-     * @return DTO Response mis à jour
-     * @throws ResourceNotFoundException si l'utilisateur est introuvable
-     */
     @Transactional
     public UtilisateurDTO.Response update(Long id, UtilisateurDTO.UpdateRequest req) {
         Utilisateur u = utilisateurRepository.findById(id)
@@ -129,15 +115,14 @@ public class UtilisateurService {
             }
         }
 
-        return UtilisateurDTO.Response.from(utilisateurRepository.save(u));
+        if (req.roles() != null) {
+            assignRoles(u, req.roles());
+        }
+
+        Utilisateur saved = utilisateurRepository.save(u);
+        return UtilisateurDTO.Response.from(saved, getRoles(saved.getId()));
     }
 
-    /**
-     * Désactive un compte utilisateur (actif = false).
-     *
-     * @param id identifiant technique
-     * @throws ResourceNotFoundException si l'utilisateur est introuvable
-     */
     @Transactional
     public void desactiver(Long id) {
         Utilisateur u = utilisateurRepository.findById(id)
@@ -146,13 +131,6 @@ public class UtilisateurService {
         utilisateurRepository.save(u);
     }
 
-    /**
-     * Réinitialise le mot de passe d'un utilisateur et remet les échecs à zéro.
-     *
-     * @param id              identifiant technique
-     * @param nouveauMotDePasse nouveau mot de passe en clair (sera BCrypt-encodé)
-     * @throws ResourceNotFoundException si l'utilisateur est introuvable
-     */
     @Transactional
     public void reinitialiserMotDePasse(Long id, String nouveauMotDePasse) {
         Utilisateur u = utilisateurRepository.findById(id)
@@ -162,17 +140,31 @@ public class UtilisateurService {
         utilisateurRepository.save(u);
     }
 
-    /**
-     * Supprime un utilisateur.
-     *
-     * @param id identifiant technique
-     * @throws ResourceNotFoundException si l'utilisateur est introuvable
-     */
     @Transactional
     public void delete(Long id) {
         if (!utilisateurRepository.existsById(id)) {
             throw new ResourceNotFoundException("Utilisateur", id);
         }
+        utilisateurRoleRepository.deleteByUserId(id);
         utilisateurRepository.deleteById(id);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private List<String> getRoles(Long userId) {
+        return utilisateurRoleRepository.findWithRoleByUserId(userId)
+            .stream()
+            .map(ur -> ur.getRole().getCodeRole())
+            .toList();
+    }
+
+    private void assignRoles(Utilisateur u, List<String> roleCodes) {
+        utilisateurRoleRepository.deleteByUserId(u.getId());
+        for (String code : roleCodes) {
+            Role role = roleRepository.findByCodeRole(code)
+                .orElseThrow(() -> new BusinessException("Rôle inconnu : " + code));
+            utilisateurRoleRepository.save(
+                new UtilisateurRole(new UtilisateurRoleId(u.getId(), role.getId()), u, role));
+        }
     }
 }

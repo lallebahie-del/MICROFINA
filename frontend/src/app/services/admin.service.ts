@@ -14,6 +14,7 @@ export interface Utilisateur {
   dateExpirationCompte?: string;
   derniereConnexion?: string;
   nombreEchecs?: number;
+  roles?: string[];
 }
 
 export interface UtilisateurCreate {
@@ -25,6 +26,7 @@ export interface UtilisateurCreate {
   actif?: boolean;
   dateExpirationCompte?: string;
   codeAgence?: string;
+  roles?: string[];
 }
 
 export interface UtilisateurUpdate {
@@ -34,6 +36,7 @@ export interface UtilisateurUpdate {
   actif?: boolean;
   dateExpirationCompte?: string;
   codeAgence?: string;
+  roles?: string[];
 }
 
 export interface Role {

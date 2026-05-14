@@ -73,10 +73,17 @@
       </div>
     </fieldset>
 
-    <!-- ── Taux ── -->
-    <fieldset class="form-section">
-      <legend>Taux (%)</legend>
-      <div class="form-row">
+    <!-- ── Taux — adapté selon le type de produit ── -->
+    <fieldset class="form-section" [class.form-section-islamic]="isIslamic">
+
+      <!-- Badge islamique -->
+      <legend>
+        <span *ngIf="isIslamic" class="islamic-badge">☪ Finance Islamique</span>
+        <span *ngIf="!isIslamic">Taux (%)</span>
+      </legend>
+
+      <!-- ═══ CONVENTIONNEL ═══ -->
+      <div class="form-row" *ngIf="!isIslamic">
         <div class="form-group">
           <label>Taux intérêt</label>
           <input type="number" [(ngModel)]="form.tauxInteret" name="tauxInteret" step="0.01"/>
@@ -94,6 +101,86 @@
           <input type="number" [(ngModel)]="form.tauxAssurance" name="tauxAssurance" step="0.01"/>
         </div>
       </div>
+
+      <!-- ═══ MOURABAHA ═══ -->
+      <div *ngIf="isIslamic && islamicType === 'MOURABAHA'">
+        <p class="islamic-desc">
+          Contrat de vente à terme — l'institution achète le bien et le revend au membre
+          avec une marge bénéficiaire déclarée. Aucun intérêt (ribā).
+        </p>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Marge bénéficiaire (%)</label>
+            <input type="number" [(ngModel)]="form.tauxInteret" name="tauxInteret"
+                   step="0.01" min="0" placeholder="ex : 8.00"/>
+            <small>Mark-up sur le coût d'acquisition</small>
+          </div>
+          <div class="form-group">
+            <label>Taux pénalité retard (%)</label>
+            <input type="number" [(ngModel)]="form.tauxPenalite" name="tauxPenalite"
+                   step="0.01" min="0"/>
+          </div>
+          <div class="form-group">
+            <label>Frais de dossier (%)</label>
+            <input type="number" [(ngModel)]="form.tauxCommission" name="tauxCommission"
+                   step="0.01" min="0"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ MOUCHARAKA ═══ -->
+      <div *ngIf="isIslamic && islamicType === 'MOUCHARAKA'">
+        <p class="islamic-desc">
+          Contrat de partenariat — l'institution et le membre partagent les bénéfices
+          selon un ratio convenu et les pertes au prorata des apports.
+        </p>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Taux de partage des bénéfices (%)</label>
+            <input type="number" [(ngModel)]="form.tauxInteret" name="tauxInteret"
+                   step="0.01" min="0" max="100" placeholder="ex : 50"/>
+            <small>Part des bénéfices revenant à l'institution</small>
+          </div>
+          <div class="form-group">
+            <label>Taux pénalité retard (%)</label>
+            <input type="number" [(ngModel)]="form.tauxPenalite" name="tauxPenalite"
+                   step="0.01" min="0"/>
+          </div>
+          <div class="form-group">
+            <label>Frais de dossier (%)</label>
+            <input type="number" [(ngModel)]="form.tauxCommission" name="tauxCommission"
+                   step="0.01" min="0"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ IJARA ═══ -->
+      <div *ngIf="isIslamic && islamicType === 'IJARA'">
+        <p class="islamic-desc">
+          Contrat de crédit-bail — l'institution loue le bien au membre avec option
+          d'achat à terme. Le loyer remplace l'intérêt.
+        </p>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Taux de loyer (%)</label>
+            <input type="number" [(ngModel)]="form.tauxInteret" name="tauxInteret"
+                   step="0.01" min="0" placeholder="ex : 6.00"/>
+            <small>Appliqué sur la valeur du bien financé</small>
+          </div>
+          <div class="form-group">
+            <label>Valeur résiduelle (%)</label>
+            <input type="number" [(ngModel)]="form.tauxCommission" name="tauxCommission"
+                   step="0.01" min="0" max="100" placeholder="ex : 10"/>
+            <small>% de la valeur du bien à l'option d'achat</small>
+          </div>
+          <div class="form-group">
+            <label>Taux pénalité retard (%)</label>
+            <input type="number" [(ngModel)]="form.tauxPenalite" name="tauxPenalite"
+                   step="0.01" min="0"/>
+          </div>
+        </div>
+      </div>
+
     </fieldset>
 
     <!-- ── Échéancier ── -->
