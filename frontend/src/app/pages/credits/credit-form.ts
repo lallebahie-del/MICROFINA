@@ -2,6 +2,7 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule }              from '@angular/common';
 import { FormsModule }               from '@angular/forms';
 import { ActivatedRoute, Router }    from '@angular/router';
+import { forkJoin }                  from 'rxjs';
 import { CreditsService, Credit }    from '../../services/credits.service';
 import { ProduitsCreditService, ProduitCredit } from '../../services/produits-credit.service';
 import { MembresService, Membre }    from '../../services/membres.service';
@@ -75,8 +76,17 @@ export class CreditFormComponent implements OnInit {
 
     if (!this.isNew && this.creditId) {
       this.loading.set(true);
-      this.creditsService.getOne(this.creditId).subscribe({
-        next:  c => { this.form = { ...c }; this.loading.set(false); },
+      forkJoin({
+        credit:   this.creditsService.getOne(this.creditId),
+        produits: this.produitsService.listActifs()
+      }).subscribe({
+        next: ({ credit, produits }) => {
+          this.form = { ...credit };
+          this.produits.set(produits);
+          const p = produits.find(p => p.numProduit === credit.produitCode);
+          if (p) this.selectedProduit.set(p);
+          this.loading.set(false);
+        },
         error: e => { this.error.set('Erreur : ' + e.message); this.loading.set(false); }
       });
     }

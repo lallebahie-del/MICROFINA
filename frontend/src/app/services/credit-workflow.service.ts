@@ -39,15 +39,11 @@ export class CreditWorkflowService {
   }
 
   comiteApprouver(id: number, req?: WorkflowDecisionRequest): Observable<WorkflowCreditSummary> {
-    return this.http.post<Credit>(`${this.base}/${id}/transitionner`, { statut: 'VALIDE_COMITE' }).pipe(
-      map(c => this.toSummary(c))
-    );
+    return this.http.post<WorkflowCreditSummary>(`${this.base}/${id}/workflow/comite/approuver`, req ?? {});
   }
 
   comiteRejeter(id: number, req?: WorkflowDecisionRequest): Observable<WorkflowCreditSummary> {
-    return this.http.post<Credit>(`${this.base}/${id}/transitionner`, { statut: 'REJETE' }).pipe(
-      map(c => this.toSummary(c))
-    );
+    return this.http.post<WorkflowCreditSummary>(`${this.base}/${id}/workflow/comite/rejeter`, req ?? {});
   }
 
   visaSf(id: number, req?: WorkflowDecisionRequest): Observable<WorkflowCreditSummary> {
@@ -73,19 +69,11 @@ export class CreditWorkflowService {
   }
 
   getComitePending(): Observable<WorkflowCreditSummary[]> {
-    return this.http.get<any>(`${this.base}`, {
-      params: { statut: 'VALIDE_AGENT', size: '200' }
-    }).pipe(
-      map((r: any) => (r.content ?? r).map((c: Credit) => this.toSummary(c)))
-    );
+    return this.http.get<WorkflowCreditSummary[]>(`${this.base}/workflow/comite/pending`);
   }
 
   getAgentPending(): Observable<WorkflowCreditSummary[]> {
-    return this.http.get<any>(`${this.base}`, {
-      params: { statut: 'SOUMIS', size: '200' }
-    }).pipe(
-      map((r: any) => (r.content ?? r).map((c: Credit) => this.toSummary(c)))
-    );
+    return this.http.get<WorkflowCreditSummary[]>(`${this.base}/workflow/agent/pending`);
   }
 
   getQueueByEtape(etape: string): Observable<WorkflowCreditSummary[]> {

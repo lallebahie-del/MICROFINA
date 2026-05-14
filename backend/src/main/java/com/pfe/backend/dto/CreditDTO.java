@@ -126,6 +126,9 @@ public class CreditDTO {
     private String  objetCredit;
     private Integer numeroCycle;
 
+    // ── Workflow ──────────────────────────────────────────────────
+    private String  etapeCourante;
+
     // ── FK labels ─────────────────────────────────────────────────
     private String membreNum;
     private String membreNom;
@@ -163,6 +166,7 @@ public class CreditDTO {
         dto.dateCloture      = c.getDateCloture();
         dto.objetCredit      = c.getObjetCredit();
         dto.numeroCycle      = c.getNumeroCycle();
+        dto.etapeCourante    = c.getEtapeCourante();
 
         if (c.getMembre() != null) {
             dto.membreNum    = c.getMembre().getNumMembre();
@@ -275,4 +279,7 @@ public class CreditDTO {
 
     public String getAgenceNom()                     { return agenceNom; }
     public void   setAgenceNom(String v)             { this.agenceNom = v; }
+
+    public String getEtapeCourante()                 { return etapeCourante; }
+    public void   setEtapeCourante(String v)         { this.etapeCourante = v; }
 }

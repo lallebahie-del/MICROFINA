@@ -44,6 +44,7 @@ export interface Credit {
   produitNom?: string;
   agenceCode?: string;
   agenceNom?: string;
+  etapeCourante?: string;
 }
 
 export interface PageResult<T> {

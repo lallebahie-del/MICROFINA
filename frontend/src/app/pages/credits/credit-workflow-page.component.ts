@@ -100,7 +100,7 @@ export class CreditWorkflowPageComponent implements OnInit {
   }
 
   get etapeCourante(): Etape {
-    return ((this.credit as any)?.etapeCourante ?? 'SAISIE') as Etape;
+    return (this.credit?.etapeCourante ?? 'SAISIE') as Etape;
   }
 
   isComplete(etape: Etape): boolean {

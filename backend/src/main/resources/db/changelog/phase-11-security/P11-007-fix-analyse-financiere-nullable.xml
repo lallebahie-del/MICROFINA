@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P11-007-fix-analyse-financiere-nullable" author="microfina">
+        <comment>Make optional columns in analyse_financiere nullable — TOTAL_ACTIF, TOTAL_PASSIF,
+        TYPE_ANALYSE, INDICATEURS_JSON, COMMENTAIRE, AVIS_AGENT were NOT NULL but are optional in the form.</comment>
+        <sql dbms="mssql" splitStatements="false"><![CDATA[
+IF EXISTS (
+    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = 'analyse_financiere' AND COLUMN_NAME = 'TOTAL_ACTIF'
+    AND IS_NULLABLE = 'NO'
+)
+BEGIN
+    ALTER TABLE analyse_financiere ALTER COLUMN TOTAL_ACTIF  DECIMAL(19,4)    NULL;
+    ALTER TABLE analyse_financiere ALTER COLUMN TOTAL_PASSIF DECIMAL(19,4)    NULL;
+    ALTER TABLE analyse_financiere ALTER COLUMN TYPE_ANALYSE NVARCHAR(20)     NULL;
+    ALTER TABLE analyse_financiere ALTER COLUMN AVIS_AGENT   NVARCHAR(20)     NULL;
+    ALTER TABLE analyse_financiere ALTER COLUMN COMMENTAIRE  NVARCHAR(500)    NULL;
+END
+        ]]></sql>
+        <rollback><!-- NOT NULL was never intended — no meaningful rollback --></rollback>
+    </changeSet>
+
+</databaseChangeLog>
