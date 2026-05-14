@@ -22,8 +22,10 @@ services:
       test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 12
-      start_period: 30s
+      retries: 20
+      # 90s : SQL Server 2022 met 60-90s à démarrer sous émulation amd64
+      # (cas Apple Silicon). Trop court → sqlserver-init échoue avant qu'il soit prêt.
+      start_period: 90s
     restart: unless-stopped
 
   # Creates the 'microfina' database once SQL Server is ready
