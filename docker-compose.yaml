@@ -4,6 +4,29 @@
 #   docker compose --profile docker-backend up -d
 
 services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: microfina-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      # Complex password (SQL Server policy). Override via .env if needed.
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-Password123!}"
+      MSSQL_PID: "Developer"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+      - ./backend/backups:/var/opt/mssql/backup
+    ports:
+      - "1434:1433"
+    healthcheck:
+      # Use container env var MSSQL_SA_PASSWORD (do NOT single-quote it, or it won't expand)
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  # Creates the 'microfina' database once SQL Server is ready
   sqlserver-init:
     image: mcr.microsoft.com/mssql/server:2022-latest
 
@@ -25,22 +48,6 @@ services:
           -C \
           -Q "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N''microfina'') CREATE DATABASE microfina"
       '
-    restart: "no"
-
-  # Creates the 'microfina' database once SQL Server is ready
-  sqlserver-init:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: microfina-sqlserver-init
-    depends_on:
-      sqlserver:
-        condition: service_healthy
-    environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:-Password123!}"
-    command: >
-      /opt/mssql-tools18/bin/sqlcmd
-      -S sqlserver -U sa -P "${MSSQL_SA_PASSWORD:-Password123!}"
-      -C -Q "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'microfina') CREATE DATABASE microfina"
     restart: "no"
 
   backend:
