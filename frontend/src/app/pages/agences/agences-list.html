@@ -9,16 +9,16 @@
     <input class="filter-input"
            type="text"
            placeholder="Rechercher (code, nom, chef d'agence…)"
-           [(ngModel)]="search"
-           (input)="applyFilters()"/>
+           [ngModel]="search"
+           (ngModelChange)="search = $event; page = 0; applyFilters()"/>
 
-    <select class="filter-select" [(ngModel)]="filtreActif" (change)="applyFilters()">
+    <select class="filter-select" [(ngModel)]="filtreActif" (change)="page = 0; applyFilters()">
       <option value="">Tous les statuts</option>
       <option value="true">Actives</option>
       <option value="false">Inactives</option>
     </select>
 
-    <select class="filter-select" [(ngModel)]="filtreType" (change)="applyFilters()">
+    <select class="filter-select" [(ngModel)]="filtreType" (change)="page = 0; applyFilters()">
       <option value="">Tous les types</option>
       <option value="siege">Sièges</option>
       <option value="agence">Agences</option>
@@ -27,7 +27,7 @@
     <button class="btn btn-outline btn-sm" (click)="resetFilters()">Réinitialiser</button>
 
     <span style="margin-left:auto;font-size:12px;color:var(--text-medium)">
-      {{ agences.length }} résultat{{ agences.length > 1 ? 's' : '' }}
+      {{ filteredTotal }} résultat{{ filteredTotal > 1 ? 's' : '' }}
     </span>
   </div>
 
@@ -195,11 +195,17 @@
               </td>
             </tr>
           }
-          @if (agences.length === 0) {
+          @if (filteredTotal === 0) {
             <tr><td colspan="7" class="empty-row">Aucune agence trouvée.</td></tr>
           }
         </tbody>
       </table>
+
+      <app-pagination-bar
+        [page]="page"
+        [totalElements]="filteredTotal"
+        [pageSize]="pageSize"
+        (pageChange)="onPageChange($event)"/>
     </div>
   }
 

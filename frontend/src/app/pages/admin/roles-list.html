@@ -67,7 +67,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (r of items(); track r.id) {
+          @for (r of pagedRoles(); track r.id) {
             <tr>
               <td class="mono">#{{ r.id }}</td>
               <td class="mono"><strong>{{ r.codeRole }}</strong></td>
@@ -86,6 +86,12 @@
           }
         </tbody>
       </table>
+
+      <app-pagination-bar
+        [page]="clampedRolesPage()"
+        [totalElements]="items().length"
+        [pageSize]="pageSize"
+        (pageChange)="onRolesPageChange($event)"/>
     </div>
   }
 

@@ -88,18 +88,12 @@
       </tbody>
     </table>
 
-    <!-- ── Pagination ── -->
-    <div class="pagination" *ngIf="result()!.totalPages > 1">
-      <button class="page-btn" [disabled]="page === 0" (click)="goPage(page - 1)">‹</button>
-      <button class="page-btn"
-              *ngFor="let p of pages"
-              [class.active]="p === page"
-              (click)="goPage(p)">{{ p + 1 }}</button>
-      <button class="page-btn" [disabled]="page >= result()!.totalPages - 1" (click)="goPage(page + 1)">›</button>
-      <span class="page-info">
-        {{ result()!.totalElements }} résultat(s)
-      </span>
-    </div>
+    <!-- ── Pagination (serveur) ── -->
+    <app-pagination-bar
+      [page]="page"
+      [totalElements]="result()!.totalElements"
+      [pageSize]="size"
+      (pageChange)="goPage($event)"/>
   </div>
 
 </div>

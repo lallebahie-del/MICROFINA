@@ -16,10 +16,10 @@
     <input class="filter-input"
            type="text"
            placeholder="Rechercher (code, nom, SWIFT, pays…)"
-           [ngModel]="search()" (ngModelChange)="search.set($event)"/>
+           [ngModel]="search()" (ngModelChange)="onSearchChange($event)"/>
 
     <select class="filter-select"
-            [ngModel]="filtreActif()" (ngModelChange)="filtreActif.set($event)">
+            [ngModel]="filtreActif()" (ngModelChange)="onFiltreActifChange($event)">
       <option value="">Tous les statuts</option>
       <option value="true">Actives</option>
       <option value="false">Inactives</option>
@@ -102,7 +102,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (b of banques(); track b.codeBanque) {
+          @for (b of pagedBanques(); track b.codeBanque) {
             <tr>
               <td class="mono"><strong>{{ b.codeBanque }}</strong></td>
               <td>{{ b.nom }}</td>
@@ -126,6 +126,12 @@
           }
         </tbody>
       </table>
+
+      <app-pagination-bar
+        [page]="clampedPageBanque()"
+        [totalElements]="banques().length"
+        [pageSize]="pageSize"
+        (pageChange)="onBanquePageChange($event)"/>
     </div>
   }
 

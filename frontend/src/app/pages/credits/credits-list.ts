@@ -3,11 +3,13 @@ import { CommonModule }              from '@angular/common';
 import { FormsModule }               from '@angular/forms';
 import { Router, RouterModule }      from '@angular/router';
 import { CreditsService, Credit, CreditStatut, PageResult } from '../../services/credits.service';
+import { PaginationBarComponent } from '../../components/pagination-bar/pagination-bar.component';
+import { DEFAULT_LIST_PAGE_SIZE } from '../../shared/list-pagination';
 
 @Component({
   selector: 'app-credits-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, PaginationBarComponent],
   templateUrl: './credits-list.html'
 })
 export class CreditsListComponent implements OnInit {
@@ -20,7 +22,8 @@ export class CreditsListComponent implements OnInit {
   statut    = '';
   numMembre = '';
   page      = 0;
-  size      = 20;
+  /** Taille de page (API) — pagination serveur (même que les autres listes) */
+  size      = DEFAULT_LIST_PAGE_SIZE;
 
   readonly statuts: CreditStatut[] = [
     'BROUILLON','SOUMIS','VALIDE_AGENT','VALIDE_COMITE','DEBLOQUE','SOLDE','REJETE'
@@ -72,10 +75,5 @@ export class CreditsListComponent implements OnInit {
       case 'REJETE':        return 'badge badge-danger';
       default:              return 'badge';
     }
-  }
-
-  get pages(): number[] {
-    const total = this.result()?.totalPages ?? 0;
-    return Array.from({ length: total }, (_, i) => i);
   }
 }

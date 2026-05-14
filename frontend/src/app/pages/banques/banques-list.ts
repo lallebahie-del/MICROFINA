@@ -2,11 +2,13 @@ import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BanqueService, Banque } from '../../services/banque.service';
+import { PaginationBarComponent } from '../../components/pagination-bar/pagination-bar.component';
+import { DEFAULT_LIST_PAGE_SIZE, listClampPage, listSlice } from '../../shared/list-pagination';
 
 @Component({
   selector: 'app-banques-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginationBarComponent],
   templateUrl: './banques-list.html'
 })
 export class BanquesListComponent implements OnInit {
@@ -14,6 +16,8 @@ export class BanquesListComponent implements OnInit {
 
   search       = signal('');
   filtreActif  = signal<string>('');
+  pageBanque   = signal(0);
+  readonly pageSize = DEFAULT_LIST_PAGE_SIZE;
 
   banques = computed<Banque[]>(() => {
     const q = this.search().trim().toLowerCase();
@@ -27,6 +31,15 @@ export class BanquesListComponent implements OnInit {
           || (b.pays?.toLowerCase().includes(q) ?? false);
     });
   });
+
+  /** Page bornée au nombre de pages (après filtre / chargement) */
+  clampedPageBanque = computed(() =>
+    listClampPage(this.pageBanque(), this.banques().length, this.pageSize)
+  );
+
+  pagedBanques = computed(() =>
+    listSlice(this.banques(), this.clampedPageBanque(), this.pageSize)
+  );
 
   loading = signal(false);
   saving  = signal(false);
@@ -46,7 +59,11 @@ export class BanquesListComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     this.svc.getAll().subscribe({
-      next: data => { this.all.set(data); this.loading.set(false); },
+      next: data => {
+        this.all.set(data);
+        this.pageBanque.set(0);
+        this.loading.set(false);
+      },
       error: e   => { this.error.set('Erreur : ' + (e.error?.message ?? e.message)); this.loading.set(false); }
     });
   }
@@ -54,6 +71,21 @@ export class BanquesListComponent implements OnInit {
   resetFilters(): void {
     this.search.set('');
     this.filtreActif.set('');
+    this.pageBanque.set(0);
+  }
+
+  onSearchChange(v: string): void {
+    this.search.set(v);
+    this.pageBanque.set(0);
+  }
+
+  onFiltreActifChange(v: string): void {
+    this.filtreActif.set(v);
+    this.pageBanque.set(0);
+  }
+
+  onBanquePageChange(p: number): void {
+    this.pageBanque.set(listClampPage(p, this.banques().length, this.pageSize));
   }
 
   openNew(): void {

@@ -4,11 +4,13 @@ import { FormsModule }               from '@angular/forms';
 import { Router, RouterModule }      from '@angular/router';
 import { HttpErrorResponse }         from '@angular/common/http';
 import { MembresService, Membre, PageResult } from '../../services/membres.service';
+import { PaginationBarComponent } from '../../components/pagination-bar/pagination-bar.component';
+import { DEFAULT_LIST_PAGE_SIZE } from '../../shared/list-pagination';
 
 @Component({
   selector: 'app-membres-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, PaginationBarComponent],
   templateUrl: './membres-list.html'
 })
 export class MembresListComponent implements OnInit {
@@ -23,7 +25,8 @@ export class MembresListComponent implements OnInit {
   statut = '';
   etat   = '';
   page   = 0;
-  size   = 20;
+  /** Taille de page (API) — pagination serveur (même que les autres listes) */
+  size   = DEFAULT_LIST_PAGE_SIZE;
 
   constructor(
     private service: MembresService,
@@ -75,10 +78,5 @@ export class MembresListComponent implements OnInit {
       next:  () => this.load(),
       error: e  => this.error.set('Erreur : ' + (e.message ?? e))
     });
-  }
-
-  get pages(): number[] {
-    const total = this.result()?.totalPages ?? 0;
-    return Array.from({ length: total }, (_, i) => i);
   }
 }

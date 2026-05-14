@@ -2,16 +2,25 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AgencesService, Agence } from '../../services/agences.service';
+import { PaginationBarComponent } from '../../components/pagination-bar/pagination-bar.component';
+import { DEFAULT_LIST_PAGE_SIZE, listClampPage, listSlice } from '../../shared/list-pagination';
 
 @Component({
   selector: 'app-agences-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginationBarComponent],
   templateUrl: './agences-list.html'
 })
 export class AgencesListComponent implements OnInit {
   private all: Agence[] = [];
+  private filtered: Agence[] = [];
+  /** Lignes affichées (page courante) */
   agences: Agence[] = [];
+
+  page = 0;
+  readonly pageSize = DEFAULT_LIST_PAGE_SIZE;
+  /** Nombre de lignes après filtres (toutes pages) */
+  filteredTotal = 0;
 
   search: string = '';
   filtreActif: string = '';
@@ -41,7 +50,7 @@ export class AgencesListComponent implements OnInit {
 
   applyFilters(): void {
     const q = this.search.trim().toLowerCase();
-    this.agences = this.all.filter(a => {
+    this.filtered = this.all.filter(a => {
       if (this.filtreActif !== '' && (this.filtreActif === 'true') !== !!a.actif) return false;
       if (this.filtreType === 'siege'  && a.isSiege !== '1') return false;
       if (this.filtreType === 'agence' && a.isSiege === '1') return false;
@@ -52,12 +61,21 @@ export class AgencesListComponent implements OnInit {
           || (a.nomPrenomChefAgence?.toLowerCase().includes(q) ?? false)
           || (a.chefAgence?.toLowerCase().includes(q) ?? false);
     });
+    this.page = listClampPage(this.page, this.filtered.length, this.pageSize);
+    this.filteredTotal = this.filtered.length;
+    this.agences = listSlice(this.filtered, this.page, this.pageSize);
+  }
+
+  onPageChange(p: number): void {
+    this.page = p;
+    this.agences = listSlice(this.filtered, this.page, this.pageSize);
   }
 
   resetFilters(): void {
     this.search = '';
     this.filtreActif = '';
     this.filtreType = '';
+    this.page = 0;
     this.applyFilters();
   }
 

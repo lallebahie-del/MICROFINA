@@ -3,12 +3,15 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService, Utilisateur, UtilisateurCreate, UtilisateurUpdate, Role } from '../../services/admin.service';
 import { AgencesService, Agence } from '../../services/agences.service';
+import { PaginationBarComponent } from '../../components/pagination-bar/pagination-bar.component';
+import { DEFAULT_LIST_PAGE_SIZE } from '../../shared/list-pagination';
 
 @Component({
   selector: 'app-utilisateurs-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: './utilisateurs-list.html'
+  imports: [CommonModule, FormsModule, PaginationBarComponent],
+  templateUrl: './utilisateurs-list.html',
+  styleUrls: ['./utilisateurs-list.css']
 })
 export class UtilisateursListComponent implements OnInit {
 
@@ -32,6 +35,29 @@ export class UtilisateursListComponent implements OnInit {
           || (u.nomComplet?.toLowerCase().includes(q) ?? false)
           || (u.email?.toLowerCase().includes(q) ?? false);
     });
+  });
+
+  /** Pagination locale (liste filtrée) — même taille que les autres listes */
+  readonly pageSizeUtilisateurs = DEFAULT_LIST_PAGE_SIZE;
+  pageUtilisateurs = signal(0);
+
+  totalUserPages = computed(() => {
+    const n = this.utilisateurs().length;
+    return n === 0 ? 0 : Math.ceil(n / this.pageSizeUtilisateurs);
+  });
+
+  /** Index de page effectif (borne si la liste rétrécit après filtre / suppression) */
+  activeUserPage = computed(() => {
+    const tp = this.totalUserPages();
+    if (tp === 0) return 0;
+    return Math.min(this.pageUtilisateurs(), tp - 1);
+  });
+
+  pagedUtilisateurs = computed<Utilisateur[]>(() => {
+    const list = this.utilisateurs();
+    if (list.length === 0) return [];
+    const start = this.activeUserPage() * this.pageSizeUtilisateurs;
+    return list.slice(start, start + this.pageSizeUtilisateurs);
   });
 
   loading = signal(false);
@@ -61,15 +87,55 @@ export class UtilisateursListComponent implements OnInit {
   load(): void {
     this.loading.set(true);
     this.adminService.getUtilisateurs().subscribe({
-      next: data => { this.all.set(data); this.loading.set(false); },
+      next: data => {
+        this.all.set(data);
+        this.loading.set(false);
+        this.clampUserPage();
+      },
       error: e   => { this.error.set('Erreur : ' + (e.error?.message ?? e.message)); this.loading.set(false); }
     });
+  }
+
+  goUserPage(p: number): void {
+    const tp = this.totalUserPages();
+    if (tp === 0) {
+      this.pageUtilisateurs.set(0);
+      return;
+    }
+    this.pageUtilisateurs.set(Math.max(0, Math.min(p, tp - 1)));
+  }
+
+  private clampUserPage(): void {
+    const tp = this.totalUserPages();
+    if (tp === 0) {
+      this.pageUtilisateurs.set(0);
+      return;
+    }
+    if (this.pageUtilisateurs() > tp - 1) {
+      this.pageUtilisateurs.set(tp - 1);
+    }
+  }
+
+  onSearchChange(v: string): void {
+    this.search.set(v);
+    this.pageUtilisateurs.set(0);
+  }
+
+  onFiltreActifChange(v: string): void {
+    this.filtreActif.set(v);
+    this.pageUtilisateurs.set(0);
+  }
+
+  onFiltreAgenceChange(v: string): void {
+    this.filtreAgence.set(v);
+    this.pageUtilisateurs.set(0);
   }
 
   resetFilters(): void {
     this.search.set('');
     this.filtreActif.set('');
     this.filtreAgence.set('');
+    this.pageUtilisateurs.set(0);
   }
 
   openNew(): void {

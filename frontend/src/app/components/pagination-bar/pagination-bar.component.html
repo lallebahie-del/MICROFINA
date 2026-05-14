@@ -1,0 +1,20 @@
+@if (totalElements > 0) {
+  <div class="pagination">
+    <button type="button" class="page-btn"
+            [disabled]="page <= 0"
+            (click)="emitPage(page - 1)">‹</button>
+    @for (p of pageIndices; track p) {
+      <button type="button" class="page-btn"
+              [class.active]="p === page"
+              (click)="emitPage(p)">{{ p + 1 }}</button>
+    }
+    <button type="button" class="page-btn"
+            [disabled]="totalPages <= 1 || page >= totalPages - 1"
+            (click)="emitPage(page + 1)">›</button>
+    <span class="page-info">
+      Page {{ page + 1 }} / {{ displayTotalPages }}
+      · {{ totalElements }} résultat(s)
+      · {{ pageSize }} par page
+    </span>
+  </div>
+}

@@ -1,24 +1,34 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OperationsBanqueService, OperationBanque, OperationBanqueForm } from '../../services/operations-banque.service';
 import { AgencesService, Agence } from '../../services/agences.service';
 import { BanqueService, Banque } from '../../services/banque.service';
+import { PaginationBarComponent } from '../../components/pagination-bar/pagination-bar.component';
+import { DEFAULT_LIST_PAGE_SIZE, listClampPage, listSlice } from '../../shared/list-pagination';
 
 @Component({
   selector: 'app-operations-banque-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginationBarComponent],
   templateUrl: './operations-banque-list.html'
 })
 export class OperationsBanqueListComponent implements OnInit {
-  operations = signal<OperationBanque[]>([]);
-  agences    = signal<Agence[]>([]);
-  banques    = signal<Banque[]>([]);
+  allOperations = signal<OperationBanque[]>([]);
+  agences         = signal<Agence[]>([]);
+  banques         = signal<Banque[]>([]);
 
   agenceFilter = signal<string>('');
-  page         = signal(0);
-  totalPages   = signal(0);
+  page           = signal(0);
+  readonly pageSize = DEFAULT_LIST_PAGE_SIZE;
+
+  clampedOpPage = computed(() =>
+    listClampPage(this.page(), this.allOperations().length, this.pageSize)
+  );
+
+  pagedOperations = computed(() =>
+    listSlice(this.allOperations(), this.clampedOpPage(), this.pageSize)
+  );
 
   loading = signal(false);
   saving  = signal(false);
@@ -51,8 +61,8 @@ export class OperationsBanqueListComponent implements OnInit {
     this.error.set(null);
     this.svc.getAll(this.agenceFilter() || undefined).subscribe({
       next: (list: OperationBanque[]) => {
-        this.operations.set(list);
-        this.totalPages.set(0);
+        this.allOperations.set(list);
+        this.page.set(0);
         this.loading.set(false);
       },
       error: e => {
@@ -62,8 +72,14 @@ export class OperationsBanqueListComponent implements OnInit {
     });
   }
 
-  prev(): void { if (this.page() > 0)                  { this.page.set(this.page() - 1); this.load(); } }
-  next(): void { if (this.page() < this.totalPages() - 1) { this.page.set(this.page() + 1); this.load(); } }
+  onAgenceFilterChange(v: string): void {
+    this.agenceFilter.set(v);
+    this.load();
+  }
+
+  onOpPageChange(p: number): void {
+    this.page.set(listClampPage(p, this.allOperations().length, this.pageSize));
+  }
 
   openNew(): void {
     this.form = {
@@ -98,7 +114,6 @@ export class OperationsBanqueListComponent implements OnInit {
         this.saving.set(false);
         this.success.set('Opération bancaire enregistrée.');
         this.showForm.set(false);
-        this.page.set(0);
         this.load();
       },
       error: e => {

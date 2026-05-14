@@ -1,16 +1,28 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AdminService, Role } from '../../services/admin.service';
+import { PaginationBarComponent } from '../../components/pagination-bar/pagination-bar.component';
+import { DEFAULT_LIST_PAGE_SIZE, listClampPage, listSlice } from '../../shared/list-pagination';
 
 @Component({
   selector: 'app-roles-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginationBarComponent],
   templateUrl: './roles-list.html'
 })
 export class RolesListComponent implements OnInit {
   items   = signal<Role[]>([]);
+  page    = signal(0);
+  readonly pageSize = DEFAULT_LIST_PAGE_SIZE;
+
+  clampedRolesPage = computed(() =>
+    listClampPage(this.page(), this.items().length, this.pageSize)
+  );
+
+  pagedRoles = computed(() =>
+    listSlice(this.items(), this.clampedRolesPage(), this.pageSize)
+  );
   loading = signal(false);
   saving  = signal(false);
   error   = signal<string | null>(null);
@@ -28,7 +40,7 @@ export class RolesListComponent implements OnInit {
   load(): void {
     this.loading.set(true);
     this.svc.getRoles().subscribe({
-      next: data => { this.items.set(data); this.loading.set(false); },
+      next: data => { this.items.set(data); this.page.set(0); this.loading.set(false); },
       error: e   => { this.error.set('Erreur : ' + (e.error?.message ?? e.message)); this.loading.set(false); }
     });
   }
@@ -87,5 +99,9 @@ export class RolesListComponent implements OnInit {
       next: () => { this.success.set('Rôle supprimé.'); this.load(); },
       error: e => this.error.set('Erreur : ' + (e.error?.message ?? e.message))
     });
+  }
+
+  onRolesPageChange(p: number): void {
+    this.page.set(listClampPage(p, this.items().length, this.pageSize));
   }
 }

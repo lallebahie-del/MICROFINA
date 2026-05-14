@@ -14,7 +14,7 @@
 
   <div class="filter-bar">
     <select class="filter-select"
-            [ngModel]="agenceFilter()" (ngModelChange)="agenceFilter.set($event); page.set(0); load()">
+            [ngModel]="agenceFilter()" (ngModelChange)="onAgenceFilterChange($event)">
       <option value="">Toutes agences</option>
       @for (a of agences(); track a.codeAgence) {
         <option [value]="a.codeAgence">{{ a.codeAgence }} — {{ a.nomAgence }}</option>
@@ -24,7 +24,7 @@
     <button class="btn btn-outline btn-sm" (click)="load()" [disabled]="loading()">↻ Actualiser</button>
 
     <span style="margin-left:auto;font-size:12px;color:var(--text-medium)">
-      Page {{ page() + 1 }} / {{ totalPages() || 1 }}
+      {{ allOperations().length }} opération{{ allOperations().length > 1 ? 's' : '' }}
     </span>
   </div>
 
@@ -117,7 +117,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (op of operations(); track op.id) {
+          @for (op of pagedOperations(); track op.id) {
             <tr>
               <td class="mono">#{{ op.id }}</td>
               <td>{{ op.dateOperation | date:'dd/MM/yyyy' }}</td>
@@ -127,20 +127,18 @@
               <td><span [class]="statutClass(op.statut)">{{ op.statut }}</span></td>
             </tr>
           }
-          @if (operations().length === 0) {
+          @if (allOperations().length === 0) {
             <tr><td colspan="6" class="empty-row">Aucune opération bancaire.</td></tr>
           }
         </tbody>
       </table>
-    </div>
 
-    @if (totalPages() > 1) {
-      <div class="actions-cell" style="justify-content:center;margin-top:16px">
-        <button class="btn btn-outline btn-sm" (click)="prev()" [disabled]="page() === 0">‹ Précédent</button>
-        <span class="sub-text">Page {{ page() + 1 }} / {{ totalPages() }}</span>
-        <button class="btn btn-outline btn-sm" (click)="next()" [disabled]="page() >= totalPages() - 1">Suivant ›</button>
-      </div>
-    }
+      <app-pagination-bar
+        [page]="clampedOpPage()"
+        [totalElements]="allOperations().length"
+        [pageSize]="pageSize"
+        (pageChange)="onOpPageChange($event)"/>
+    </div>
   }
 
 </div>

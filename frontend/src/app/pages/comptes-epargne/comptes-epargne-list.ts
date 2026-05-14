@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ComptesEpargneService, CompteEpargne } from '../../services/comptes-epargne.service';
 import { AgencesService, Agence } from '../../services/agences.service';
+import { PaginationBarComponent } from '../../components/pagination-bar/pagination-bar.component';
+import { DEFAULT_LIST_PAGE_SIZE, listClampPage, listSlice } from '../../shared/list-pagination';
 
 @Component({
   selector: 'app-comptes-epargne-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PaginationBarComponent],
   templateUrl: './comptes-epargne-list.html'
 })
 export class ComptesEpargneListComponent implements OnInit {
@@ -17,6 +19,8 @@ export class ComptesEpargneListComponent implements OnInit {
   search       = signal('');
   agenceFilter = signal<string>('');
   filtreStatut = signal<string>('');
+  page         = signal(0);
+  readonly pageSize = DEFAULT_LIST_PAGE_SIZE;
 
   comptes = computed<CompteEpargne[]>(() => {
     const q = this.search().trim().toLowerCase();
@@ -31,6 +35,14 @@ export class ComptesEpargneListComponent implements OnInit {
   });
 
   totalSolde = computed<number>(() => this.comptes().reduce((s, c) => s + (c.solde ?? 0), 0));
+
+  clampedComptesPage = computed(() =>
+    listClampPage(this.page(), this.comptes().length, this.pageSize)
+  );
+
+  pagedComptes = computed(() =>
+    listSlice(this.comptes(), this.clampedComptesPage(), this.pageSize)
+  );
 
   loading = signal(false);
   saving  = signal(false);
@@ -54,7 +66,7 @@ export class ComptesEpargneListComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     this.svc.getAll(this.agenceFilter() || undefined).subscribe({
-      next: data => { this.all.set(data); this.loading.set(false); },
+      next: data => { this.all.set(data); this.page.set(0); this.loading.set(false); },
       error: e   => { this.error.set('Erreur : ' + (e.error?.message ?? e.message)); this.loading.set(false); }
     });
   }
@@ -63,7 +75,28 @@ export class ComptesEpargneListComponent implements OnInit {
     this.search.set('');
     this.agenceFilter.set('');
     this.filtreStatut.set('');
+    this.page.set(0);
     this.load();
+  }
+
+  onSearchCompteChange(v: string): void {
+    this.search.set(v);
+    this.page.set(0);
+  }
+
+  onFiltreStatutChange(v: string): void {
+    this.filtreStatut.set(v);
+    this.page.set(0);
+  }
+
+  onAgenceFilterChange(v: string): void {
+    this.agenceFilter.set(v);
+    this.page.set(0);
+    this.load();
+  }
+
+  onComptePageChange(p: number): void {
+    this.page.set(listClampPage(p, this.comptes().length, this.pageSize));
   }
 
   openNew(): void {

@@ -17,17 +17,17 @@
     <input class="filter-input"
            type="text"
            placeholder="Rechercher (login, nom, email…)"
-           [ngModel]="search()" (ngModelChange)="search.set($event)"/>
+           [ngModel]="search()" (ngModelChange)="onSearchChange($event)"/>
 
     <select class="filter-select"
-            [ngModel]="filtreActif()" (ngModelChange)="filtreActif.set($event)">
+            [ngModel]="filtreActif()" (ngModelChange)="onFiltreActifChange($event)">
       <option value="">Tous les statuts</option>
       <option value="true">Actifs</option>
       <option value="false">Inactifs</option>
     </select>
 
     <select class="filter-select"
-            [ngModel]="filtreAgence()" (ngModelChange)="filtreAgence.set($event)">
+            [ngModel]="filtreAgence()" (ngModelChange)="onFiltreAgenceChange($event)">
       <option value="">Toutes agences</option>
       @for (a of agences(); track a.codeAgence) {
         <option [value]="a.codeAgence">{{ a.codeAgence }} — {{ a.nomAgence }}</option>
@@ -36,8 +36,14 @@
 
     <button class="btn btn-outline btn-sm" (click)="resetFilters()">Réinitialiser</button>
 
-    <span style="margin-left:auto;font-size:12px;color:var(--text-medium)">
+    <span style="margin-left:auto;font-size:12px;color:var(--text-medium);text-align:right">
       {{ utilisateurs().length }} résultat{{ utilisateurs().length > 1 ? 's' : '' }}
+      @if (utilisateurs().length > 0) {
+        · {{ pageSizeUtilisateurs }} par page
+        @if (totalUserPages() > 1) {
+          · page {{ activeUserPage() + 1 }} / {{ totalUserPages() }}
+        }
+      }
     </span>
   </div>
 
@@ -159,8 +165,8 @@
   @if (loading()) {
     <div class="loading-indicator"><div class="spinner"></div> Chargement…</div>
   } @else {
-    <div class="table-wrapper">
-      <table class="data-table">
+    <div class="table-wrapper utilisateurs-table-wrap">
+      <table class="data-table data-table--users" lang="fr">
         <thead>
           <tr>
             <th>ID</th>
@@ -175,15 +181,15 @@
           </tr>
         </thead>
         <tbody>
-          @for (u of utilisateurs(); track u.id) {
+          @for (u of pagedUtilisateurs(); track u.id) {
             <tr>
               <td class="mono">#{{ u.id }}</td>
-              <td><strong>{{ u.login }}</strong></td>
-              <td>{{ u.nomComplet || '—' }}</td>
-              <td>{{ u.email || '—' }}</td>
+              <td><div class="cell-one-line" [attr.title]="u.login || null"><strong>{{ u.login }}</strong></div></td>
+              <td><div class="cell-one-line" [attr.title]="u.nomComplet || null">{{ u.nomComplet || '—' }}</div></td>
+              <td><div class="cell-one-line" [attr.title]="u.email || null">{{ u.email || '—' }}</div></td>
               <td>{{ u.codeAgence || '—' }}</td>
               <td>
-                <div class="role-badges">
+                <div class="role-badges role-badges--single-line">
                   @for (role of (u.roles ?? []); track role) {
                     <span class="badge badge-role">{{ role }}</span>
                   }
@@ -197,9 +203,17 @@
                   {{ u.actif ? 'Actif' : 'Inactif' }}
                 </span>
               </td>
-              <td class="sub-text">{{ u.derniereConnexion ? (u.derniereConnexion | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
+              <td class="sub-text">
+                @if (u.derniereConnexion) {
+                  <div class="cell-one-line" [attr.title]="(u.derniereConnexion | date:'dd/MM/yyyy HH:mm')">
+                    {{ u.derniereConnexion | date:'dd/MM/yyyy HH:mm' }}
+                  </div>
+                } @else {
+                  —
+                }
+              </td>
               <td>
-                <div class="actions-cell">
+                <div class="actions-cell actions-cell--grid">
                   <button class="btn btn-outline btn-icon" (click)="openEdit(u)" title="Modifier" aria-label="Modifier">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -239,6 +253,12 @@
           }
         </tbody>
       </table>
+
+      <app-pagination-bar
+        [page]="activeUserPage()"
+        [totalElements]="utilisateurs().length"
+        [pageSize]="pageSizeUtilisateurs"
+        (pageChange)="goUserPage($event)"/>
     </div>
   }
 

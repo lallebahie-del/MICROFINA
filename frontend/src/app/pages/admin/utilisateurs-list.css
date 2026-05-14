@@ -1,0 +1,135 @@
+/* Liste utilisateurs : pas de scroll horizontal, texte sur une ligne (ellipsis), actions en grille 2×2 */
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.utilisateurs-table-wrap {
+  overflow-x: hidden !important;
+  max-width: 100%;
+}
+
+.data-table--users {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.data-table--users th,
+.data-table--users td {
+  padding: 10px 8px;
+  vertical-align: middle;
+  word-break: normal;
+}
+
+.data-table--users th {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+}
+
+/* Une seule ligne, … si trop long ; title natif pour le survol */
+.cell-one-line {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.cell-one-line strong {
+  font-weight: 600;
+}
+
+.data-table--users td:nth-child(1) {
+  white-space: nowrap;
+}
+
+.data-table--users td:nth-child(5),
+.data-table--users td:nth-child(7) {
+  white-space: nowrap;
+}
+
+/* Rôles : une ligne, ellipsis si débordement */
+.data-table--users td:nth-child(6) .role-badges--single-line {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.data-table--users td:nth-child(6) .role-badges--single-line .badge-role {
+  flex-shrink: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Actions : 2 boutons en haut, 2 en bas */
+.data-table--users td:nth-child(9) .actions-cell--grid {
+  display: grid;
+  grid-template-columns: repeat(2, 32px);
+  grid-template-rows: repeat(2, 32px);
+  gap: 5px;
+  justify-content: end;
+  justify-items: center;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  margin-left: auto;
+}
+
+.data-table--users td:nth-child(9) .actions-cell--grid .btn-icon {
+  flex-shrink: 0;
+}
+
+/* Largeurs colonnes (~100 %) */
+.data-table--users th:nth-child(1),
+.data-table--users td:nth-child(1) {
+  width: 5%;
+}
+
+.data-table--users th:nth-child(2),
+.data-table--users td:nth-child(2) {
+  width: 9%;
+}
+
+.data-table--users th:nth-child(3),
+.data-table--users td:nth-child(3) {
+  width: 15%;
+}
+
+.data-table--users th:nth-child(4),
+.data-table--users td:nth-child(4) {
+  width: 17%;
+}
+
+.data-table--users th:nth-child(5),
+.data-table--users td:nth-child(5) {
+  width: 6%;
+}
+
+.data-table--users th:nth-child(6),
+.data-table--users td:nth-child(6) {
+  width: 11%;
+}
+
+.data-table--users th:nth-child(7),
+.data-table--users td:nth-child(7) {
+  width: 8%;
+}
+
+.data-table--users th:nth-child(8),
+.data-table--users td:nth-child(8) {
+  width: 13%;
+}
+
+.data-table--users th:nth-child(9),
+.data-table--users td:nth-child(9) {
+  width: 16%;
+  min-width: 0;
+}

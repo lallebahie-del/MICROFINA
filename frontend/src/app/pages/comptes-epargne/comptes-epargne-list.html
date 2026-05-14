@@ -16,10 +16,10 @@
     <input class="filter-input"
            type="text"
            placeholder="Rechercher (n° compte, membre…)"
-           [ngModel]="search()" (ngModelChange)="search.set($event)"/>
+           [ngModel]="search()" (ngModelChange)="onSearchCompteChange($event)"/>
 
     <select class="filter-select"
-            [ngModel]="agenceFilter()" (ngModelChange)="agenceFilter.set($event); load()">
+            [ngModel]="agenceFilter()" (ngModelChange)="onAgenceFilterChange($event)">
       <option value="">Toutes agences</option>
       @for (a of agences(); track a.codeAgence) {
         <option [value]="a.codeAgence">{{ a.codeAgence }} — {{ a.nomAgence }}</option>
@@ -27,7 +27,7 @@
     </select>
 
     <select class="filter-select"
-            [ngModel]="filtreStatut()" (ngModelChange)="filtreStatut.set($event)">
+            [ngModel]="filtreStatut()" (ngModelChange)="onFiltreStatutChange($event)">
       <option value="">Tous statuts</option>
       <option value="ACTIF">Actifs</option>
       <option value="BLOQUE">Bloqués</option>
@@ -115,7 +115,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (c of comptes(); track c.numCompte) {
+          @for (c of pagedComptes(); track c.numCompte) {
             <tr>
               <td class="mono"><strong>{{ c.numCompte }}</strong></td>
               <td>{{ c.nomMembre || c.numMembre }}</td>
@@ -138,6 +138,12 @@
           }
         </tbody>
       </table>
+
+      <app-pagination-bar
+        [page]="clampedComptesPage()"
+        [totalElements]="comptes().length"
+        [pageSize]="pageSize"
+        (pageChange)="onComptePageChange($event)"/>
     </div>
   }
 
