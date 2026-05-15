@@ -280,7 +280,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (i of indicateurs(); track i.codeAgence) {
+          @for (i of indicateursTable(); track i.codeAgence) {
             <tr>
               <td><strong>{{ i.nomAgence }}</strong> <span class="sub-text">{{ i.codeAgence }}</span></td>
               <td class="num">{{ i.nbMembresEmprunteurs }}</td>
@@ -291,7 +291,7 @@
               <td class="num">{{ fmt(i.montantRembourseTotal) }}</td>
             </tr>
           }
-          @if (indicateurs().length === 0 && !loading()) {
+          @if (indicateursTable().length === 0 && !loading()) {
             <tr><td colspan="7" class="empty-row">Aucun indicateur disponible.</td></tr>
           }
         </tbody>

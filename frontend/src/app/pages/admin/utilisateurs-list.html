@@ -227,6 +227,14 @@
                     </svg>
                   </button>
 
+                  @if (isAdmin()) {
+                    <button class="btn btn-outline btn-icon" (click)="openPrivileges(u)" title="Gérer les privilèges" aria-label="Gérer les privilèges">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2zm10-10V7a4 4 0 0 0-8 0v4h8z"/>
+                      </svg>
+                    </button>
+                  }
+
                   @if (u.actif) {
                     <button class="btn btn-warning btn-icon" (click)="desactiver(u.id, u.login)" title="Désactiver" aria-label="Désactiver">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -259,6 +267,86 @@
         [totalElements]="utilisateurs().length"
         [pageSize]="pageSizeUtilisateurs"
         (pageChange)="goUserPage($event)"/>
+    </div>
+  }
+
+  <!-- ── Modal Privilèges (admin) ────────────────────────────────────── -->
+  @if (showPrivModal()) {
+    <div class="modal-overlay" (click)="closePrivileges()">
+      <div class="modal-box modal-box--lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>
+            Privilèges de
+            <strong>{{ showPrivModal()?.login }}</strong>
+            @if (showPrivModal()?.nomComplet) {
+              <small style="font-weight:400;color:var(--text-medium)"> — {{ showPrivModal()?.nomComplet }}</small>
+            }
+          </h3>
+          <button class="modal-close" (click)="closePrivileges()" aria-label="Fermer">×</button>
+        </div>
+
+        <div class="modal-body">
+          <p style="font-size:12px;color:var(--text-medium);margin:0 0 12px">
+            Les privilèges sont accordés via les rôles. Sélectionnez les rôles à attribuer à cet utilisateur :
+          </p>
+
+          <fieldset class="form-section" style="margin:0 0 16px">
+            <legend>Rôles à attribuer</legend>
+            <div class="role-checkbox-grid">
+              @for (r of allRoles(); track r.id) {
+                <label class="role-checkbox-item">
+                  <input type="checkbox"
+                         [checked]="isPrivRoleSelected(r.codeRole)"
+                         (change)="togglePrivRole(r.codeRole)"/>
+                  <span class="role-label">
+                    <strong>{{ r.codeRole }}</strong>
+                    <small>{{ r.libelle }}</small>
+                  </span>
+                </label>
+              }
+            </div>
+          </fieldset>
+
+          @if (allPrivileges().length > 0) {
+            <fieldset class="form-section" style="margin:0">
+              <legend>Privilèges directs à accorder</legend>
+              <p style="font-size:12px;color:var(--text-medium);margin:0 0 10px">
+                Cochez les privilèges à accorder directement à cet utilisateur (en plus de ceux hérités des rôles).
+              </p>
+              <div style="max-height:320px;overflow-y:auto;font-size:12px;padding-right:6px">
+                @for (mod of privModules(); track mod) {
+                  <div style="margin-bottom:14px">
+                    <label style="display:flex;align-items:center;gap:6px;font-weight:600;color:var(--text-dark);margin-bottom:6px;cursor:pointer">
+                      <input type="checkbox"
+                             [checked]="allPrivsOfModuleSelected(mod)"
+                             (change)="toggleAllPrivsOfModule(mod)"/>
+                      {{ mod }}
+                    </label>
+                    <div style="display:flex;flex-direction:column;gap:4px;padding-left:18px">
+                      @for (p of privilegesByModule(mod); track p.id) {
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                          <input type="checkbox"
+                                 [checked]="isPrivCodeSelected(p.codePrivilege)"
+                                 (change)="togglePrivCode(p.codePrivilege)"/>
+                          <code style="background:var(--bg-light);padding:1px 6px;border-radius:3px;font-size:11px">{{ p.codePrivilege }}</code>
+                          <span style="color:var(--text-medium)">{{ p.libelle }}</span>
+                        </label>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            </fieldset>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closePrivileges()">Annuler</button>
+          <button class="btn btn-primary" (click)="submitPrivileges()" [disabled]="privSaving()">
+            {{ privSaving() ? 'Enregistrement…' : 'Enregistrer' }}
+          </button>
+        </div>
+      </div>
     </div>
   }
 

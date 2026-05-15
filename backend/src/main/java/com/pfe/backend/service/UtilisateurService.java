@@ -1,7 +1,10 @@
 package com.pfe.backend.service;
 
 import com.microfina.entity.Agence;
+import com.microfina.entity.Privilege;
 import com.microfina.entity.Role;
+import com.microfina.entity.RolePrivilege;
+import com.microfina.entity.RolePrivilegeId;
 import com.microfina.entity.Utilisateur;
 import com.microfina.entity.UtilisateurRole;
 import com.microfina.entity.UtilisateurRoleId;
@@ -9,6 +12,8 @@ import com.pfe.backend.dto.UtilisateurDTO;
 import com.pfe.backend.exception.BusinessException;
 import com.pfe.backend.exception.ResourceNotFoundException;
 import com.pfe.backend.repository.AgenceRepository;
+import com.pfe.backend.repository.PrivilegeRepository;
+import com.pfe.backend.repository.RolePrivilegeRepository;
 import com.pfe.backend.repository.RoleRepository;
 import com.pfe.backend.repository.UtilisateurRepository;
 import com.pfe.backend.repository.UtilisateurRoleRepository;
@@ -30,17 +35,23 @@ public class UtilisateurService {
     private final PasswordEncoder passwordEncoder;
     private final UtilisateurRoleRepository utilisateurRoleRepository;
     private final RoleRepository roleRepository;
+    private final PrivilegeRepository privilegeRepository;
+    private final RolePrivilegeRepository rolePrivilegeRepository;
 
     public UtilisateurService(UtilisateurRepository utilisateurRepository,
                                AgenceRepository agenceRepository,
                                PasswordEncoder passwordEncoder,
                                UtilisateurRoleRepository utilisateurRoleRepository,
-                               RoleRepository roleRepository) {
+                               RoleRepository roleRepository,
+                               PrivilegeRepository privilegeRepository,
+                               RolePrivilegeRepository rolePrivilegeRepository) {
         this.utilisateurRepository = utilisateurRepository;
         this.agenceRepository = agenceRepository;
         this.passwordEncoder = passwordEncoder;
         this.utilisateurRoleRepository = utilisateurRoleRepository;
         this.roleRepository = roleRepository;
+        this.privilegeRepository = privilegeRepository;
+        this.rolePrivilegeRepository = rolePrivilegeRepository;
     }
 
     public List<UtilisateurDTO.Response> findAll() {
@@ -147,6 +158,71 @@ public class UtilisateurService {
         }
         utilisateurRoleRepository.deleteByUserId(id);
         utilisateurRepository.deleteById(id);
+    }
+
+    /**
+     * Récupère les codes de privilèges actuellement accordés à l'utilisateur
+     * via son rôle "direct" auto-géré (USER_<login>_DIRECT).
+     */
+    public List<String> getDirectPrivileges(Long userId) {
+        Utilisateur u = utilisateurRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("Utilisateur", userId));
+        String code = directRoleCode(u);
+        return roleRepository.findByCodeRole(code)
+            .map(r -> rolePrivilegeRepository.findWithPrivilegeByRoleId(r.getId())
+                .stream()
+                .map(rp -> rp.getPrivilege().getCodePrivilege())
+                .toList())
+            .orElseGet(List::of);
+    }
+
+    /**
+     * Attribue à l'utilisateur la liste exacte de privilèges fournie en
+     * créant/mettant à jour son rôle "direct" auto-géré
+     * (code = USER_<login>_DIRECT) puis en s'assurant que ce rôle lui
+     * est bien rattaché.
+     */
+    @Transactional
+    public UtilisateurDTO.Response setDirectPrivileges(Long userId, List<String> codePrivileges) {
+        Utilisateur u = utilisateurRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("Utilisateur", userId));
+
+        String code = directRoleCode(u);
+        Role role = roleRepository.findByCodeRole(code).orElseGet(() -> {
+            Role r = new Role();
+            r.setCodeRole(code);
+            r.setLibelle("Privilèges directs de " + u.getLogin());
+            r.setDescription("Rôle technique auto-géré pour attribuer des privilèges directs.");
+            return roleRepository.save(r);
+        });
+
+        // Réinitialise les associations RolePrivilege
+        rolePrivilegeRepository.deleteByRoleId(role.getId());
+        rolePrivilegeRepository.flush();
+
+        if (codePrivileges != null && !codePrivileges.isEmpty()) {
+            List<Privilege> privs = privilegeRepository.findByCodePrivilegeIn(codePrivileges);
+            for (Privilege p : privs) {
+                rolePrivilegeRepository.save(new RolePrivilege(
+                    new RolePrivilegeId(role.getId(), p.getId()), role, p));
+            }
+        }
+
+        // Assure l'attribution du rôle direct à l'utilisateur
+        boolean hasRole = utilisateurRoleRepository.findWithRoleByUserId(u.getId())
+            .stream()
+            .anyMatch(ur -> code.equals(ur.getRole().getCodeRole()));
+        if (!hasRole) {
+            utilisateurRoleRepository.save(new UtilisateurRole(
+                new UtilisateurRoleId(u.getId(), role.getId()), u, role));
+        }
+
+        return UtilisateurDTO.Response.from(u, getRoles(u.getId()));
+    }
+
+    private String directRoleCode(Utilisateur u) {
+        String login = u.getLogin() != null ? u.getLogin().toUpperCase() : ("ID" + u.getId());
+        return "USER_" + login + "_DIRECT";
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

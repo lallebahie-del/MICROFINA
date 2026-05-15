@@ -18,4 +18,6 @@ public interface PrivilegeRepository extends JpaRepository<Privilege, Long> {
     boolean existsByCodePrivilege(String codePrivilege);
 
     List<Privilege> findByModule(String module);
+
+    List<Privilege> findByCodePrivilegeIn(List<String> codes);
 }

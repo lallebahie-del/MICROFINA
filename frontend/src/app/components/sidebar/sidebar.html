@@ -15,11 +15,6 @@
           <span class="item-arrow">▸</span>Membres
         </a>
       </li>
-      <li *ngIf="has('PRIV_OPEN_COMPTE_EPS','PRIV_MANAGE_USERS')">
-        <a class="menu-item" routerLink="/membres/nouveau">
-          <span class="item-arrow">▸</span>Nouveau membre
-        </a>
-      </li>
       <li *ngIf="has('PRIV_BANK_OPERATION','PRIV_MANAGE_USERS')">
         <a class="menu-item" routerLink="/operations-caisse" routerLinkActive="active">
           <span class="item-arrow">▸</span>Opérations caisse
@@ -64,13 +59,8 @@
     </div>
     <ul class="menu-list">
       <li *ngIf="has('PRIV_CREATE_CREDIT','PRIV_VALIDATE_CREDIT','PRIV_VIEW_REPORTS','PRIV_MANAGE_USERS')">
-        <a class="menu-item" routerLink="/credits" routerLinkActive="active">
+        <a class="menu-item" routerLink="/credits" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
           <span class="item-arrow">▸</span>Liste des crédits
-        </a>
-      </li>
-      <li *ngIf="has('PRIV_CREATE_CREDIT','PRIV_MANAGE_USERS')">
-        <a class="menu-item" routerLink="/credits/nouveau">
-          <span class="item-arrow">▸</span>Nouveau crédit
         </a>
       </li>
       <li *ngIf="has('PRIV_CREATE_CREDIT','PRIV_POST_REGLEMENT')">
@@ -86,11 +76,6 @@
       <li *ngIf="has('PRIV_CREATE_CREDIT','PRIV_MANAGE_USERS')">
         <a class="menu-item" routerLink="/produits-credit" routerLinkActive="active">
           <span class="item-arrow">▸</span>Produits crédit
-        </a>
-      </li>
-      <li *ngIf="has('PRIV_MANAGE_USERS')">
-        <a class="menu-item" routerLink="/produits-credit/nouveau">
-          <span class="item-arrow">▸</span>Nouveau produit
         </a>
       </li>
     </ul>
@@ -194,6 +179,7 @@
   </div>
 
   <!-- ── BANQUE ── -->
+  <!--
   <div class="sidebar-section" *ngIf="has('PRIV_BANK_OPERATION','PRIV_CREATE_BUDGET','PRIV_VALIDATE_BUDGET','PRIV_MANAGE_USERS','PRIV_VIEW_REPORTS')">
     <div class="section-header teal">
       <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16">
@@ -213,6 +199,7 @@
       </li>
     </ul>
   </div>
+  -->
 
   <!-- ── ADMINISTRATION ── -->
   <div class="sidebar-section" *ngIf="has('PRIV_MANAGE_USERS','PRIV_VIEW_AUDIT','PRIV_CLOSE_DAY')">

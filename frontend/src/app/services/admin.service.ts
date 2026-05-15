@@ -93,6 +93,14 @@ export class AdminService {
     return this.http.delete<void>(`${this.base}/utilisateurs/${id}`);
   }
 
+  // ── Privilèges directs d'un utilisateur (rôle technique auto-géré) ─
+  getUtilisateurPrivileges(id: number): Observable<string[]> {
+    return this.http.get<string[]>(`${this.base}/utilisateurs/${id}/privileges`);
+  }
+  setUtilisateurPrivileges(id: number, privileges: string[]): Observable<Utilisateur> {
+    return this.http.put<Utilisateur>(`${this.base}/utilisateurs/${id}/privileges`, { privileges });
+  }
+
   // ── Rôles ─────────────────────────────────────────────────
   getRoles(): Observable<Role[]> {
     return this.http.get<Role[]>(`${this.base}/roles`);

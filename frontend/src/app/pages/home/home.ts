@@ -2,6 +2,9 @@ import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ReportingService, Indicateur, RatiosBcm, EtatCredit } from '../../services/reporting.service';
+import { MembresService, Membre } from '../../services/membres.service';
+import { CreditsService, Credit } from '../../services/credits.service';
+import { AgencesService, Agence } from '../../services/agences.service';
 import { AuthService } from '../../core/auth.service';
 
 interface DonutSlice {
@@ -48,17 +51,46 @@ export class HomeComponent implements OnInit {
   ratios      = signal<RatiosBcm[]>([]);
   credits     = signal<EtatCredit[]>([]);
 
+  // ── Sources de secours (calcul direct depuis membres/crédits/agences) ───
+  membresAll = signal<Membre[]>([]);
+  creditsAll = signal<Credit[]>([]);
+  agencesAll = signal<Agence[]>([]);
+
   loading = signal(true);
   error   = signal<string | null>(null);
 
-  // ── KPIs agrégés ────────────────────────────────────────────────────────
-  nbMembres        = computed<number>(() => sum(this.indicateurs(), i => i.nbMembresEmprunteurs));
-  nbMembresActifs  = computed<number>(() => sum(this.indicateurs(), i => i.nbMembresActifs));
-  nbCreditsActifs  = computed<number>(() => sum(this.indicateurs(), i => i.nbCreditsActifs));
-  encoursBrutTotal = computed<number>(() => sum(this.indicateurs(), i => i.montantEncours));
-  montantDecaisseJour = computed<number>(() => sum(this.indicateurs(), i => i.montantDebloqueTotal));
-  montantRemboJour    = computed<number>(() => sum(this.indicateurs(), i => i.montantRembourseTotal));
-  encaissJour         = computed<number>(() => sum(this.indicateurs(), i => i.nbReglements));
+  // ── KPIs agrégés (privilégie reporting, sinon recalcule depuis sources) ─
+  nbMembres = computed<number>(() => {
+    const fromRep = sum(this.indicateurs(), i => i.nbMembresEmprunteurs);
+    return fromRep || this.membresAll().length;
+  });
+  nbMembresActifs = computed<number>(() => {
+    const fromRep = sum(this.indicateurs(), i => i.nbMembresActifs);
+    if (fromRep) return fromRep;
+    return this.membresAll().filter(m => isActif(m.etat) || isActif(m.statut)).length;
+  });
+  nbCreditsActifs = computed<number>(() => {
+    const fromRep = sum(this.indicateurs(), i => i.nbCreditsActifs);
+    if (fromRep) return fromRep;
+    return this.creditsAll().filter(c => c.statut === 'DEBLOQUE').length;
+  });
+  encoursBrutTotal = computed<number>(() => {
+    const fromRep = sum(this.indicateurs(), i => i.montantEncours);
+    if (fromRep) return fromRep;
+    return this.creditsAll()
+      .filter(c => c.statut === 'DEBLOQUE')
+      .reduce((s, c) => s + (c.soldeCapital || 0), 0);
+  });
+  montantDecaisseJour = computed<number>(() => {
+    const fromRep = sum(this.indicateurs(), i => i.montantDebloqueTotal);
+    if (fromRep) return fromRep;
+    const today = todayIso();
+    return this.creditsAll()
+      .filter(c => c.dateDeblocage?.startsWith(today))
+      .reduce((s, c) => s + (c.montantDebloquer || c.montantAccorde || 0), 0);
+  });
+  montantRemboJour = computed<number>(() => sum(this.indicateurs(), i => i.montantRembourseTotal));
+  encaissJour      = computed<number>(() => sum(this.indicateurs(), i => i.nbReglements));
 
   par30Moyen = computed<number>(() => {
     const r = this.ratios();
@@ -81,12 +113,19 @@ export class HomeComponent implements OnInit {
 
   // ── Donut PAR ───────────────────────────────────────────────────────────
   donutPar = computed<DonutSlice[]>(() => {
-    const c = this.credits();
     const buckets: Record<string, number> = { SAIN: 0, PAR30: 0, PAR60: 0, PAR90: 0 };
-    for (const k of c) {
-      const cat = (k.categoriePar || 'SAIN').toUpperCase();
-      if (buckets[cat] != null) buckets[cat]++;
-      else buckets['SAIN']++;
+    const repCredits = this.credits();
+    if (repCredits.length) {
+      for (const k of repCredits) {
+        const cat = (k.categoriePar || 'SAIN').toUpperCase();
+        if (buckets[cat] != null) buckets[cat]++;
+        else buckets['SAIN']++;
+      }
+    } else {
+      for (const c of this.creditsAll()) {
+        if (c.statut !== 'DEBLOQUE') continue;
+        buckets['SAIN']++;
+      }
     }
     return [
       { label: 'Sain',    value: buckets['SAIN'],  color: '#28a745' },
@@ -98,12 +137,25 @@ export class HomeComponent implements OnInit {
   donutParTotal = computed<number>(() => sum(this.donutPar(), s => s.value));
 
   // ── Bar : encours par agence (top 8) ───────────────────────────────────
-  barEncours = computed<BarItem[]>(() =>
-    [...this.indicateurs()]
-      .map(i => ({ label: i.nomAgence || i.codeAgence, value: i.montantEncours ?? 0 }))
+  barEncours = computed<BarItem[]>(() => {
+    const rep = this.indicateurs();
+    if (rep.length) {
+      return [...rep]
+        .map(i => ({ label: i.nomAgence || i.codeAgence, value: i.montantEncours ?? 0 }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 8);
+    }
+    const map = new Map<string, number>();
+    for (const c of this.creditsAll()) {
+      if (c.statut !== 'DEBLOQUE') continue;
+      const key = c.agenceNom || c.agenceCode || '—';
+      map.set(key, (map.get(key) || 0) + (c.soldeCapital || 0));
+    }
+    return [...map.entries()]
+      .map(([label, value]) => ({ label, value }))
       .sort((a, b) => b.value - a.value)
-      .slice(0, 8)
-  );
+      .slice(0, 8);
+  });
   barEncoursMax = computed<number>(() => Math.max(1, ...this.barEncours().map(b => b.value)));
 
   // ── Donut flux du jour ─────────────────────────────────────────────────
@@ -115,28 +167,95 @@ export class HomeComponent implements OnInit {
   donutFluxTotal = computed<number>(() => sum(this.donutFlux(), s => s.value));
 
   // ── Derniers crédits décaissés ─────────────────────────────────────────
-  lastCredits = computed<EtatCredit[]>(() =>
-    [...this.credits()]
+  lastCredits = computed<EtatCredit[]>(() => {
+    const rep = [...this.credits()]
+      .filter(c => c.dateDeblocage)
+      .sort((a, b) => (b.dateDeblocage ?? '').localeCompare(a.dateDeblocage ?? ''))
+      .slice(0, 6);
+    if (rep.length) return rep;
+    return this.creditsAll()
       .filter(c => c.dateDeblocage)
       .sort((a, b) => (b.dateDeblocage ?? '').localeCompare(a.dateDeblocage ?? ''))
       .slice(0, 6)
-  );
+      .map(c => creditToEtat(c));
+  });
 
-  constructor(private reporting: ReportingService) {}
+  // ── Indicateurs détaillés par agence (avec fallback) ───────────────────
+  indicateursTable = computed<Indicateur[]>(() => {
+    const rep = this.indicateurs();
+    if (rep.length) return rep;
+    const byAg = new Map<string, Indicateur>();
+    for (const a of this.agencesAll()) {
+      byAg.set(a.codeAgence, {
+        codeAgence: a.codeAgence,
+        nomAgence: a.nomAgence || a.codeAgence,
+        nbMembresEmprunteurs: 0,
+        nbMembresActifs: 0,
+        nbCreditsTotal: 0,
+        nbCreditsActifs: 0,
+        montantEncours: 0,
+        montantDebloqueTotal: 0,
+        nbReglements: 0,
+        montantRembourseTotal: 0
+      });
+    }
+    const ensure = (code: string, nom?: string): Indicateur => {
+      let row = byAg.get(code);
+      if (!row) {
+        row = {
+          codeAgence: code, nomAgence: nom || code,
+          nbMembresEmprunteurs: 0, nbMembresActifs: 0,
+          nbCreditsTotal: 0, nbCreditsActifs: 0,
+          montantEncours: 0, montantDebloqueTotal: 0,
+          nbReglements: 0, montantRembourseTotal: 0
+        };
+        byAg.set(code, row);
+      }
+      return row;
+    };
+    for (const m of this.membresAll()) {
+      const code = m.agenceCode || '—';
+      const row = ensure(code, m.agenceLibelle);
+      row.nbMembresEmprunteurs++;
+      if (isActif(m.etat) || isActif(m.statut)) row.nbMembresActifs++;
+    }
+    const today = todayIso();
+    for (const c of this.creditsAll()) {
+      const code = c.agenceCode || '—';
+      const row = ensure(code, c.agenceNom);
+      row.nbCreditsTotal++;
+      if (c.statut === 'DEBLOQUE') {
+        row.nbCreditsActifs++;
+        row.montantEncours += c.soldeCapital || 0;
+      }
+      if (c.dateDeblocage?.startsWith(today)) {
+        row.montantDebloqueTotal += c.montantDebloquer || c.montantAccorde || 0;
+      }
+    }
+    return [...byAg.values()].filter(r =>
+      r.nbMembresEmprunteurs || r.nbCreditsTotal
+    );
+  });
+
+  constructor(
+    private reporting: ReportingService,
+    private membresSvc: MembresService,
+    private creditsSvc: CreditsService,
+    private agencesSvc: AgencesService
+  ) {}
 
   ngOnInit(): void { this.refresh(); }
 
   refresh(): void {
     this.loading.set(true);
     this.error.set(null);
-    let pending = 3;
-    const done = () => { pending--; if (pending === 0) this.loading.set(false); };
+    let pending = 6;
+    const done = () => { pending--; if (pending <= 0) this.loading.set(false); };
 
     /**
-     * Ces endpoints exigent le privilège PRIV_VIEW_REPORTS (rôle ADMIN / SUPERVISEUR /
-     * COMITE). Pour les profils sans ce droit (ex. AGENT), le backend renvoie 403
-     * — c'est attendu, on ne doit pas afficher de message d'erreur rouge :
-     * les cartes resteront simplement à zéro et l'utilisateur navigue via la sidebar.
+     * Les endpoints /reporting/* exigent PRIV_VIEW_REPORTS. En 401/403 on
+     * masque l'erreur et on bascule sur les services de base (membres,
+     * crédits, agences) pour calculer les KPIs directement.
      */
     const isAccessError = (e: any): boolean =>
       e?.status === 401 || e?.status === 403;
@@ -157,6 +276,20 @@ export class HomeComponent implements OnInit {
     this.reporting.getEtatCredits().subscribe({
       next: list => { this.credits.set(list); done(); },
       error: ()  => done()
+    });
+
+    // Fallback : sources de base toujours chargées en parallèle.
+    this.membresSvc.search('', '', '', 0, 500).subscribe({
+      next: p => { this.membresAll.set(p.content || []); done(); },
+      error: () => done()
+    });
+    this.creditsSvc.search('', '', '', 0, 500).subscribe({
+      next: p => { this.creditsAll.set(p.content || []); done(); },
+      error: () => done()
+    });
+    this.agencesSvc.getAll(true).subscribe({
+      next: list => { this.agencesAll.set(list || []); done(); },
+      error: () => done()
     });
   }
 
@@ -194,9 +327,46 @@ export class HomeComponent implements OnInit {
   });
 }
 
-// ── Helpers SVG ────────────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────
 function sum<T>(arr: T[], pick: (x: T) => number): number {
   return arr.reduce((s, x) => s + (pick(x) || 0), 0);
+}
+
+function isActif(v?: string): boolean {
+  const s = (v || '').toUpperCase();
+  return s === 'ACTIF' || s === 'VALIDE' || s === 'VALIDÉ' || s === 'VALIDE_AGENT';
+}
+
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function creditToEtat(c: Credit): EtatCredit {
+  return {
+    idCredit: c.idCredit ?? 0,
+    numCredit: c.numCredit ?? '',
+    statutCredit: c.statut ?? '',
+    objetCredit: c.objetCredit ?? '',
+    numMembre: c.membreNum ?? '',
+    nomMembre: c.membreNom ?? '',
+    prenomMembre: c.membrePrenom ?? '',
+    sexe: '',
+    codeAgence: c.agenceCode ?? '',
+    nomAgence: c.agenceNom ?? '',
+    nomAgent: '',
+    dateDemande: c.dateDemande ?? '',
+    dateDeblocage: c.dateDeblocage ?? '',
+    dateEcheanceFinale: c.dateEcheance ?? '',
+    montantAccorde: c.montantAccorde ?? 0,
+    montantDebloque: c.montantDebloquer ?? 0,
+    soldeCapital: c.soldeCapital ?? 0,
+    soldeTotal: (c.soldeCapital ?? 0) + (c.soldeInteret ?? 0) + (c.soldePenalite ?? 0),
+    joursRetard: 0,
+    totalArrieres: 0,
+    categoriePar: 'SAIN',
+    totalGaranties: 0,
+    tauxCouverturePct: 0
+  };
 }
 
 function startAngle(slices: DonutSlice[], current: DonutSlice, total: number): number {

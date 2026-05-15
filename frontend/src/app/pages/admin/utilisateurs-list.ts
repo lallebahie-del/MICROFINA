@@ -1,8 +1,9 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AdminService, Utilisateur, UtilisateurCreate, UtilisateurUpdate, Role } from '../../services/admin.service';
+import { AdminService, Utilisateur, UtilisateurCreate, UtilisateurUpdate, Role, Privilege } from '../../services/admin.service';
 import { AgencesService, Agence } from '../../services/agences.service';
+import { AuthService } from '../../core/auth.service';
 import { PaginationBarComponent } from '../../components/pagination-bar/pagination-bar.component';
 import { DEFAULT_LIST_PAGE_SIZE } from '../../shared/list-pagination';
 
@@ -70,6 +71,55 @@ export class UtilisateursListComponent implements OnInit {
   showResetMdp = signal<number | null>(null);
   newMdp = '';
 
+  // ── Modal Privilèges (admin uniquement) ──────────────────────────
+  private auth = inject(AuthService);
+  isAdmin = computed(() => {
+    const u = this.auth.currentUser();
+    if (!u) return false;
+    const role = (u.role || '').toUpperCase();
+    if (role === 'ADMIN' || role === 'ROLE_ADMIN' || role.includes('ADMIN')) return true;
+    // Fallback : autoriser tout utilisateur qui a le privilège de gérer les comptes
+    return this.auth.hasAnyPrivilege('PRIV_MANAGE_USERS');
+  });
+
+  showPrivModal = signal<Utilisateur | null>(null);
+  allPrivileges = signal<Privilege[]>([]);
+  privSelectedRoles: string[] = [];
+  privSelectedCodes: string[] = [];
+  privSaving = signal(false);
+
+  privModules = computed<string[]>(() =>
+    Array.from(new Set(this.allPrivileges().map(p => p.module))).sort()
+  );
+
+  privilegesByModule(mod: string): Privilege[] {
+    return this.allPrivileges().filter(p => p.module === mod);
+  }
+
+  togglePrivCode(code: string): void {
+    const idx = this.privSelectedCodes.indexOf(code);
+    if (idx >= 0) this.privSelectedCodes.splice(idx, 1);
+    else this.privSelectedCodes.push(code);
+  }
+  isPrivCodeSelected(code: string): boolean {
+    return this.privSelectedCodes.includes(code);
+  }
+  toggleAllPrivsOfModule(mod: string): void {
+    const codes = this.privilegesByModule(mod).map(p => p.codePrivilege);
+    const allSelected = codes.every(c => this.isPrivCodeSelected(c));
+    if (allSelected) {
+      this.privSelectedCodes = this.privSelectedCodes.filter(c => !codes.includes(c));
+    } else {
+      const set = new Set(this.privSelectedCodes);
+      codes.forEach(c => set.add(c));
+      this.privSelectedCodes = [...set];
+    }
+  }
+  allPrivsOfModuleSelected(mod: string): boolean {
+    const codes = this.privilegesByModule(mod).map(p => p.codePrivilege);
+    return codes.length > 0 && codes.every(c => this.isPrivCodeSelected(c));
+  }
+
   form: UtilisateurCreate = { login: '', motDePasse: '', actif: true };
   selectedRoles: string[] = [];
 
@@ -82,6 +132,7 @@ export class UtilisateursListComponent implements OnInit {
     this.load();
     this.agencesSvc.getAll(true).subscribe({ next: list => this.agences.set(list) });
     this.adminService.getRoles().subscribe({ next: list => this.allRoles.set(list) });
+    this.adminService.getPrivileges().subscribe({ next: list => this.allPrivileges.set(list) });
   }
 
   load(): void {
@@ -250,6 +301,77 @@ export class UtilisateursListComponent implements OnInit {
         this.newMdp = '';
       },
       error: e => this.error.set('Erreur : ' + (e.error?.message ?? e.message))
+    });
+  }
+
+  // ── Privilèges (via rôles) ───────────────────────────────────────
+  openPrivileges(u: Utilisateur): void {
+    if (!this.isAdmin()) return;
+    this.showPrivModal.set(u);
+    this.privSelectedRoles = u.roles ? [...u.roles] : [];
+    this.privSelectedCodes = [];
+    this.error.set(null);
+    this.success.set(null);
+    // Charge la liste actuelle des privilèges directs accordés à cet utilisateur
+    this.adminService.getUtilisateurPrivileges(u.id).subscribe({
+      next: codes => { this.privSelectedCodes = codes || []; },
+      error: () => { this.privSelectedCodes = []; }
+    });
+  }
+
+  closePrivileges(): void {
+    this.showPrivModal.set(null);
+    this.privSelectedRoles = [];
+    this.privSelectedCodes = [];
+  }
+
+  togglePrivRole(code: string): void {
+    const idx = this.privSelectedRoles.indexOf(code);
+    if (idx >= 0) this.privSelectedRoles.splice(idx, 1);
+    else this.privSelectedRoles.push(code);
+  }
+
+  isPrivRoleSelected(code: string): boolean {
+    return this.privSelectedRoles.includes(code);
+  }
+
+  submitPrivileges(): void {
+    const u = this.showPrivModal();
+    if (!u) return;
+    this.privSaving.set(true);
+    this.error.set(null);
+
+    // Étape 1 : met à jour les rôles, puis les privilèges directs
+    const req: UtilisateurUpdate = {
+      nomComplet: u.nomComplet,
+      email: u.email,
+      telephone: u.telephone,
+      actif: u.actif,
+      dateExpirationCompte: u.dateExpirationCompte,
+      codeAgence: u.codeAgence,
+      roles: this.privSelectedRoles
+    };
+    this.adminService.updateUtilisateur(u.id, req).subscribe({
+      next: () => {
+        this.adminService.setUtilisateurPrivileges(u.id, this.privSelectedCodes).subscribe({
+          next: () => {
+            this.privSaving.set(false);
+            this.success.set(`Privilèges mis à jour pour ${u.login}.`);
+            this.showPrivModal.set(null);
+            this.privSelectedRoles = [];
+            this.privSelectedCodes = [];
+            this.load();
+          },
+          error: e => {
+            this.privSaving.set(false);
+            this.error.set('Erreur privilèges : ' + (e.error?.message ?? e.message));
+          }
+        });
+      },
+      error: e => {
+        this.privSaving.set(false);
+        this.error.set('Erreur rôles : ' + (e.error?.message ?? e.message));
+      }
     });
   }
 }

@@ -103,4 +103,21 @@ public class AdminUtilisateurController {
         utilisateurService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(summary = "Lister les privilèges directs attribués à l'utilisateur")
+    @GetMapping("/{id}/privileges")
+    @PreAuthorize("hasAuthority('PRIV_MANAGE_USERS')")
+    public ResponseEntity<List<String>> getDirectPrivileges(@PathVariable Long id) {
+        return ResponseEntity.ok(utilisateurService.getDirectPrivileges(id));
+    }
+
+    @Operation(summary = "Attribuer une liste exacte de privilèges à un utilisateur")
+    @PutMapping("/{id}/privileges")
+    @PreAuthorize("hasAuthority('PRIV_MANAGE_USERS')")
+    public ResponseEntity<UtilisateurDTO.Response> setDirectPrivileges(
+            @PathVariable Long id,
+            @RequestBody Map<String, List<String>> body) {
+        List<String> privileges = body.get("privileges");
+        return ResponseEntity.ok(utilisateurService.setDirectPrivileges(id, privileges));
+    }
 }
