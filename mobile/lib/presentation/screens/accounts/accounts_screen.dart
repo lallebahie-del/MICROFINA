@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/account_color_parser.dart';
 import '../../../core/theme/app_shadows.dart';
 import '../../../data/models/compte_eps_model.dart';
 import '../../blocs/account/account_bloc.dart';
@@ -127,9 +128,8 @@ class _AccountListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color accountColor = account.accountTypeColor != null
-        ? Color(int.parse(account.accountTypeColor!.replaceFirst('#', '0xFF')))
-        : AppColors.secondary;
+    final Color accountColor =
+        tryParseAccountColor(account.accountTypeColor) ?? AppColors.secondary;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -265,13 +265,9 @@ class AccountDetailScreen extends StatelessWidget {
             );
           }
 
-          final Color accountColor = account.accountTypeColor != null
-              ? Color(
-                  int.parse(
-                    account.accountTypeColor!.replaceFirst('#', '0xFF'),
-                  ),
-                )
-              : AppColors.secondary;
+          final Color accountColor =
+              tryParseAccountColor(account.accountTypeColor) ??
+              AppColors.secondary;
 
           return ListView(
             padding: const EdgeInsets.all(24),

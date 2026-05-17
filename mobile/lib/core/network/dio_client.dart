@@ -11,15 +11,10 @@ class DioClient {
   DioClient(this._dio, this._secureStorage, this._sessionInvalidation) {
     const baseUrl = String.fromEnvironment(
       'API_BASE_URL',
-      defaultValue: 'https://api.microfina.com/v1',
+      defaultValue: 'http://localhost:8080',
     );
     final interceptors = <Interceptor>[
-      AuthInterceptor(
-        _secureStorage,
-        _dio,
-        _sessionInvalidation,
-        baseUrl: baseUrl,
-      ),
+      AuthInterceptor(_secureStorage, _sessionInvalidation),
     ];
     if (kDebugMode) {
       interceptors.add(
@@ -74,20 +69,29 @@ class DioClient {
       onReceiveProgress: onReceiveProgress,
     );
   }
+
+  Future<Response> patch(
+    String url, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) async {
+    return _dio.patch(
+      url,
+      data: data,
+      queryParameters: queryParameters,
+      options: options,
+      cancelToken: cancelToken,
+    );
+  }
 }
 
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor(
-    this._secureStorage,
-    this._dio,
-    this._sessionInvalidation, {
-    required String baseUrl,
-  }) : _baseUrl = baseUrl;
+  AuthInterceptor(this._secureStorage, this._sessionInvalidation);
 
   final SecureStorageService _secureStorage;
-  final Dio _dio;
   final SessionInvalidationBroadcaster _sessionInvalidation;
-  final String _baseUrl;
 
   @override
   Future<void> onRequest(
@@ -99,17 +103,6 @@ class AuthInterceptor extends Interceptor {
       options.headers['Authorization'] = 'Bearer $token';
     }
     handler.next(options);
-  }
-
-  Dio _plainRefreshClient() {
-    return Dio(
-      BaseOptions(
-        baseUrl: _baseUrl,
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
-        responseType: ResponseType.json,
-      ),
-    );
   }
 
   Future<void> _clearSessionAndNotify() async {
@@ -133,35 +126,7 @@ class AuthInterceptor extends Interceptor {
       return handler.next(err);
     }
 
-    final refreshToken = await _secureStorage.getRefreshToken();
-    if (refreshToken == null) {
-      await _clearSessionAndNotify();
-      return handler.next(err);
-    }
-
-    try {
-      final refreshClient = _plainRefreshClient();
-      final response = await refreshClient.post(
-        '/auth/refresh',
-        data: {'refreshToken': refreshToken},
-      );
-
-      if (response.statusCode == 200 && response.data is Map) {
-        final data = response.data as Map;
-        final newToken = data['token'];
-        final newRefresh = data['refreshToken'];
-        if (newToken is String && newRefresh is String) {
-          await _secureStorage.saveToken(newToken);
-          await _secureStorage.saveRefreshToken(newRefresh);
-          err.requestOptions.headers['Authorization'] = 'Bearer $newToken';
-          final cloneReq = await _dio.fetch(err.requestOptions);
-          return handler.resolve(cloneReq);
-        }
-      }
-    } catch (_) {
-      // refresh impossible
-    }
-
+    // Le backend ne fournit pas encore de refresh token : session expirée.
     await _clearSessionAndNotify();
     return handler.next(err);
   }

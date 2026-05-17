@@ -14,6 +14,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../data/datasources/mock/mock_data.dart';
 import '../../../data/models/agence_model.dart';
+import '../../../domain/repositories/agences_repository.dart';
 import '../../blocs/auth/auth_bloc.dart';
 
 class AgenciesScreen extends MapScreen {
@@ -32,8 +33,10 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   final Completer<GoogleMapController> _mapController =
       Completer<GoogleMapController>();
-  late final List<AgenceModel> _agences;
+  List<AgenceModel> _agences = [];
   AgenceModel? _focusedAgence;
+  bool _agencesLoading = true;
+  String? _agencesError;
   bool _isLocatingUser = true;
   String? _locationMessage;
   LatLng? _userProfileLatLng;
@@ -94,10 +97,35 @@ class _MapScreenState extends State<MapScreen> {
   @override
   void initState() {
     super.initState();
-    _agences = MockData.getAgences();
-    _focusedAgence = widget.initialAgenceId == null
-        ? null
-        : MockData.findAgenceByIdOrCode(widget.initialAgenceId!);
+    _loadAgences();
+  }
+
+  Future<void> _loadAgences() async {
+    try {
+      final list = await sl<AgencesRepository>().fetchAgences();
+      if (!mounted) return;
+      AgenceModel? focused;
+      final initialId = widget.initialAgenceId;
+      if (initialId != null) {
+        for (final a in list) {
+          if (a.id == initialId || a.code == initialId) {
+            focused = a;
+            break;
+          }
+        }
+      }
+      setState(() {
+        _agences = list;
+        _agencesLoading = false;
+        _focusedAgence = focused;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _agencesError = e.toString();
+        _agencesLoading = false;
+      });
+    }
   }
 
   CameraPosition get _initialCameraPosition {
@@ -467,7 +495,26 @@ class _MapScreenState extends State<MapScreen> {
         backgroundColor: Colors.white,
         foregroundColor: AppColors.primary,
       ),
-      body: _agences.isEmpty
+      body: _agencesLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _agencesError != null
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(_agencesError!, textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadAgences,
+                      child: const Text('RÉESSAYER'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : _agences.isEmpty
           ? _buildEmptyState()
           : Stack(
               children: [

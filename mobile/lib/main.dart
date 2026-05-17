@@ -21,6 +21,9 @@ import 'core/utils/bloc_observer.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'presentation/blocs/account/account_bloc.dart';
+import 'package:flutter/foundation.dart';
+
+import 'core/config/app_build_config.dart';
 import 'data/datasources/mock/mock_data.dart';
 
 void main() async {
@@ -28,7 +31,14 @@ void main() async {
   await Hive.initFlutter();
 
   await initializeDateFormatting('fr_FR', null);
-  await MockData.hydrateReferenceTablesFromAssetsIfPresent();
+  if (AppBuildConfig.allowMockFallback) {
+    await MockData.hydrateReferenceTablesFromAssetsIfPresent();
+  }
+  if (kDebugMode) {
+    debugPrint(
+      'API_BASE_URL = ${const String.fromEnvironment('API_BASE_URL', defaultValue: 'http://localhost:8080')}',
+    );
+  }
   setupLocator();
   Bloc.observer = SimpleBlocObserver();
   runApp(const MyApp());

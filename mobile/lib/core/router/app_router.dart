@@ -23,7 +23,7 @@ import '../../presentation/screens/loans/certificat_screen.dart';
 import '../../presentation/screens/loans/loan_request_screen.dart';
 import '../../presentation/screens/accounts/accounts_screen.dart';
 import '../../presentation/screens/agencies/agencies_screen.dart';
-import '../../data/datasources/mock/mock_data.dart';
+import '../../core/config/api_config.dart';
 import '../widgets/sensitive_screen_guard.dart';
 
 class AppRouter {
@@ -135,9 +135,11 @@ class AppRouter {
               path: transactions,
               builder: (context, state) => BlocProvider(
                 create: (context) => sl<TransactionBloc>()
-                  ..add(LoadTransactions(MockData.transactionScopeAllAccounts)),
-                child: TransactionsScreen(
-                  accountId: MockData.transactionScopeAllAccounts,
+                  ..add(
+                    LoadTransactions(ApiConfig.allAccountsTransactionScope),
+                  ),
+                child: const TransactionsScreen(
+                  accountId: ApiConfig.allAccountsTransactionScope,
                 ),
               ),
             ),

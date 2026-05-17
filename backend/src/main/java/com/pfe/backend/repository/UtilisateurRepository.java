@@ -15,6 +15,10 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
 
     Optional<Utilisateur> findByLogin(String login);
 
+    Optional<Utilisateur> findByNumCompteCourant(String numCompteCourant);
+
+    Optional<Utilisateur> findByNumMembre(String numMembre);
+
     List<Utilisateur> findByActifTrue();
 
     List<Utilisateur> findByAgence_CodeAgence(String codeAgence);

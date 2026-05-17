@@ -13,5 +13,8 @@
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
 
     <include file="db/changelog/phase-13-mobile/P13-001-CREATE-TABLE-Notification.xml"/>
+    <include file="db/changelog/phase-13-mobile/P13-002-ALTER-Utilisateur-num-membre.xml"/>
+    <include file="db/changelog/phase-13-mobile/P13-003-ALTER-Utilisateur-profile-adresse.xml"/>
+    <include file="db/changelog/phase-13-mobile/P13-004-ENSURE-Utilisateur-mobile-columns.xml"/>
 
 </databaseChangeLog>

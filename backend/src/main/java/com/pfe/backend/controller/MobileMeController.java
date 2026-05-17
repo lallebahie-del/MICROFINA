@@ -8,6 +8,8 @@ import com.pfe.backend.dto.CreditDTO;
 import com.pfe.backend.repository.CompteEpsRepository;
 import com.pfe.backend.repository.CreditsRepository;
 import com.pfe.backend.repository.UtilisateurRepository;
+import com.pfe.backend.service.MobileAccountProvisioningService;
+import com.pfe.backend.service.MobileMeProfileService;
 import com.pfe.backend.service.MobileMeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -45,15 +47,21 @@ public class MobileMeController {
     private final CompteEpsRepository   compteEpsRepo;
     private final CreditsRepository     creditsRepo;
     private final MobileMeService       mobileService;
+    private final MobileMeProfileService profileService;
+    private final MobileAccountProvisioningService provisioningService;
 
     public MobileMeController(UtilisateurRepository utilisateurRepo,
                               CompteEpsRepository compteEpsRepo,
                               CreditsRepository creditsRepo,
-                              MobileMeService mobileService) {
+                              MobileMeService mobileService,
+                              MobileMeProfileService profileService,
+                              MobileAccountProvisioningService provisioningService) {
         this.utilisateurRepo = utilisateurRepo;
         this.compteEpsRepo = compteEpsRepo;
         this.creditsRepo = creditsRepo;
         this.mobileService = mobileService;
+        this.profileService = profileService;
+        this.provisioningService = provisioningService;
     }
 
     // ── Profil ──────────────────────────────────────────────────────────────
@@ -62,14 +70,8 @@ public class MobileMeController {
     @GetMapping("/profile")
     public ResponseEntity<Map<String, Object>> profile(Authentication auth) {
         Utilisateur user = currentUser(auth);
-        return ResponseEntity.ok(Map.of(
-            "login",       user.getLogin(),
-            "nomComplet",  user.getNomComplet() != null ? user.getNomComplet() : "",
-            "email",       user.getEmail() != null ? user.getEmail() : "",
-            "telephone",   user.getTelephone() != null ? user.getTelephone() : "",
-            "codeAgence",  user.getAgence() != null ? user.getAgence().getCodeAgence() : "",
-            "actif",       user.getActif() != null ? user.getActif() : Boolean.FALSE
-        ));
+        user = provisioningService.provisionIfMissing(user);
+        return ResponseEntity.ok(profileService.buildProfile(user));
     }
 
     // ── Comptes ─────────────────────────────────────────────────────────────
@@ -77,10 +79,12 @@ public class MobileMeController {
     @Operation(summary = "Comptes épargne accessibles à l'utilisateur courant")
     @GetMapping("/comptes")
     public ResponseEntity<List<CompteEpsDTO.Response>> comptes(Authentication auth) {
-        Utilisateur user = currentUser(auth);
+        Utilisateur user = provisioningService.provisionIfMissing(currentUser(auth));
 
         List<CompteEps> list;
-        if (user.getAgence() != null && user.getAgence().getCodeAgence() != null) {
+        if (user.getNumMembre() != null && !user.getNumMembre().isBlank()) {
+            list = compteEpsRepo.findByMembre_NumMembre(user.getNumMembre());
+        } else if (user.getAgence() != null && user.getAgence().getCodeAgence() != null) {
             list = compteEpsRepo.findByAgence_CodeAgence(user.getAgence().getCodeAgence());
         } else {
             list = compteEpsRepo.findAll();
@@ -143,6 +147,31 @@ public class MobileMeController {
             auth.getName(),
             req.compteSource(),
             req.compteDestinataire(),
+            req.montant(),
+            req.libelle()
+        ));
+    }
+
+    public record ExternalTransferRequest(
+        String compteSource,
+        String telephoneBeneficiaire,
+        BigDecimal montant,
+        String libelle,
+        String nomBeneficiaire,
+        String banque
+    ) {}
+
+    @Operation(summary = "Virement vers un autre client mobile (par numéro de téléphone)")
+    @PostMapping("/transfer-external")
+    public ResponseEntity<Map<String, Object>> transferExternal(
+            @RequestBody ExternalTransferRequest req,
+            Authentication auth) {
+        return ResponseEntity.ok(mobileService.transferExternalByPhone(
+            auth.getName(),
+            req.compteSource(),
+            req.telephoneBeneficiaire(),
+            req.nomBeneficiaire(),
+            req.banque(),
             req.montant(),
             req.libelle()
         ));

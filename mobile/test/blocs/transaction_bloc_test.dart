@@ -61,6 +61,15 @@ class _FakeTransactionRepository implements TransactionRepository {
     required String reason,
   }) async =>
       false;
+
+  @override
+  Future<bool> transferExternalFunds({
+    required String fromAccountId,
+    required String beneficiaryPhone,
+    required double amount,
+    required String reason,
+  }) async =>
+      false;
 }
 
 void main() {

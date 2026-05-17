@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="P13-002-alter-utilisateur-num-membre" author="microfina-phase13">
+        <comment>Lie chaque utilisateur mobile à son membre (COMPTEEPS / ADRESSE)</comment>
+
+        <addColumn tableName="Utilisateur">
+            <column name="num_membre" type="NVARCHAR(25)"/>
+        </addColumn>
+
+        <addForeignKeyConstraint
+            baseTableName="Utilisateur"
+            baseColumnNames="num_membre"
+            referencedTableName="membres"
+            referencedColumnNames="NUM_MEMBRE"
+            constraintName="FK_Utilisateur_membres"
+            onDelete="SET NULL"
+            onUpdate="CASCADE"/>
+
+        <rollback>
+            <dropForeignKeyConstraint
+                baseTableName="Utilisateur"
+                constraintName="FK_Utilisateur_membres"/>
+            <dropColumn tableName="Utilisateur" columnName="num_membre"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

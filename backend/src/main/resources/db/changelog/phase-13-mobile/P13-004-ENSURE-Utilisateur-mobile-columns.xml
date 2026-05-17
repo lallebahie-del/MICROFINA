@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!-- Idempotent : s'exécute même si P13-002/003 ont été ignorés sur une base existante -->
+    <changeSet id="P13-004-ensure-utilisateur-mobile-columns" author="microfina-phase13">
+        <comment>Colonnes profil mobile + lien membre (idempotent SQL Server)</comment>
+
+        <sql>
+IF COL_LENGTH('Utilisateur', 'num_membre') IS NULL
+    ALTER TABLE Utilisateur ADD num_membre NVARCHAR(25) NULL;
+        </sql>
+        <sql>
+IF COL_LENGTH('Utilisateur', 'adresse') IS NULL
+    ALTER TABLE Utilisateur ADD adresse NVARCHAR(500) NULL;
+        </sql>
+        <sql>
+IF COL_LENGTH('Utilisateur', 'ville') IS NULL
+    ALTER TABLE Utilisateur ADD ville NVARCHAR(255) NULL;
+        </sql>
+        <sql>
+IF COL_LENGTH('Utilisateur', 'latitude') IS NULL
+    ALTER TABLE Utilisateur ADD latitude NVARCHAR(50) NULL;
+        </sql>
+        <sql>
+IF COL_LENGTH('Utilisateur', 'longitude') IS NULL
+    ALTER TABLE Utilisateur ADD longitude NVARCHAR(50) NULL;
+        </sql>
+        <sql>
+IF COL_LENGTH('Utilisateur', 'num_compte_courant') IS NULL
+    ALTER TABLE Utilisateur ADD num_compte_courant NVARCHAR(255) NULL;
+        </sql>
+        <sql>
+IF NOT EXISTS (
+    SELECT 1 FROM sys.foreign_keys WHERE name = N'FK_Utilisateur_membres'
+)
+AND COL_LENGTH('Utilisateur', 'num_membre') IS NOT NULL
+    ALTER TABLE Utilisateur ADD CONSTRAINT FK_Utilisateur_membres
+        FOREIGN KEY (num_membre) REFERENCES membres(NUM_MEMBRE);
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

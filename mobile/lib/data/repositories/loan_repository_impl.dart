@@ -1,11 +1,13 @@
+import '../../core/config/api_config.dart';
 import '../../core/config/app_build_config.dart';
 import '../../core/network/dio_client.dart';
 import '../../core/network/connectivity_service.dart';
 import '../../core/storage/local_cache_service.dart';
 import '../../domain/repositories/loan_repository.dart';
 import '../datasources/mock/mock_data.dart';
-import '../models/credit_model.dart';
+import '../mappers/mobile_api_mapper.dart';
 import '../models/amortp_model.dart';
+import '../models/credit_model.dart';
 import '../models/extra_models.dart';
 
 class LoanRepositoryImpl implements LoanRepository {
@@ -67,11 +69,11 @@ class LoanRepositoryImpl implements LoanRepository {
     }
 
     try {
-      final response = await _dioClient.get('/loans');
-      final List<dynamic> data = response.data;
-      final loansJson = data.map((e) => e as Map<String, dynamic>).toList();
-      final loans = loansJson
-          .map((json) => LoanModel.fromJson(json))
+      final response = await _dioClient.get(ApiConfig.mobileCredits());
+      final List<dynamic> raw = (response.data as List<dynamic>?) ?? const [];
+      final loans = raw
+          .whereType<Map<String, dynamic>>()
+          .map(MobileApiMapper.loanFromCreditDto)
           .where((l) => l.statusCode != 3)
           .toList();
 
@@ -81,7 +83,10 @@ class LoanRepositoryImpl implements LoanRepository {
         }
         return [];
       }
-      await _cacheService.cacheLoans(loansJson);
+
+      await _cacheService.cacheLoans(
+        loans.map((l) => l.toJson()).toList(),
+      );
       return loans;
     } catch (e) {
       final cached = await _cacheService.getCachedLoans();
@@ -100,46 +105,31 @@ class LoanRepositoryImpl implements LoanRepository {
 
   @override
   Future<LoanModel> getLoanDetails(String loanId) async {
-    try {
-      final response = await _dioClient.get('/loans/$loanId');
-      return LoanModel.fromJson(response.data);
-    } catch (e) {
-      if (AppBuildConfig.allowMockFallback) {
-        final fallback = _mockLoanById(loanId);
-        if (fallback != null) return fallback;
-      }
-      rethrow;
+    final loans = await getLoans();
+    final match = loans.where((l) => l.loanId == loanId);
+    if (match.isNotEmpty) return match.first;
+
+    if (AppBuildConfig.allowMockFallback) {
+      final fallback = _mockLoanById(loanId);
+      if (fallback != null) return fallback;
     }
+    throw Exception('Crédit introuvable: $loanId');
   }
 
   @override
   Future<List<AmortpModel>> getAmortizationSchedule(String loanId) async {
-    try {
-      final response = await _dioClient.get('/loans/$loanId/schedule');
-      return (response.data as List)
-          .map((json) => AmortpModel.fromJson(json as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      if (AppBuildConfig.allowMockFallback) {
-        return _mockSchedule(loanId);
-      }
-      rethrow;
+    if (AppBuildConfig.allowMockFallback) {
+      return _mockSchedule(loanId);
     }
+    return [];
   }
 
   @override
   Future<List<GarantieModel>> getGuarantees(String loanId) async {
-    try {
-      final response = await _dioClient.get('/loans/$loanId/guarantees');
-      return (response.data as List)
-          .map((json) => GarantieModel.fromJson(json as Map<String, dynamic>))
-          .toList();
-    } catch (e) {
-      if (AppBuildConfig.allowMockFallback) {
-        return _mockGuarantees(loanId);
-      }
-      rethrow;
+    if (AppBuildConfig.allowMockFallback) {
+      return _mockGuarantees(loanId);
     }
+    return [];
   }
 
   @override
@@ -148,19 +138,11 @@ class LoanRepositoryImpl implements LoanRepository {
     required int duration,
     required String purpose,
   }) async {
-    try {
-      final response = await _dioClient.post(
-        '/loans/request',
-        data: {'amount': amount, 'duration': duration, 'purpose': purpose},
-      );
-      return response.statusCode == 201 || response.statusCode == 200;
-    } catch (e) {
-      if (AppBuildConfig.allowMockFallback) {
-        await Future.delayed(const Duration(milliseconds: 600));
-        return true;
-      }
-      return false;
+    if (AppBuildConfig.allowMockFallback) {
+      await Future.delayed(const Duration(milliseconds: 600));
+      return true;
     }
+    return false;
   }
 
   @override
@@ -169,20 +151,12 @@ class LoanRepositoryImpl implements LoanRepository {
     required int installmentId,
     required double amount,
   }) async {
-    try {
-      final response = await _dioClient.post(
-        '/loans/$loanId/pay',
-        data: {'installmentId': installmentId, 'amount': amount},
+    if (AppBuildConfig.allowMockFallback) {
+      return MockData.payLoanInstallmentFull(
+        loanId: loanId,
+        installmentId: installmentId,
       );
-      return response.statusCode == 200;
-    } catch (e) {
-      if (AppBuildConfig.allowMockFallback) {
-        return MockData.payLoanInstallmentFull(
-          loanId: loanId,
-          installmentId: installmentId,
-        );
-      }
-      return false;
     }
+    return false;
   }
 }

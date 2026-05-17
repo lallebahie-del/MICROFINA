@@ -4,7 +4,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../core/auth/biometric_auth_service.dart';
 import '../../../core/di/service_locator.dart';
+import '../../../core/notifications/notification_refresh_broadcaster.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/phone_number_policy.dart';
+import '../../../core/utils/account_color_parser.dart';
 import '../../../data/models/compte_eps_model.dart';
 import '../../blocs/account/account_bloc.dart';
 import '../../blocs/transfer/transfer_bloc.dart';
@@ -23,9 +26,7 @@ class _TransferScreenState extends State<TransferScreen>
   final _formKeyExternal = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _reasonController = TextEditingController();
-  final _beneficiaryNameController = TextEditingController();
   final _externalAccountController = TextEditingController();
-  final _bankController = TextEditingController();
   final BiometricAuthService _biometric = sl<BiometricAuthService>();
   final currencyFormat = NumberFormat.currency(
     locale: 'fr_FR',
@@ -52,9 +53,7 @@ class _TransferScreenState extends State<TransferScreen>
     _tabController.dispose();
     _amountController.dispose();
     _reasonController.dispose();
-    _beneficiaryNameController.dispose();
     _externalAccountController.dispose();
-    _bankController.dispose();
     super.dispose();
   }
 
@@ -147,11 +146,11 @@ class _TransferScreenState extends State<TransferScreen>
       return;
     }
 
-    final ext = _externalAccountController.text.trim().replaceAll(' ', '');
-    if (ext.length < 8) {
+    final phone = PhoneNumberPolicy.normalize(_externalAccountController.text);
+    if (!PhoneNumberPolicy.isValid(phone)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Le numéro de compte externe doit comporter au moins 8 caractères.'),
+          content: Text(PhoneNumberPolicy.validationMessage),
         ),
       );
       return;
@@ -248,11 +247,9 @@ class _TransferScreenState extends State<TransferScreen>
     context.read<TransferBloc>().add(
       PerformExternalTransfer(
         fromAccountId: _fromAccountId!,
-        beneficiaryName: _beneficiaryNameController.text.trim(),
-        externalAccountNumber: _externalAccountController.text.trim(),
-        beneficiaryBank: _bankController.text.trim().isEmpty
-            ? null
-            : _bankController.text.trim(),
+        beneficiaryPhone: PhoneNumberPolicy.normalize(
+          _externalAccountController.text,
+        ),
         amount: double.parse(_amountController.text),
         reason: _reasonController.text.trim(),
       ),
@@ -396,9 +393,10 @@ class _TransferScreenState extends State<TransferScreen>
       listener: (context, state) {
         if (state.status == TransferStatus.success) {
           context.read<AccountBloc>().add(FetchAccounts());
+          sl<NotificationRefreshBroadcaster>().broadcast();
           _showSuccessPopup(
             _pendingSuccessIsExternal
-                ? 'Virement externe envoyé avec succès !'
+                ? 'Virement envoyé avec succès !'
                 : 'Virement effectué avec succès !',
           );
         } else if (state.status == TransferStatus.failure) {
@@ -609,7 +607,7 @@ class _TransferScreenState extends State<TransferScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Envoyez des fonds vers un compte d\'un autre titulaire ou une autre banque.',
+              'Envoyez des fonds à un autre client inscrit sur l\'application (par son numéro de téléphone).',
               style: TextStyle(
                 fontSize: 15,
                 color: Colors.grey,
@@ -626,35 +624,13 @@ class _TransferScreenState extends State<TransferScreen>
               hint: 'Compte à débiter',
             ),
             const SizedBox(height: 32),
-            _buildSectionTitle('BÉNÉFICIAIRE'),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _beneficiaryNameController,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                hintText: 'Nom et prénom du destinataire',
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              validator: (v) {
-                if (v == null || v.trim().length < 2) {
-                  return 'Indiquez le nom du bénéficiaire';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 32),
-            _buildSectionTitle('NUMÉRO DE COMPTE EXTERNE'),
+            _buildSectionTitle('TÉLÉPHONE DU BÉNÉFICIAIRE'),
             const SizedBox(height: 12),
             TextFormField(
               controller: _externalAccountController,
-              keyboardType: TextInputType.text,
+              keyboardType: TextInputType.phone,
               decoration: InputDecoration(
-                hintText: 'RIB ou numéro de compte (min. 8 caractères)',
+                hintText: 'Ex: 27222722 (8 chiffres, commence par 2, 3 ou 4)',
                 filled: true,
                 fillColor: Colors.white,
                 border: OutlineInputBorder(
@@ -663,28 +639,11 @@ class _TransferScreenState extends State<TransferScreen>
                 ),
               ),
               validator: (v) {
-                final s = v?.trim().replaceAll(' ', '') ?? '';
-                if (s.length < 8) {
-                  return 'Au moins 8 caractères';
+                if (!PhoneNumberPolicy.isValid(v ?? '')) {
+                  return PhoneNumberPolicy.validationMessage;
                 }
                 return null;
               },
-            ),
-            const SizedBox(height: 32),
-            _buildSectionTitle('BANQUE (OPTIONNEL)'),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _bankController,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                hintText: 'Ex: Banque nationale de Mauritanie',
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
             ),
             const SizedBox(height: 32),
             _buildSectionTitle('MONTANT'),
@@ -833,16 +792,8 @@ class _TransferScreenState extends State<TransferScreen>
                     width: 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: account.accountTypeColor != null
-                          ? Color(
-                              int.parse(
-                                account.accountTypeColor!.replaceFirst(
-                                  '#',
-                                  '0xFF',
-                                ),
-                              ),
-                            )
-                          : AppColors.primary,
+                      color: tryParseAccountColor(account.accountTypeColor) ??
+                          AppColors.primary,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -873,16 +824,8 @@ class _TransferScreenState extends State<TransferScreen>
                   width: 8,
                   height: 8,
                   decoration: BoxDecoration(
-                    color: account.accountTypeColor != null
-                        ? Color(
-                            int.parse(
-                              account.accountTypeColor!.replaceFirst(
-                                '#',
-                                '0xFF',
-                              ),
-                            ),
-                          )
-                        : AppColors.primary,
+                    color: tryParseAccountColor(account.accountTypeColor) ??
+                        AppColors.primary,
                     shape: BoxShape.circle,
                   ),
                 ),

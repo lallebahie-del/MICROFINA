@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -7,8 +8,12 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/account_color_parser.dart';
 import '../../../core/theme/app_shadows.dart';
-import '../../../data/datasources/mock/mock_data.dart';
+import '../../../core/di/service_locator.dart';
+import '../../../core/notifications/notification_refresh_broadcaster.dart';
+import '../../../domain/repositories/notifications_repository.dart';
+import '../../../domain/repositories/profile_repository.dart';
 import '../../../core/router/app_router.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/account/account_bloc.dart';
@@ -33,12 +38,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isBalanceVisible = true;
   ConnectivityStatus _connectivityStatus = ConnectivityStatus.online;
   int? _touchedIndex;
+  bool _hasUnreadNotifications = false;
+  StreamSubscription<void>? _notificationRefreshSub;
 
   @override
   void initState() {
     super.initState();
     _listenToConnectivity();
     _loadUserData();
+    _loadNotificationBadge();
+    _notificationRefreshSub =
+        sl<NotificationRefreshBroadcaster>().stream.listen((_) {
+      _loadNotificationBadge();
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificationRefreshSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadNotificationBadge() async {
+    try {
+      final page = await sl<NotificationsRepository>().fetch(page: 0, size: 1);
+      if (mounted) {
+        setState(() => _hasUnreadNotifications = page.unread > 0);
+      }
+    } catch (_) {}
   }
 
   void _listenToConnectivity() {
@@ -54,15 +81,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadUserData() async {
-    // Simuler un chargement pour montrer le Skeleton
-    await Future.delayed(const Duration(seconds: 2));
-
     if (!mounted) return;
 
     final authBloc = context.read<AuthBloc>();
     final authState = authBloc.state;
     if (authState is AuthSuccess && authState.phone != null) {
-      final name = await _secureStorage.getUserName(authState.phone!);
+      String? name = await _secureStorage.getUserName(authState.phone!);
+      try {
+        final profile = await sl<ProfileRepository>().getProfile();
+        if (profile.nomComplet.isNotEmpty) name = profile.nomComplet;
+      } catch (_) {}
       final photo = await _secureStorage.getUserPhoto(authState.phone!);
       if (mounted) {
         setState(() {
@@ -97,9 +125,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             soldeBloque += acc.blockedBalance;
           }
           final double soldeTotal = soldeDisponible + soldeBloque;
-          final hasUnreadNotifications = MockData.getNotifications().any(
-            (n) => n['isRead'] == false,
-          );
+          final hasUnreadNotifications = _hasUnreadNotifications;
 
           return Column(
             children: [
@@ -123,6 +149,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: RefreshIndicator(
                   onRefresh: () async {
                     context.read<AccountBloc>().add(FetchAccounts());
+                    await _loadNotificationBadge();
+                    await _loadUserData();
                   },
                   child: CustomScrollView(
                     physics: const BouncingScrollPhysics(),
@@ -463,14 +491,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   itemBuilder: (context, index) {
                                     final account = userAccounts[index];
                                     final Color accountColor =
-                                        account.accountTypeColor != null
-                                        ? Color(
-                                            int.parse(
-                                              account.accountTypeColor!
-                                                  .replaceFirst('#', '0xFF'),
-                                            ),
-                                          )
-                                        : AppColors.secondary;
+                                        tryParseAccountColor(
+                                              account.accountTypeColor,
+                                            ) ??
+                                        AppColors.secondary;
 
                                     return AnimationConfiguration.staggeredList(
                                       position: index,

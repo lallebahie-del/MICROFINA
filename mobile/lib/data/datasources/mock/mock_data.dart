@@ -185,17 +185,14 @@ class MockData {
   /// Simulation d'un virement vers un compte **externe** (autre institution / tiers).
   static Future<bool> performExternalTransfer({
     required String fromAccountId,
-    required String beneficiaryName,
-    required String externalAccountNumber,
-    String? beneficiaryBank,
+    required String beneficiaryPhone,
     required double amount,
     required String reason,
   }) async {
     await Future.delayed(const Duration(seconds: 2));
     if (amount <= 0) return false;
-    final name = beneficiaryName.trim();
-    final ext = externalAccountNumber.trim().replaceAll(RegExp(r'\s'), '');
-    if (name.length < 2 || ext.length < 8) return false;
+    final phone = beneficiaryPhone.replaceAll(RegExp(r'\D'), '');
+    if (phone.length != 8) return false;
 
     Map<String, dynamic>? fromAcc;
     for (final userAccounts in _userAccountsMap.values) {
@@ -207,11 +204,15 @@ class MockData {
       return false;
     }
 
+    final destAccounts = _userAccountsMap[phone];
+    if (destAccounts == null || destAccounts.isEmpty) return false;
+
+    final destAcc = destAccounts.first;
+    destAcc['availableBalance'] =
+        (destAcc['availableBalance'] as num).toDouble() + amount;
+
     fromAcc['availableBalance'] =
         (fromAcc['availableBalance'] as num).toDouble() - amount;
-
-    final bank = beneficiaryBank?.trim();
-    final bankSuffix = (bank != null && bank.isNotEmpty) ? ' — $bank' : '';
 
     mockEpargneTransactions.insert(0, {
       'id': 'tx_ext_${DateTime.now().millisecondsSinceEpoch}',
@@ -219,8 +220,7 @@ class MockData {
       'date': DateTime.now().toIso8601String(),
       'montant': amount,
       'type': 'DEBIT',
-      'libelle':
-          'Virement externe vers $name (compte $ext)$bankSuffix — $reason',
+      'libelle': 'Virement vers $phone — $reason',
     });
 
     return true;
@@ -446,6 +446,16 @@ class MockData {
   static void markAllNotificationsAsRead() {
     for (final n in _composeNotificationFeed()) {
       _readNotificationIds.add(n['id'] as String);
+    }
+  }
+
+  static void markNotificationAsRead(int notificationId) {
+    for (final n in _composeNotificationFeed()) {
+      final sid = n['id'] as String;
+      if (sid.hashCode == notificationId) {
+        _readNotificationIds.add(sid);
+        return;
+      }
     }
   }
 

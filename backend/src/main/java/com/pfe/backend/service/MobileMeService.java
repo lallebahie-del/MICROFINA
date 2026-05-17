@@ -27,10 +27,14 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -56,6 +60,7 @@ public class MobileMeService {
     private final CompteEpsRepository    compteEpsRepo;
     private final EpargneRepository      epargneRepo;
     private final NotificationRepository notificationRepo;
+    private final MobileAccountProvisioningService provisioningService;
 
     @Value("${app.photos.dir:./photos}")
     private String photosDir;
@@ -63,15 +68,21 @@ public class MobileMeService {
     private static final long MAX_PHOTO_SIZE = 2L * 1024 * 1024;
     private static final Set<String> ALLOWED_PHOTO_TYPES =
         Set.of("image/jpeg", "image/png");
+    private static final String NOTIF_TYPE_OPERATION = "OPERATION";
+    private static final List<String> MOBILE_OPERATION_CODES = List.of(
+        "VIREMENT_DEBIT", "VIREMENT_CREDIT", "PAIEMENT_SERVICE"
+    );
 
     public MobileMeService(UtilisateurRepository utilisateurRepo,
                            CompteEpsRepository compteEpsRepo,
                            EpargneRepository epargneRepo,
-                           NotificationRepository notificationRepo) {
+                           NotificationRepository notificationRepo,
+                           MobileAccountProvisioningService provisioningService) {
         this.utilisateurRepo  = utilisateurRepo;
         this.compteEpsRepo    = compteEpsRepo;
         this.epargneRepo      = epargneRepo;
         this.notificationRepo = notificationRepo;
+        this.provisioningService = provisioningService;
     }
 
     public Utilisateur currentUser(String login) {
@@ -82,15 +93,63 @@ public class MobileMeService {
     // ── Notifications ───────────────────────────────────────────────────────
 
     public Map<String, Object> getNotifications(String login, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("dateCreation").descending());
-        Page<Notification> result = notificationRepo.findByUserLogin(login, pageable);
+        // Priorité aux mouvements EPARGNE (virements / paiements mobile) — toujours synchronisés.
+        Map<String, Object> fromEpargne = getNotificationsFromEpargne(login, page, size);
+        long epargneTotal = ((Number) fromEpargne.get("totalElements")).longValue();
+        if (epargneTotal > 0) {
+            return fromEpargne;
+        }
 
-        List<Map<String, Object>> items = result.getContent().stream()
-            .map(MobileMeService::toNotificationDto)
+        List<String> loginAliases = loginAliases(login);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("dateCreation").descending());
+        Page<Notification> result = notificationRepo.findByUserLoginIn(loginAliases, pageable);
+
+        if (result.getTotalElements() > 0) {
+            List<Map<String, Object>> items = result.getContent().stream()
+                .map(MobileMeService::toNotificationDto)
+                .toList();
+            long unread = notificationRepo.countByUserLoginInAndLuFalse(loginAliases);
+            return notificationPageBody(items, result, unread);
+        }
+
+        return fromEpargne;
+    }
+
+    private Map<String, Object> getNotificationsFromEpargne(String login, int page, int size) {
+        Optional<Utilisateur> userOpt = resolveUserByLoginAliases(login);
+        if (userOpt.isEmpty()) {
+            return emptyNotificationPage(page, size);
+        }
+
+        Utilisateur user = provisioningService.provisionIfMissing(userOpt.get());
+        List<String> comptes = resolveCompteNumbers(user);
+        if (comptes.isEmpty()) {
+            return emptyNotificationPage(page, size);
+        }
+
+        Pageable pageable = PageRequest.of(
+            page, size,
+            Sort.by("dateOperation").descending().and(Sort.by("idEpargne").descending()));
+        Page<Epargne> epargnes = epargneRepo.findByNumCompteIn(comptes, pageable);
+
+        List<Map<String, Object>> items = epargnes.getContent().stream()
+            .filter(MobileMeService::isMobileMovement)
+            .map(MobileMeService::epargneToNotificationDto)
             .toList();
 
-        long unread = notificationRepo.countByUserLoginAndLuFalse(login);
+        long unread = items.stream().filter(m -> !Boolean.TRUE.equals(m.get("lu"))).count();
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("content",       items);
+        body.put("totalElements", epargnes.getTotalElements());
+        body.put("totalPages",    epargnes.getTotalPages());
+        body.put("page",          epargnes.getNumber());
+        body.put("size",          epargnes.getSize());
+        body.put("unread",        unread);
+        return body;
+    }
 
+    private static Map<String, Object> notificationPageBody(
+            List<Map<String, Object>> items, Page<Notification> result, long unread) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("content",       items);
         body.put("totalElements", result.getTotalElements());
@@ -101,11 +160,109 @@ public class MobileMeService {
         return body;
     }
 
+    private static Map<String, Object> emptyNotificationPage(int page, int size) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("content",       List.of());
+        body.put("totalElements", 0L);
+        body.put("totalPages",    0);
+        body.put("page",          page);
+        body.put("size",          size);
+        body.put("unread",        0L);
+        return body;
+    }
+
+    private static boolean isMobileMovement(Epargne e) {
+        if (e == null) {
+            return false;
+        }
+        String code = e.getCodeTypeOperation();
+        if (code != null && !code.isBlank()) {
+            String u = code.toUpperCase(Locale.ROOT);
+            if (MOBILE_OPERATION_CODES.stream().anyMatch(u::contains)) {
+                return true;
+            }
+            if (u.contains("VIREMENT") || u.contains("PAIEMENT") || u.contains("RETRAIT")
+                || u.contains("DEPOT")) {
+                return true;
+            }
+        }
+        boolean hasDebit = e.getMontantDebit() != null && e.getMontantDebit().signum() > 0;
+        boolean hasCredit = e.getMontantCredit() != null && e.getMontantCredit().signum() > 0;
+        return hasDebit || hasCredit;
+    }
+
+    private static Map<String, Object> epargneToNotificationDto(Epargne e) {
+        boolean credit = e.getMontantCredit() != null && e.getMontantCredit().signum() > 0;
+        BigDecimal montant = credit
+            ? e.getMontantCredit()
+            : (e.getMontantDebit() != null ? e.getMontantDebit() : BigDecimal.ZERO);
+
+        Map<String, Object> m = new HashMap<>();
+        m.put("id",           e.getIdEpargne());
+        m.put("titre",        credit ? "Crédit sur compte" : "Débit sur compte");
+        m.put("message",      (e.getLibelleOperation() != null ? e.getLibelleOperation() : "")
+            + " · " + formatMontant(montant));
+        m.put("type",         NOTIF_TYPE_OPERATION);
+        m.put("lu",           false);
+        LocalDateTime created = e.getDateOperation() != null
+            ? e.getDateOperation().atStartOfDay()
+            : null;
+        m.put("dateCreation", created != null ? created.toString() : null);
+        m.put("dateLecture",  null);
+        m.put("lien",         "epargne:" + e.getIdEpargne());
+        return m;
+    }
+
+    private List<String> resolveCompteNumbers(Utilisateur user) {
+        List<String> nums = new ArrayList<>();
+        if (user.getNumCompteCourant() != null && !user.getNumCompteCourant().isBlank()) {
+            nums.add(user.getNumCompteCourant().trim());
+        }
+        if (user.getNumMembre() != null && !user.getNumMembre().isBlank()) {
+            compteEpsRepo.findByMembre_NumMembre(user.getNumMembre()).stream()
+                .map(CompteEps::getNumCompte)
+                .filter(n -> n != null && !n.isBlank())
+                .forEach(nums::add);
+        }
+        return nums.stream().distinct().toList();
+    }
+
+    private Optional<Utilisateur> resolveUserByLoginAliases(String login) {
+        for (String alias : loginAliases(login)) {
+            Optional<Utilisateur> u = utilisateurRepo.findByLogin(alias);
+            if (u.isPresent()) {
+                return u;
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static List<String> loginAliases(String login) {
+        if (login == null || login.isBlank()) {
+            return List.of();
+        }
+        String trimmed = login.trim();
+        String digits = normalizeLogin(trimmed);
+        List<String> aliases = new ArrayList<>();
+        aliases.add(trimmed);
+        if (!digits.isBlank() && !digits.equals(trimmed)) {
+            aliases.add(digits);
+        }
+        return aliases.stream().distinct().toList();
+    }
+
+    private static String normalizeLogin(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        return raw.replaceAll("\\D", "");
+    }
+
     @Transactional
     public Notification markAsRead(String login, Long id) {
         Notification n = notificationRepo.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Notification", id));
-        if (!login.equals(n.getUserLogin())) {
+        if (!loginAliases(login).contains(n.getUserLogin())) {
             throw new BusinessException("ACCES_REFUSE", "Cette notification ne vous appartient pas.");
         }
         if (Boolean.FALSE.equals(n.getLu())) {
@@ -118,8 +275,8 @@ public class MobileMeService {
 
     @Transactional
     public int markAllAsRead(String login) {
-        Page<Notification> page = notificationRepo.findByUserLogin(
-            login, PageRequest.of(0, 500, Sort.by("dateCreation").descending()));
+        Page<Notification> page = notificationRepo.findByUserLoginIn(
+            loginAliases(login), PageRequest.of(0, 500, Sort.by("dateCreation").descending()));
         int updated = 0;
         LocalDateTime now = LocalDateTime.now();
         for (Notification n : page.getContent()) {
@@ -131,6 +288,49 @@ public class MobileMeService {
             }
         }
         return updated;
+    }
+
+    /**
+     * Crée une notification in-app pour l'utilisateur mobile (écran Notifications).
+     */
+    private void notifyOperation(String userLogin, String titre, String message, Long epargneId) {
+        String login = resolveUserByLoginAliases(userLogin)
+            .map(Utilisateur::getLogin)
+            .orElse(userLogin != null ? userLogin.trim() : "");
+        if (login.isBlank()) {
+            return;
+        }
+        Notification n = new Notification(login, titre, message, NOTIF_TYPE_OPERATION);
+        if (epargneId != null) {
+            n.setLien("epargne:" + epargneId);
+        }
+        notificationRepo.save(n);
+    }
+
+    private static String formatMontant(BigDecimal montant) {
+        if (montant == null) {
+            return "0 FCFA";
+        }
+        NumberFormat fmt = NumberFormat.getInstance(Locale.FRANCE);
+        fmt.setMaximumFractionDigits(0);
+        fmt.setMinimumFractionDigits(0);
+        return fmt.format(montant) + " FCFA";
+    }
+
+    /** Résout le login mobile (téléphone) associé à un compte épargne. */
+    private Optional<String> resolveUserLoginForCompte(CompteEps compte) {
+        if (compte == null || compte.getNumCompte() == null) {
+            return Optional.empty();
+        }
+        Optional<Utilisateur> byCompte = utilisateurRepo.findByNumCompteCourant(compte.getNumCompte());
+        if (byCompte.isPresent()) {
+            return Optional.of(byCompte.get().getLogin());
+        }
+        if (compte.getMembre() != null && compte.getMembre().getNumMembre() != null) {
+            return utilisateurRepo.findByNumMembre(compte.getMembre().getNumMembre())
+                .map(Utilisateur::getLogin);
+        }
+        return Optional.empty();
     }
 
     private static Map<String, Object> toNotificationDto(Notification n) {
@@ -315,6 +515,14 @@ public class MobileMeService {
         crd.setUtilisateur(login);
         epargneRepo.save(crd);
 
+        String montantFmt = formatMontant(montant);
+        notifyOperation(login, "Débit sur compte",
+            dbg.getLibelleOperation() + " · " + montantFmt, dbg.getIdEpargne());
+        resolveUserLoginForCompte(dest)
+            .filter(benLogin -> !normalizeLogin(benLogin).equals(normalizeLogin(login)))
+            .ifPresent(benLogin -> notifyOperation(benLogin, "Crédit sur compte",
+                crd.getLibelleOperation() + " · " + montantFmt, crd.getIdEpargne()));
+
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("statut",      "OK");
         body.put("compteSource", numCompteSource);
@@ -322,6 +530,72 @@ public class MobileMeService {
         body.put("montant",      montant);
         body.put("soldeSourceApres", soldeSrc.subtract(montant));
         return body;
+    }
+
+    /**
+     * Virement vers un autre client mobile identifié par son numéro de téléphone (login).
+     */
+    @Transactional
+    public Map<String, Object> transferExternalByPhone(String senderLogin,
+                                                        String compteSource,
+                                                        String telephoneBeneficiaire,
+                                                        String nomBeneficiaire,
+                                                        String banque,
+                                                        BigDecimal montant,
+                                                        String libelle) {
+        String phone = normalizePhone(telephoneBeneficiaire);
+        if (phone.isBlank()) {
+            throw new BusinessException("TELEPHONE_INVALIDE", "Numéro de téléphone bénéficiaire invalide.");
+        }
+        if (phone.equals(normalizePhone(senderLogin))) {
+            throw new BusinessException("SELF_TRANSFER", "Vous ne pouvez pas vous virer des fonds à vous-même.");
+        }
+
+        Utilisateur beneficiary = utilisateurRepo.findByLogin(phone)
+            .orElseThrow(() -> new ResourceNotFoundException(
+                "Utilisateur", "Aucun client mobile enregistré pour le numéro " + phone));
+
+        beneficiary = provisioningService.provisionIfMissing(beneficiary);
+
+        String destCompte = beneficiary.getNumCompteCourant();
+        if (destCompte == null || destCompte.isBlank()) {
+            if (beneficiary.getNumMembre() != null && !beneficiary.getNumMembre().isBlank()) {
+                var comptes = compteEpsRepo.findByMembre_NumMembre(beneficiary.getNumMembre());
+                if (!comptes.isEmpty()) {
+                    destCompte = comptes.get(0).getNumCompte();
+                }
+            }
+        }
+        if (destCompte == null || destCompte.isBlank()) {
+            throw new BusinessException("COMPTE_BENEFICIAIRE_ABSENT",
+                "Le bénéficiaire n'a pas de compte courant actif.");
+        }
+
+        StringBuilder lbl = new StringBuilder();
+        lbl.append("Virement vers ");
+        if (nomBeneficiaire != null && !nomBeneficiaire.isBlank()) {
+            lbl.append(nomBeneficiaire.trim());
+        } else if (beneficiary.getNomComplet() != null) {
+            lbl.append(beneficiary.getNomComplet());
+        } else {
+            lbl.append(phone);
+        }
+        lbl.append(" (").append(phone).append(")");
+        if (banque != null && !banque.isBlank()) {
+            lbl.append(" — ").append(banque.trim());
+        }
+        if (libelle != null && !libelle.isBlank()) {
+            lbl.append(" — ").append(libelle.trim());
+        }
+
+        Map<String, Object> result = transfer(senderLogin, compteSource, destCompte, montant, lbl.toString());
+        result.put("telephoneBeneficiaire", phone);
+        result.put("compteBeneficiaire", destCompte);
+        return result;
+    }
+
+    private static String normalizePhone(String raw) {
+        return normalizeLogin(raw);
     }
 
     // ── Paiement service ───────────────────────────────────────────────────
@@ -371,6 +645,9 @@ public class MobileMeService {
         mvt.setUtilisateur(login);
         if (reference != null) mvt.setNumPiece(reference);
         epargneRepo.save(mvt);
+
+        notifyOperation(login, "Débit sur compte",
+            mvt.getLibelleOperation() + " · " + formatMontant(montant), mvt.getIdEpargne());
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("statut",        "OK");

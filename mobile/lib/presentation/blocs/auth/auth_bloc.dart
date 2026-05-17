@@ -17,7 +17,9 @@ String _loginFailureMessage(LoginFailureKind kind) {
     case LoginFailureKind.invalidCredentials:
       return 'Numéro ou code PIN incorrect.';
     case LoginFailureKind.network:
-      return 'Problème de connexion. Vérifiez votre réseau et réessayez.';
+      return 'Impossible de joindre le serveur. Sur téléphone, lancez l\'app avec '
+          'l\'IP de votre PC : flutter run --dart-define=API_BASE_URL=http://VOTRE_IP:8080 '
+          '(pas localhost). Même Wi-Fi + backend démarré.';
     case LoginFailureKind.unknown:
       return "Erreur d'authentification. Réessayez.";
   }
@@ -32,6 +34,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     : super(AuthInitial()) {
     on<AppStarted>(_onAppStarted);
     on<LoginRequested>(_onLoginRequested);
+    on<RegisterRequested>(_onRegisterRequested);
     on<LogoutRequested>(_onLogoutRequested);
     on<RemoteSessionInvalidated>(_onRemoteSessionInvalidated);
 
@@ -64,6 +67,31 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthSuccess(token, phone: phone));
     } else {
       emit(Unauthenticated());
+    }
+  }
+
+  Future<void> _onRegisterRequested(
+    RegisterRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      final outcome = await _authRepository.registerMobile(
+        phone: event.phone,
+        pin: event.pin,
+        nomComplet: event.nomComplet,
+        email: event.email,
+        address: event.address,
+      );
+      switch (outcome) {
+        case LoginSuccess(:final token):
+          MockData.currentUserPhone = event.phone;
+          emit(AuthSuccess(token, phone: event.phone));
+        case LoginFailure(:final kind):
+          emit(AuthFailure(_loginFailureMessage(kind)));
+      }
+    } catch (e) {
+      emit(AuthFailure(e.toString()));
     }
   }
 

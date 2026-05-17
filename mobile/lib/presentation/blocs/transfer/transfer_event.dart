@@ -26,28 +26,17 @@ class PerformTransfer extends TransferEvent {
 
 class PerformExternalTransfer extends TransferEvent {
   final String fromAccountId;
-  final String beneficiaryName;
-  final String externalAccountNumber;
-  final String? beneficiaryBank;
+  final String beneficiaryPhone;
   final double amount;
   final String reason;
 
   const PerformExternalTransfer({
     required this.fromAccountId,
-    required this.beneficiaryName,
-    required this.externalAccountNumber,
-    this.beneficiaryBank,
+    required this.beneficiaryPhone,
     required this.amount,
     required this.reason,
   });
 
   @override
-  List<Object?> get props => [
-    fromAccountId,
-    beneficiaryName,
-    externalAccountNumber,
-    beneficiaryBank,
-    amount,
-    reason,
-  ];
+  List<Object?> get props => [fromAccountId, beneficiaryPhone, amount, reason];
 }

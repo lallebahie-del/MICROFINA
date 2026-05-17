@@ -9,6 +9,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/phone_number_policy.dart';
 import '../../../data/datasources/mock/mock_data.dart';
+import '../../../domain/repositories/profile_repository.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../widgets/logout_confirm_dialog.dart';
 
@@ -30,6 +31,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isEditing = false;
   bool _isFormValid = false;
   String? _authPhone;
+  String _numCompteCourant = '';
 
   static final RegExp _emailRegex = RegExp(
     r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$',
@@ -53,7 +55,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ? authState.phone!
         : MockData.currentUserPhone;
 
-    final adresse = Map<String, dynamic>.from(MockData.getAdresseForPhone(phone));
+    final adresse = <String, dynamic>{
+      'nom': '',
+      'email': '',
+      'telephone': phone,
+      'adresse': '',
+    };
+
+    try {
+      final profile = await sl<ProfileRepository>().getProfile();
+      adresse['nom'] = profile.nomComplet;
+      adresse['email'] = profile.email;
+      adresse['telephone'] = profile.telephone.isNotEmpty
+          ? profile.telephone
+          : phone;
+      if (profile.adresse.isNotEmpty) {
+        adresse['adresse'] = profile.adresse;
+      } else if (profile.ville.isNotEmpty) {
+        adresse['adresse'] = profile.ville;
+      }
+      _numCompteCourant = profile.numCompteCourant;
+    } catch (_) {
+      adresse.addAll(MockData.getAdresseForPhone(phone));
+    }
 
     final storedName = await _secureStorage.getUserName(phone);
     if (storedName != null && storedName.trim().isNotEmpty) {
@@ -278,15 +302,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
-            child: Text(
-              _nameController.text.trim().isEmpty
-                  ? 'Mon profil'
-                  : _nameController.text.trim(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _nameController.text.trim().isEmpty
+                      ? 'Mon profil'
+                      : _nameController.text.trim(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                if (_numCompteCourant.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Compte courant · $_numCompteCourant',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],

@@ -17,6 +17,25 @@ class LoginRequested extends AuthEvent {
   List<Object?> get props => [phone, pin];
 }
 
+class RegisterRequested extends AuthEvent {
+  final String phone;
+  final String pin;
+  final String nomComplet;
+  final String? email;
+  final Map<String, String>? address;
+
+  const RegisterRequested({
+    required this.phone,
+    required this.pin,
+    required this.nomComplet,
+    this.email,
+    this.address,
+  });
+
+  @override
+  List<Object?> get props => [phone, pin, nomComplet, email, address];
+}
+
 class LogoutRequested extends AuthEvent {}
 
 class AppStarted extends AuthEvent {}

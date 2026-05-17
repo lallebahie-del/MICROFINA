@@ -77,6 +77,10 @@
 	<key>NSCameraUsageDescription</key>
 	<string>L'accès à la caméra est nécessaire pour scanner les QR codes de paiement.</string>
 
+	<!-- geolocator / adresse à l'inscription -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Votre position permet d'enregistrer votre adresse lors de la création du compte.</string>
+
 	<!-- image_picker / photo de profil -->
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>L'accès à la photothèque permet de définir votre photo de profil.</string>

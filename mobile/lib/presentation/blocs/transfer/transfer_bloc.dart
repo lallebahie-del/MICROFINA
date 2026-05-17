@@ -1,4 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../../core/di/service_locator.dart';
+import '../../../core/notifications/notification_refresh_broadcaster.dart';
 import '../../../domain/repositories/transaction_repository.dart';
 import 'transfer_event.dart';
 import 'transfer_state.dart';
@@ -29,6 +31,7 @@ class TransferBloc extends Bloc<TransferEvent, TransferState> {
       );
 
       if (success) {
+        sl<NotificationRefreshBroadcaster>().broadcast();
         emit(state.copyWith(status: TransferStatus.success));
       } else {
         emit(
@@ -58,21 +61,20 @@ class TransferBloc extends Bloc<TransferEvent, TransferState> {
     try {
       final success = await _transactionRepository.transferExternalFunds(
         fromAccountId: event.fromAccountId,
-        beneficiaryName: event.beneficiaryName,
-        externalAccountNumber: event.externalAccountNumber,
-        beneficiaryBank: event.beneficiaryBank,
+        beneficiaryPhone: event.beneficiaryPhone,
         amount: event.amount,
         reason: event.reason,
       );
 
       if (success) {
+        sl<NotificationRefreshBroadcaster>().broadcast();
         emit(state.copyWith(status: TransferStatus.success));
       } else {
         emit(
           state.copyWith(
             status: TransferStatus.failure,
             errorMessage:
-                'Le virement externe a échoué. Vérifiez le solde, le bénéficiaire et le numéro de compte.',
+                'Le virement a échoué. Vérifiez le solde, le numéro de téléphone du bénéficiaire et qu\'il est inscrit sur l\'app.',
           ),
         );
       }

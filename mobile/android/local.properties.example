@@ -6,3 +6,11 @@
 # 3) Pour le debug, restriction "Android apps" avec le SHA-1 du keystore debug
 #
 GOOGLE_MAPS_API_KEY=
+
+# ── API backend (app mobile) ───────────────────────────────────────────────
+# Sur un TELEPHONE PHYSIQUE, localhost = le telephone, pas votre PC.
+# 1) Sur le PC : ipconfig → adresse IPv4 (ex. 192.168.1.42)
+# 2) Verifier : http://192.168.1.42:8080/actuator/health depuis le navigateur du telephone
+# 3) Lancer Flutter avec l'IP du PC (meme Wi-Fi) :
+#    flutter run --dart-define=API_BASE_URL=http://192.168.1.42:8080
+# Emulateur Android : --dart-define=API_BASE_URL=http://10.0.2.2:8080

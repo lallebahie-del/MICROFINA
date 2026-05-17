@@ -1,6 +1,4 @@
-import 'package:flutter/foundation.dart';
-
-/// Données de démo / repli mock : actives en debug, ou en release si
+/// Données de démo / repli mock si
 /// `flutter run --dart-define=ALLOW_MOCK_FALLBACK=true`.
 class AppBuildConfig {
   AppBuildConfig._();
@@ -10,6 +8,6 @@ class AppBuildConfig {
     defaultValue: false,
   );
 
-  /// Repli sur JSON mock quand l’API est vide / en erreur (hors cache).
-  static bool get allowMockFallback => kDebugMode || _allowMockFromDefine;
+  /// Repli mock uniquement si `flutter run --dart-define=ALLOW_MOCK_FALLBACK=true`.
+  static bool get allowMockFallback => _allowMockFromDefine;
 }

@@ -3,14 +3,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/extra_models.dart';
-import '../../../data/datasources/mock/mock_data.dart';
+import '../../../core/config/api_config.dart';
 import '../../blocs/transaction/transaction_bloc.dart';
 import '../../blocs/account/account_bloc.dart';
 import '../../widgets/transaction_shimmer.dart';
 import '../../../core/utils/pdf_generator_service.dart';
 
 class TransactionsScreen extends StatefulWidget {
-  /// Identifiant du compte, ou [MockData.transactionScopeAllAccounts] pour l’historique agrégé.
+  /// Identifiant du compte, ou [ApiConfig.allAccountsTransactionScope] pour l’historique agrégé.
   final String accountId;
 
   const TransactionsScreen({super.key, required this.accountId});
@@ -29,7 +29,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   DateTimeRange? _selectedDateRange;
 
   bool get _allAccounts =>
-      widget.accountId == MockData.transactionScopeAllAccounts;
+      widget.accountId == ApiConfig.allAccountsTransactionScope;
 
   @override
   void initState() {

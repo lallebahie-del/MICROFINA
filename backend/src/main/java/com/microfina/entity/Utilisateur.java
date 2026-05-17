@@ -82,6 +82,27 @@ public class Utilisateur implements Serializable {
                 foreignKey = @ForeignKey(name = "FK_Utilisateur_Agence"))
     private Agence agence;
 
+    /** Membre lié (inscription mobile) — FK vers membres.NUM_MEMBRE. */
+    @Column(name = "num_membre", length = 25)
+    private String numMembre;
+
+    /** Adresse complète (profil mobile, copie à l'inscription). */
+    @Column(name = "adresse", length = 500)
+    private String adresse;
+
+    @Column(name = "ville", length = 255)
+    private String ville;
+
+    @Column(name = "latitude", length = 50)
+    private String latitude;
+
+    @Column(name = "longitude", length = 50)
+    private String longitude;
+
+    /** Numéro du compte courant ouvert à l'inscription mobile. */
+    @Column(name = "num_compte_courant", length = 255)
+    private String numCompteCourant;
+
     // ── Constructeurs ──────────────────────────────────────────────────────────
 
     /** Constructeur sans arguments requis par JPA. */
@@ -242,6 +263,54 @@ public class Utilisateur implements Serializable {
     /** @param agence agence de rattachement */
     public void setAgence(Agence agence) {
         this.agence = agence;
+    }
+
+    public String getNumMembre() {
+        return numMembre;
+    }
+
+    public void setNumMembre(String numMembre) {
+        this.numMembre = numMembre;
+    }
+
+    public String getAdresse() {
+        return adresse;
+    }
+
+    public void setAdresse(String adresse) {
+        this.adresse = adresse;
+    }
+
+    public String getVille() {
+        return ville;
+    }
+
+    public void setVille(String ville) {
+        this.ville = ville;
+    }
+
+    public String getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(String latitude) {
+        this.latitude = latitude;
+    }
+
+    public String getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(String longitude) {
+        this.longitude = longitude;
+    }
+
+    public String getNumCompteCourant() {
+        return numCompteCourant;
+    }
+
+    public void setNumCompteCourant(String numCompteCourant) {
+        this.numCompteCourant = numCompteCourant;
     }
 
     @Override

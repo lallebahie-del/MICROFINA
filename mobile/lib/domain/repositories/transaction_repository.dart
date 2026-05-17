@@ -20,12 +20,10 @@ abstract class TransactionRepository {
     required String reason,
   });
 
-  /// Virement vers un compte tiers (autre banque / RIB).
+  /// Virement vers un autre client mobile (identifié par téléphone).
   Future<bool> transferExternalFunds({
     required String fromAccountId,
-    required String beneficiaryName,
-    required String externalAccountNumber,
-    String? beneficiaryBank,
+    required String beneficiaryPhone,
     required double amount,
     required String reason,
   });

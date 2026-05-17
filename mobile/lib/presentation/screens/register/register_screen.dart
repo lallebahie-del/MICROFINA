@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/router/app_router.dart';
 import '../../../core/auth/biometric_auth_service.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../core/storage/secure_storage_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shadows.dart';
+import '../../../core/location/registration_location_service.dart';
 import '../../../core/utils/phone_number_policy.dart';
+import '../../blocs/auth/auth_bloc.dart';
 import '../../widgets/numeric_keypad.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -23,7 +27,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _confirmPinController = TextEditingController();
   final BiometricAuthService _biometric = sl<BiometricAuthService>();
   final SecureStorageService _secureStorage = sl<SecureStorageService>();
+  final RegistrationLocationService _locationService =
+      RegistrationLocationService();
   bool _isFormValid = false;
+  bool _isRegistering = false;
+  String? _lastRegisteredAddress;
 
   /// 0 = PIN principal, 1 = confirmation (cible du pavé numérique).
   int _activePinField = 0;
@@ -131,31 +139,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (didAuthenticate && mounted) {
+        setState(() => _isRegistering = true);
+
         final phone = PhoneNumberPolicy.normalize(_phoneController.text.trim());
-        // 3. Sauvegarder les infos utilisateur spécifiquement pour ce numéro
+        final pin = _pinController.text;
+
         await _secureStorage.saveAccountInfo(
           phone: phone,
           name: _nameController.text.trim(),
           biometricEnabled: true,
         );
-
-        await _secureStorage.saveLastPhone(phone);
         await _secureStorage.setSecureMode(true);
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Compte créé et biométrie configurée avec succès !',
-              ),
-              backgroundColor: AppColors.success,
-            ),
-          );
-          context.pop();
+        RegistrationAddress? address;
+        try {
+          address = await _locationService.captureCurrentAddress();
+        } catch (_) {
+          address = null;
         }
+
+        if (!mounted) return;
+        final addressLine = address?.adresse ??
+            address?.toApiPayload()['adresse'];
+        setState(() {
+          _isRegistering = false;
+          _lastRegisteredAddress = addressLine;
+        });
+
+        context.read<AuthBloc>().add(
+          RegisterRequested(
+            phone: phone,
+            pin: pin,
+            nomComplet: _nameController.text.trim(),
+            address: address?.hasData == true ? address!.toApiPayload() : null,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
+        setState(() => _isRegistering = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erreur lors de la configuration biométrique: $e'),
@@ -167,7 +189,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) async {
+        if (state is AuthSuccess) {
+          final phone = state.phone;
+          if (phone != null && phone.isNotEmpty) {
+            final addr = _lastRegisteredAddress;
+            if (addr != null && addr.isNotEmpty) {
+              await _secureStorage.saveUserAddress(phone, addr);
+            }
+          }
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Compte créé avec succès !'),
+              backgroundColor: AppColors.success,
+            ),
+          );
+          context.go(AppRouter.dashboard);
+        } else if (state is AuthFailure) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message), backgroundColor: AppColors.error),
+          );
+        }
+      },
+      child: Scaffold(
       body: Container(
         width: double.infinity,
         decoration: BoxDecoration(
@@ -338,14 +384,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                         const SizedBox(height: 56),
 
-                        ElevatedButton(
-                          onPressed: _isFormValid ? _handleRegister : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            shadowColor: AppColors.primary.withOpacity(0.3),
-                            elevation: 12,
-                          ),
-                          child: const Text('FINALISER L\'INSCRIPTION'),
+                        BlocBuilder<AuthBloc, AuthState>(
+                          builder: (context, state) {
+                            final busy =
+                                _isRegistering || state is AuthLoading;
+                            return ElevatedButton(
+                              onPressed: _isFormValid && !busy
+                                  ? _handleRegister
+                                  : null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                shadowColor: AppColors.primary.withOpacity(0.3),
+                                elevation: 12,
+                              ),
+                              child: busy
+                                  ? const SizedBox(
+                                      height: 22,
+                                      width: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text('FINALISER L\'INSCRIPTION'),
+                            );
+                          },
                         ),
 
                         const SizedBox(height: 32),
@@ -380,6 +443,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 

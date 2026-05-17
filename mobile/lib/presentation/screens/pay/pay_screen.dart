@@ -4,10 +4,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lottie/lottie.dart';
 import '../../../core/auth/biometric_auth_service.dart';
 import '../../../core/di/service_locator.dart';
+import '../../../core/notifications/notification_refresh_broadcaster.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shadows.dart';
-import '../../../data/datasources/mock/mock_data.dart';
-import '../../blocs/auth/auth_bloc.dart';
+import '../../../domain/repositories/operations_repository.dart';
+import '../../blocs/account/account_bloc.dart';
+import '../../blocs/account/account_event.dart';
 
 class PayScreen extends StatefulWidget {
   const PayScreen({super.key});
@@ -18,6 +20,18 @@ class PayScreen extends StatefulWidget {
 
 class _PayScreenState extends State<PayScreen> {
   final BiometricAuthService _biometric = sl<BiometricAuthService>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final state = context.read<AccountBloc>().state;
+      if (state.accounts.isEmpty) {
+        context.read<AccountBloc>().add(FetchAccounts());
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -402,38 +416,51 @@ class _PayScreenState extends State<PayScreen> {
     String reference,
     Color color,
   ) async {
-    final authState = context.read<AuthBloc>().state;
-    String currentPhone = '27123456';
-    if (authState is AuthSuccess && authState.phone != null) {
-      currentPhone = authState.phone!;
-    }
-
-    final accounts = MockData.getAccountsForPhone(currentPhone);
+    final accountState = context.read<AccountBloc>().state;
+    final accounts = accountState.accounts;
     if (accounts.isEmpty) {
-      if (mounted)
-        _showErrorPopup(context, 'Aucun compte disponible pour ce paiement.');
+      context.read<AccountBloc>().add(FetchAccounts());
+      if (mounted) {
+        _showErrorPopup(
+          context,
+          'Aucun compte disponible. Réessayez dans un instant.',
+        );
+      }
       return;
     }
+
     final defaultAccount = accounts.firstWhere(
-      (acc) => acc['isDefaultAccount'],
+      (a) => a.isDefaultAccount,
       orElse: () => accounts.first,
     );
 
-    final success = await MockData.performServicePayment(
-      accountId: defaultAccount['id'],
-      serviceName: serviceName,
-      amount: amount,
-      reference: reference,
-    );
+    try {
+      final ops = sl<OperationsRepository>();
+      final result = await ops.pay(
+        fromAccountNum: defaultAccount.numeroCompte,
+        serviceName: serviceName,
+        montant: amount,
+        reference: reference.isEmpty ? null : reference,
+      );
 
-    if (mounted) {
-      if (success) {
-        _showSuccessPopup(
+      if (mounted) {
+        context.read<AccountBloc>().add(FetchAccounts());
+        if (result.statut.toUpperCase() == 'OK') {
+          sl<NotificationRefreshBroadcaster>().broadcast();
+          _showSuccessPopup(
+            context,
+            'Paiement de $amount FCFA pour $serviceName effectué !',
+          );
+        } else {
+          _showErrorPopup(context, 'Le paiement a été refusé.');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorPopup(
           context,
-          'Paiement de $amount FCFA pour $serviceName effectué !',
+          e is Exception ? e.toString().replaceFirst('Exception: ', '') : 'Échec du paiement.',
         );
-      } else {
-        _showErrorPopup(context, 'Erreur : Solde insuffisant');
       }
     }
   }

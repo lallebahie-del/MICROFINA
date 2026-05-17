@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../../core/di/service_locator.dart';
+import '../../../core/notifications/notification_refresh_broadcaster.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../data/datasources/mock/mock_data.dart';
+import '../../../domain/repositories/notifications_repository.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -11,10 +14,66 @@ class NotificationScreen extends StatefulWidget {
 }
 
 class _NotificationScreenState extends State<NotificationScreen> {
+  final _repo = sl<NotificationsRepository>();
+  List<MobileNotification> _items = [];
+  bool _loading = true;
+  String? _error;
+  StreamSubscription<void>? _refreshSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    _refreshSub = sl<NotificationRefreshBroadcaster>().stream.listen((_) {
+      _load();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final page = await _repo.fetch(page: 0, size: 50);
+      if (mounted) {
+        setState(() {
+          _items = page.items;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString().replaceFirst('Exception: ', '');
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _markAllRead() async {
+    try {
+      await _repo.markAllAsRead();
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final notifications = MockData.getNotifications();
-    final hasUnread = notifications.any((n) => n['isRead'] == false);
+    final hasUnread = _items.any((n) => !n.lu);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -28,13 +87,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
         backgroundColor: Colors.transparent,
         foregroundColor: AppColors.primary,
         actions: [
-          if (notifications.isNotEmpty && hasUnread)
+          if (_items.isNotEmpty && hasUnread)
             TextButton(
-              onPressed: () {
-                setState(() {
-                  MockData.markAllNotificationsAsRead();
-                });
-              },
+              onPressed: _markAllRead,
               child: const Text(
                 'Tout lire',
                 style: TextStyle(fontWeight: FontWeight.bold),
@@ -44,33 +99,58 @@ class _NotificationScreenState extends State<NotificationScreen> {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async {
-          setState(() {});
-        },
-        child: notifications.isEmpty
-            ? ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                children: [
-                  SizedBox(height: MediaQuery.sizeOf(context).height * 0.2),
-                  _buildEmptyState(),
-                ],
-              )
-            : ListView.builder(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                itemCount: notifications.length,
-                itemBuilder: (context, index) {
-                  final notif = notifications[index];
-                  final bool isRead = notif['isRead'] ?? false;
-                  final date = DateTime.parse(notif['date'] as String);
-
-                  return _buildNotificationCard(notif, isRead, date);
-                },
-              ),
+        onRefresh: _load,
+        child: _buildBody(),
       ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_error != null) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(height: MediaQuery.sizeOf(context).height * 0.2),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  Text(_error!, textAlign: TextAlign.center),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _load,
+                    child: const Text('RÉESSAYER'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    if (_items.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(height: MediaQuery.sizeOf(context).height * 0.2),
+          _buildEmptyState(),
+        ],
+      );
+    }
+
+    return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      itemCount: _items.length,
+      itemBuilder: (context, index) {
+        final notif = _items[index];
+        final date = notif.dateCreation ?? DateTime.now();
+        return _buildNotificationCard(notif, date);
+      },
     );
   }
 
@@ -104,7 +184,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
-              'Les alertes liées à vos virements, paiements et remboursements apparaîtront ici après chaque opération.',
+              'Les alertes liées à vos virements, paiements et remboursements apparaîtront ici.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.grey[600],
@@ -118,12 +198,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 
-  Widget _buildNotificationCard(
-    Map<String, dynamic> notif,
-    bool isRead,
-    DateTime date,
-  ) {
-    final category = _getCategory(notif['title']);
+  Widget _buildNotificationCard(MobileNotification notif, DateTime date) {
+    final category = _getCategory(notif.titre);
+    final isRead = notif.lu;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -146,7 +223,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
         child: IntrinsicHeight(
           child: Row(
             children: [
-              // Barre latérale de couleur pour les non-lus
               if (!isRead) Container(width: 5, color: category.color),
               Expanded(
                 child: Padding(
@@ -154,7 +230,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Icône de catégorie
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
@@ -168,7 +243,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      // Contenu
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -178,7 +252,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    notif['title'],
+                                    notif.titre,
                                     style: TextStyle(
                                       fontWeight: isRead
                                           ? FontWeight.w700
@@ -201,11 +275,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              notif['message'],
+                              notif.message,
                               style: TextStyle(
-                                color: isRead
-                                    ? Colors.grey[600]
-                                    : Colors.black87,
+                                color: isRead ? Colors.grey[600] : Colors.black87,
                                 fontSize: 13,
                                 height: 1.4,
                               ),
@@ -242,7 +314,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
         t.contains('crédit') ||
         t.contains('debit') ||
         t.contains('débit')) {
-      // Même bleu que la part « Disponible » du dashboard (AppColors.secondary)
       return _NotificationCategory(
         Icons.account_balance_wallet_rounded,
         AppColors.secondary,
